@@ -47,3 +47,6 @@ config/*
 !config/configuration.yaml
 
 tmp*
+
+# Local deploy config (machine-specific)
+.deploy.env

@@ -1,0 +1,41 @@
+#!/bin/bash
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+ENV_FILE=".deploy.env"
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Error: $ENV_FILE not found. Create it with:"
+  echo '  HA_URL="http://your-ha-host:8123"'
+  echo '  HA_SSH="your-ha-host"'
+  echo '  HA_CONFIG="/config"'
+  exit 1
+fi
+source "$ENV_FILE"
+
+REMOTE_DIR="$HA_CONFIG/custom_components/loxone"
+LOCAL_DIR="custom_components/loxone"
+
+if [ ! -d "$LOCAL_DIR" ]; then
+  echo "Error: Could not find $LOCAL_DIR from repo root."
+  exit 1
+fi
+
+echo "==> Deploying to $HA_SSH:$REMOTE_DIR ..."
+
+if ssh "$HA_SSH" "command -v rsync" &>/dev/null; then
+  rsync -avz --delete \
+    --exclude='__pycache__' \
+    --exclude='*.pyc' \
+    "$LOCAL_DIR/" "$HA_SSH:$REMOTE_DIR/"
+else
+  echo "    (rsync not available on remote, using scp)"
+  ssh "$HA_SSH" "rm -rf $REMOTE_DIR"
+  scp -r "$LOCAL_DIR" "$HA_SSH:$HA_CONFIG/custom_components/"
+fi
+
+echo "==> Deployed. Restarting Home Assistant Core..."
+ssh "$HA_SSH" "ha core restart"
+
+echo "==> Restart triggered. HA will be back in ~30-60s."
+echo "    Logs: $HA_URL/config/logs"
