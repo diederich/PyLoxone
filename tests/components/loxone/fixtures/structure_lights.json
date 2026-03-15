@@ -1,0 +1,81 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Living Room", "uuid": "room-1" }
+  },
+  "cats": {
+    "cat-1": { "name": "Lighting", "uuid": "cat-1" }
+  },
+  "controls": {
+    "lc010000-0000-0000-0000000000000000": {
+      "name": "Main Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "lc010000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {},
+      "states": {
+        "activeMoods": "lc010000-0000-0000-0000000000000001",
+        "moodList": "lc010000-0000-0000-0000000000000002",
+        "favoriteMoods": "lc010000-0000-0000-0000000000000003",
+        "additionalMoods": "lc010000-0000-0000-0000000000000004"
+      },
+      "subControls": {
+        "lc010000-0000-0000-0000000000000000/masterValue": {
+          "name": "Master Dimmer",
+          "type": "Dimmer",
+          "uuidAction": "lc01mv00-0000-0000-0000000000000000",
+          "states": {
+            "position": "lc01mv00-0000-0000-0000000000000001",
+            "min": "lc01mv00-0000-0000-0000000000000002",
+            "max": "lc01mv00-0000-0000-0000000000000003"
+          }
+        },
+        "lc010000-0000-0000-0000000000000000/masterColor": {
+          "name": "Master Color",
+          "type": "ColorPickerV2",
+          "uuidAction": "lc01mc00-0000-0000-0000000000000000",
+          "states": {
+            "color": "lc01mc00-0000-0000-0000000000000001"
+          },
+          "details": {
+            "pickerType": "Rgb"
+          }
+        },
+        "lc010000-0000-0000-0000000000000000/spotRgb": {
+          "name": "Spot RGB",
+          "type": "ColorPickerV2",
+          "uuidAction": "lc01sp00-0000-0000-0000000000000000",
+          "states": {
+            "color": "lc01sp00-0000-0000-0000000000000001"
+          },
+          "details": {
+            "pickerType": "Rgb"
+          }
+        }
+      }
+    },
+    "dim10000-0000-0000-0000000000000000": {
+      "name": "Hallway Dimmer",
+      "type": "Dimmer",
+      "uuidAction": "dim10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {},
+      "states": {
+        "position": "dim10000-0000-0000-0000000000000001",
+        "min": "dim10000-0000-0000-0000000000000002",
+        "max": "dim10000-0000-0000-0000000000000003"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

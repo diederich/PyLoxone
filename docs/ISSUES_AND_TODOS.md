@@ -360,7 +360,7 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_config_flow.py`             | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
 | `test_switch.py`                  | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
 | `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
-| `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
+| `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool); IRoomControllerV2 creation, `is_overridden` JSON parsing |
 | `test_init.py`                    | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
 | `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
 | `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
@@ -368,6 +368,7 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_fan.py`                     | Ventilation entity creation, supported features, preset modes, speed/mode events, set_percentage command                                                             |
 | `test_number.py`                  | Slider entity creation, min/max/step properties, event state updates, set_native_value command                                                                       |
 | `test_button.py`                  | Pushbutton entity creation, extra attributes, press sends pulse, event updates state, ignores unrelated events                                                       |
+| `test_light.py`                   | LightControllerV2 creation, mood list JSON parsing (BUG-008 regression), effect commands; RGBColorPicker subcontrol creation, hsv/temp event parsing, None-guard turn_on (BUG-009) |
 | `test_media_player.py`            | AudioZoneV2 entity creation, device class, supported features, playState events (playing/paused/idle), play/pause/next/prev/volume commands                          |
 
 Infrastructure:
@@ -375,7 +376,7 @@ Infrastructure:
 | File                        | Purpose                                                                                                                                                          |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `conftest.py` (component)   | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures; `structure_fixture_name` override                                                    |
-| `fixtures/structure_*.json` | `structure_minimal.json`, `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json`, `structure_fan.json`, `structure_numbers.json`, `structure_buttons.json`, `structure_media_player.json` |
+| `fixtures/structure_*.json` | `structure_minimal.json`, `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json`, `structure_fan.json`, `structure_numbers.json`, `structure_buttons.json`, `structure_lights.json`, `structure_media_player.json` |
 | `conftest.py` (root)        | Minimal root conftest (kept empty; `auto_enable_custom_integrations` lives in the component conftest)                                                            |
 | `pyproject.toml`            | pytest config (`asyncio_mode = auto`)                                                                                                                            |
 | `requirements_test.txt`     | Test dependencies                                                                                                                                                |

@@ -34,6 +34,35 @@
         "ventMode": "ac010000-0000-0000-0000000000000007",
         "airflows": "ac010000-0000-0000-0000000000000008"
       }
+    },
+    "rc020000-0000-0000-0000000000000000": {
+      "name": "Bedroom Climate",
+      "type": "IRoomControllerV2",
+      "uuidAction": "rc020000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {
+        "format": "%.1f°C",
+        "timerModes": [
+          { "id": 0, "name": "Economy" },
+          { "id": 1, "name": "Comfort" }
+        ]
+      },
+      "states": {
+        "tempActual": "rc020000-0000-0000-0000000000000001",
+        "tempTarget": "rc020000-0000-0000-0000000000000002",
+        "operatingMode": "rc020000-0000-0000-0000000000000003",
+        "overrideEntries": "rc020000-0000-0000-0000000000000004",
+        "activeMode": "rc020000-0000-0000-0000000000000005",
+        "comfortTemperature": "rc020000-0000-0000-0000000000000006",
+        "comfortTolerance": "rc020000-0000-0000-0000000000000007",
+        "absentMinOffset": "rc020000-0000-0000-0000000000000008",
+        "absentMaxOffset": "rc020000-0000-0000-0000000000000009",
+        "frostProtectTemperature": "rc020000-0000-0000-000000000000000a",
+        "heatProtectTemperature": "rc020000-0000-0000-000000000000000b",
+        "prepareState": "rc020000-0000-0000-000000000000000c",
+        "openWindow": "rc020000-0000-0000-000000000000000d"
+      }
     }
   },
   "softwareVersion": [14, 5, 12, 7]

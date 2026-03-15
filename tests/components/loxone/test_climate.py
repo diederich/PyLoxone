@@ -1,4 +1,6 @@
-"""Tests for Loxone climate (AcControl) entities."""
+"""Tests for Loxone climate (AcControl, IRoomControllerV2) entities."""
+
+import json
 
 import pytest
 from homeassistant.components.climate import ATTR_TEMPERATURE
@@ -123,3 +125,63 @@ async def test_hvac_mode_cool(
 
     state = hass.states.get(AC_ENTITY_ID)
     assert state.state == "cool"
+
+
+# -- IRoomControllerV2 -------------------------------------------------------
+
+RC_ENTITY_ID = "climate.bedroom_climate"
+RC_OVERRIDE_UUID = "rc020000-0000-0000-0000000000000004"
+RC_TEMP_ACTUAL_UUID = "rc020000-0000-0000-0000000000000001"
+
+
+async def test_room_controller_v2_created(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """IRoomControllerV2 should create a climate entity."""
+    state = hass.states.get(RC_ENTITY_ID)
+    assert state is not None
+
+
+async def test_room_controller_v2_current_temp(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """tempActual event should update current_temperature."""
+    hass.bus.async_fire(EVENT, {RC_TEMP_ACTUAL_UUID: 21.5})
+    await hass.async_block_till_done()
+
+    state = hass.states.get(RC_ENTITY_ID)
+    assert state.attributes["current_temperature"] == pytest.approx(21.5)
+
+
+# -- is_overridden: json.loads regression (BUG-008) ---------------------------
+
+
+async def test_is_overridden_false_when_empty(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """is_overridden should be False when overrideEntries is an empty list."""
+    hass.bus.async_fire(EVENT, {RC_OVERRIDE_UUID: "[]"})
+    await hass.async_block_till_done()
+
+    state = hass.states.get(RC_ENTITY_ID)
+    assert state.attributes["is_overridden"] is False
+
+
+async def test_is_overridden_true_with_entries(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """is_overridden should be True when overrideEntries has items (JSON with true/false)."""
+    entries = json.dumps([{"from": 1000, "to": 2000, "value": 22.0, "active": True}])
+    hass.bus.async_fire(EVENT, {RC_OVERRIDE_UUID: entries})
+    await hass.async_block_till_done()
+
+    state = hass.states.get(RC_ENTITY_ID)
+    assert state.attributes["is_overridden"] is True
+
+
+async def test_is_overridden_false_when_no_event(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """is_overridden should be False before any overrideEntries event."""
+    state = hass.states.get(RC_ENTITY_ID)
+    assert state.attributes["is_overridden"] is False
