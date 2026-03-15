@@ -808,21 +808,21 @@ Comments say "Only one Miniserver" but `hass.data[DOMAIN]` is keyed by `entry_id
 
 Tasks that can be done in under 30 minutes each:
 
-| # | Task | Impact |
-|---|------|--------|
-| 1 | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py | Fixes AC temperature control |
-| 2 | Add `Platform.TEXT` to `LOXONE_PLATFORMS` | Enables text platform |
-| 4 | Remove `print()` from coordinator.py | Clean up debug output |
-| 5 | Fix `_LOGGER.error` format strings in colorpickers.py | Correct logging |
-| 6 | Fix `masterColor` filter from `> 1` to `> -1` | Correct light discovery |
-| 7 | Add `None` guard for `_last_header` in websocket_protocol.py | Prevent crash |
-| 8 | Remove `sys.exit(-1)` from LoxoneEntity | Prevent HA process kill |
-| 9 | Replace `eval()` with `ast.literal_eval()` where possible | Security hardening |
-| 10 | Fix copy-paste docstrings | Code hygiene |
-| 11 | Remove unused imports (`cast`, `ToggleEntity`) | Code hygiene |
-| 12 | Remove dead files (`helper.py`, `api.py`) | Reduce confusion |
-| 13 | Fix device name prefix: `DOMAIN` → `"Loxone"` (or just use `device_name`) in `helpers.py:18` | Correct capitalization in HA UI |
-| 14 | Add missing `name`/`description` to all services in `services.yaml` | Proper service metadata for HA action validation |
+| #   | Task                                                                                         | Impact                                           |
+| --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| 1   | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py                 | Fixes AC temperature control                     |
+| 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
+| 4   | Remove `print()` from coordinator.py                                                         | Clean up debug output                            |
+| 5   | Fix `_LOGGER.error` format strings in colorpickers.py                                        | Correct logging                                  |
+| 6   | Fix `masterColor` filter from `> 1` to `> -1`                                                | Correct light discovery                          |
+| 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
+| 8   | Remove `sys.exit(-1)` from LoxoneEntity                                                      | Prevent HA process kill                          |
+| 9   | Replace `eval()` with `ast.literal_eval()` where possible                                    | Security hardening                               |
+| 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |
+| 11  | Remove unused imports (`cast`, `ToggleEntity`)                                               | Code hygiene                                     |
+| 12  | Remove dead files (`helper.py`, `api.py`)                                                    | Reduce confusion                                 |
+| ~~13~~  | ~~Fix device name prefix: `DOMAIN` → `"Loxone"` (or just use `device_name`) in `helpers.py:18`~~ | ~~Correct capitalization in HA UI~~ ✅                  |
+| 14  | Add missing `name`/`description` to all services in `services.yaml`                          | Proper service metadata for HA action validation |
 
 ### Completed Quick Wins
 

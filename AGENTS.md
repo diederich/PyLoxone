@@ -54,6 +54,23 @@ pip install -r requirements.txt -r requirements_test.txt
 2. **Update docs with code.** If a code change requires a doc update, include both in the same commit.
 3. **Run tests after changes.** After modifying code in `custom_components/` or `tests/`, run `python -m pytest tests/ -v` and fix any failures before considering the task done. When adding new functionality, add or update tests to cover it.
 
+## Commit Messages
+
+Use this format for all commit messages:
+
+```
+<Descriptive PR title>
+<description of the change — the why & how>
+
+## What's changed
+<bullet list of changes — the what>
+
+## Testplan
+<bullet list of how we've tested the change>
+```
+
+The testplan can reference unit tests, but should often also include a manual test step (e.g. "Deploy and verify in HA UI").
+
 ## ISSUES_AND_TODOS.md — Living Document
 
 This is the project's source of truth for what's broken, what needs improvement, and what's been done. Treat it as a living document:
