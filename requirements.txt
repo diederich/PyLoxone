@@ -4,6 +4,7 @@ pip>=21.3.1
 ruff==0.14.6
 websockets>=14
 pycryptodome
+async-upnp-client
 pytest
 httpx
 debugpy

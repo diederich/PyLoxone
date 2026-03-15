@@ -116,12 +116,12 @@ The file is a god object handling HTTP setup, WebSocket lifecycle, encryption, t
 
 **Suggested decomposition:**
 
-| New Module            | Responsibility                          |
-|-----------------------|-----------------------------------------|
-| `crypto.py`           | AES/RSA encryption, salt management     |
-| `auth.py`             | Token lifecycle, HMAC, key exchange     |
-| `connection.py`       | WebSocket connect/listen/send only      |
-| `session.py`          | HTTP setup, structure file retrieval    |
+| New Module      | Responsibility                       |
+| --------------- | ------------------------------------ |
+| `crypto.py`     | AES/RSA encryption, salt management  |
+| `auth.py`       | Token lifecycle, HMAC, key exchange  |
+| `connection.py` | WebSocket connect/listen/send only   |
+| `session.py`    | HTTP setup, structure file retrieval |
 
 ### IMP-002: Replace event bus broadcast with UUID-targeted dispatch
 
@@ -147,33 +147,33 @@ async_dispatcher_connect(hass, f"loxone_event_{self.uuidAction}", self._handle_u
 
 Two overlapping sets of exceptions exist in `pyloxone_api/exceptions.py`:
 
-| Group A (older?)               | Group B (newer?)          |
-|--------------------------------|---------------------------|
-| `LoxoneConnectionError`       | `ConnectionFailure`       |
-| `LoxoneUnauthorisedError`     | `UnauthorizedError`       |
-| `LoxoneHTTPStatusError`       | `HttpApiError`            |
+| Group A (older?)          | Group B (newer?)    |
+| ------------------------- | ------------------- |
+| `LoxoneConnectionError`   | `ConnectionFailure` |
+| `LoxoneUnauthorisedError` | `UnauthorizedError` |
+| `LoxoneHTTPStatusError`   | `HttpApiError`      |
 
 Pick one naming convention and consolidate.
 
 ### IMP-006: Remove dead code
 
-| Item | Location |
-|------|----------|
-| `helper.py` (entire file) | `pyloxone_api/` — never imported |
-| `api.py` (entire file) | `pyloxone_api/` — empty placeholder |
-| `REQUIREMENTS` list | `__init__.py` — obsolete, manifest.json is authoritative |
-| `hash_algorithms` dict | `pyloxone_api/helper.py` |
-| `__color_mode_reported` | `lights/colorpickers.py` |
-| `_sequence_uuid` | `lights/colorpickers.py` |
-| `async_config_entry_updated` | `__init__.py` — empty function |
+| Item                         | Location                                                 |
+| ---------------------------- | -------------------------------------------------------- |
+| `helper.py` (entire file)    | `pyloxone_api/` — never imported                         |
+| `api.py` (entire file)       | `pyloxone_api/` — empty placeholder                      |
+| `REQUIREMENTS` list          | `__init__.py` — obsolete, manifest.json is authoritative |
+| `hash_algorithms` dict       | `pyloxone_api/helper.py`                                 |
+| `__color_mode_reported`      | `lights/colorpickers.py`                                 |
+| `_sequence_uuid`             | `lights/colorpickers.py`                                 |
+| `async_config_entry_updated` | `__init__.py` — empty function                           |
 
 ### IMP-007: Fix sync/async inconsistencies
 
-| Current (sync)                     | Replace with (async)                      | Files |
-|------------------------------------|-------------------------------------------|-------|
-| `hass.bus.fire()`                  | `hass.bus.async_fire()`                   | switch.py, button.py |
-| `schedule_update_ha_state()`       | `async_schedule_update_ha_state()`        | cover.py, number.py, button.py |
-| `hass.loop.call_later()`          | `async_call_later()` or `async_create_task()` | scene.py |
+| Current (sync)               | Replace with (async)                          | Files                          |
+| ---------------------------- | --------------------------------------------- | ------------------------------ |
+| `hass.bus.fire()`            | `hass.bus.async_fire()`                       | switch.py, button.py           |
+| `schedule_update_ha_state()` | `async_schedule_update_ha_state()`            | cover.py, number.py, button.py |
+| `hass.loop.call_later()`     | `async_call_later()` or `async_create_task()` | scene.py                       |
 
 ### IMP-008: Replace event bus broadcast with UUID-targeted dispatch
 
@@ -335,11 +335,13 @@ HA domains are always lowercase identifiers — they're not meant for display. T
 **Fix options:**
 
 1. **Simple** — hardcode the display name:
+
    ```python
    "name": f"Loxone {device_name}",
    ```
 
 2. **Better** — use just the device name from the Miniserver structure file (it's already descriptive):
+
    ```python
    "name": device_name,
    ```
@@ -365,18 +367,18 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 ## Low-Priority / Cosmetic
 
-| # | Issue | File |
-|---|-------|------|
-| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com") | binary_sensor.py, fan.py, alarm_control_panel.py |
-| LOW-002 | Typo `reponse` in `read_user_salt_response` | pyloxone_api/loxone_token.py:31 |
-| LOW-003 | Typo `shade_postion_as_text` | cover.py |
-| LOW-004 | Typo `subcontol` | switch.py |
-| LOW-005 | Typo `"binairy_sensors"` | binary_sensor.py |
-| LOW-006 | Duplicate `key="power"` in `SENSOR_TYPES` | sensor.py |
-| LOW-007 | `ToggleEntity` imported but unused | lights/switch.py |
-| LOW-008 | `cast` imported but unused | config_flow.py |
-| LOW-009 | Deprecated `DeviceInfo` import path | lights/dimmer.py, lights/lightcontroller.py |
-| LOW-010 | Inconsistent command casing `"on"`/`"off"` vs `"On"`/`"Off"` | lights/switch.py vs lights/dimmer.py |
+| #       | Issue                                                        | File                                             |
+| ------- | ------------------------------------------------------------ | ------------------------------------------------ |
+| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, fan.py, alarm_control_panel.py |
+| LOW-002 | Typo `reponse` in `read_user_salt_response`                  | pyloxone_api/loxone_token.py:31                  |
+| LOW-003 | Typo `shade_postion_as_text`                                 | cover.py                                         |
+| LOW-004 | Typo `subcontol`                                             | switch.py                                        |
+| LOW-005 | Typo `"binairy_sensors"`                                     | binary_sensor.py                                 |
+| LOW-006 | Duplicate `key="power"` in `SENSOR_TYPES`                    | sensor.py                                        |
+| LOW-007 | `ToggleEntity` imported but unused                           | lights/switch.py                                 |
+| LOW-008 | `cast` imported but unused                                   | config_flow.py                                   |
+| LOW-009 | Deprecated `DeviceInfo` import path                          | lights/dimmer.py, lights/lightcontroller.py      |
+| LOW-010 | Inconsistent command casing `"on"`/`"off"` vs `"On"`/`"Off"` | lights/switch.py vs lights/dimmer.py             |
 
 ---
 
@@ -384,23 +386,32 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 ### Current State
 
-Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
+Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13). **88 tests, all passing.**
 
-| File | Status |
-|------|--------|
-| `tests/components/loxone/test_init.py` | Setup and unload tests with mocked `LoxoneConnection` (2 tests, passing) |
-| `tests/components/loxone/conftest.py` | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures |
-| `tests/components/loxone/fixtures/structure_minimal.json` | Minimal LoxAPP3.json structure (no controls) |
-| `tests/conftest.py` | Root conftest enabling custom integrations |
-| `pyproject.toml` | pytest config (`asyncio_mode = auto`) |
-| `requirements_test.txt` | Test dependencies |
+| File                  | Tests | What's covered                                                                                                                                                      |
+| --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_helpers.py`     | 34    | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup — all parametrized with edge cases                               |
+| `test_config_flow.py` | 6     | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
+| `test_switch.py`      | 10    | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
+| `test_cover.py`       | 20    | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
+| `test_init.py`        | 2     | Setup and unload with mocked `LoxoneConnection`                                                                                                                     |
+
+Infrastructure:
+
+| File                        | Purpose                                                                                                                                                          |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `conftest.py` (component)   | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures; `structure_fixture_name` override                                                    |
+| `fixtures/structure_*.json` | `structure_minimal.json` (no controls), `structure_switches.json` (Switch + TimedSwitch), `structure_covers.json` (Jalousie/Gate/Window with various animations) |
+| `conftest.py` (root)        | `auto_enable_custom_integrations`                                                                                                                                |
+| `pyproject.toml`            | pytest config (`asyncio_mode = auto`)                                                                                                                            |
+| `requirements_test.txt`     | Test dependencies                                                                                                                                                |
 
 Legacy test files (still present in `pyloxone_api/tests/`):
 
-| File | Status |
-|------|--------|
-| `test_run_alone.py` | Loads `.env` via `python-dotenv` (not in requirements), test body is `pass` |
-| `test_discover.py` | Requires a live Miniserver on the network, uses `pytest-asyncio` (not in requirements) |
+| File                | Status                                                                                 |
+| ------------------- | -------------------------------------------------------------------------------------- |
+| `test_run_alone.py` | Loads `.env` via `python-dotenv` (not in requirements), test body is `pass`            |
+| `test_discover.py`  | Requires a live Miniserver on the network, uses `pytest-asyncio` (not in requirements) |
 
 The `@pytest.mark.online` marker in `test_discover.py` is never registered. No CI test jobs yet.
 
@@ -414,13 +425,13 @@ The Home Assistant ecosystem has a well-established testing pattern. Reference i
 
 #### Core Infrastructure
 
-| Component | Purpose |
-|-----------|---------|
+| Component                                                                                                        | Purpose                                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | [`pytest-homeassistant-custom-component`](https://github.com/MatthewFlamm/pytest-homeassistant-custom-component) | Extracts HA's test fixtures for custom component use. Provides `hass` instance, `MockConfigEntry`, `async_fire_time_changed`, `load_json_object_fixture`, and more |
-| `conftest.py` (root) | Enables custom integrations, provides component-specific fixtures |
-| `conftest.py` (per-component) | Mocked clients, config entries, `init_integration` fixture |
-| JSON fixture files | Recorded API responses stored as `.json` files in `tests/fixtures/` |
-| Snapshot testing (`syrupy`) | Assert entity states against stored snapshots |
+| `conftest.py` (root)                                                                                             | Enables custom integrations, provides component-specific fixtures                                                                                                  |
+| `conftest.py` (per-component)                                                                                    | Mocked clients, config entries, `init_integration` fixture                                                                                                         |
+| JSON fixture files                                                                                               | Recorded API responses stored as `.json` files in `tests/fixtures/`                                                                                                |
+| Snapshot testing (`syrupy`)                                                                                      | Assert entity states against stored snapshots                                                                                                                      |
 
 #### Standard Test File Structure (what HA core expects)
 
@@ -555,7 +566,8 @@ Instead of hardcoding Loxone structure data in tests, store trimmed versions of 
   },
   "rooms": {
     "0f1e2d3c-0000-0000-0000000000000000": {
-      "name": "Living Room", "uuid": "0f1e2d3c-0000-0000-0000000000000000"
+      "name": "Living Room",
+      "uuid": "0f1e2d3c-0000-0000-0000000000000000"
     }
   },
   "cats": {},
@@ -668,58 +680,58 @@ jobs:
 
 These test the API client in isolation. No HA fixtures needed — just plain pytest.
 
-| Module | What to Test | Approach |
-|--------|-------------|----------|
-| `message.py` | Parse all 8 message types, malformed headers, encoding edge cases | Construct binary payloads, assert parsed fields |
-| `loxone_token.py` | Token expiry calculation, `valid_until=0`, negative values, `LxJsonKeySalt` parsing | Direct instantiation, `freezegun` for time |
-| `loxone_http_client.py` | Error code mapping (401→Unauthorized, 503→Unavailable, etc.), timeout, Basic Auth header | `aioresponses` to mock HTTP |
-| `websocket_protocol.py` | `recv_message()` header+payload combos, `_last_header=None` guard | Mock `ClientConnection` |
-| `helpers.py` (integration) | `map_range`, `lox_to_hass`, `hass_to_lox`, `to_hass_color_temp`, `to_loxone_color_temp` | Pure function tests, boundary values |
-| `discover.py` | UDP broadcast/response parsing, timeout handling | Mock `asyncio.DatagramTransport` |
+| Module                     | What to Test                                                                             | Approach                                        |
+| -------------------------- | ---------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| `message.py`               | Parse all 8 message types, malformed headers, encoding edge cases                        | Construct binary payloads, assert parsed fields |
+| `loxone_token.py`          | Token expiry calculation, `valid_until=0`, negative values, `LxJsonKeySalt` parsing      | Direct instantiation, `freezegun` for time      |
+| `loxone_http_client.py`    | Error code mapping (401→Unauthorized, 503→Unavailable, etc.), timeout, Basic Auth header | `aioresponses` to mock HTTP                     |
+| `websocket_protocol.py`    | `recv_message()` header+payload combos, `_last_header=None` guard                        | Mock `ClientConnection`                         |
+| `helpers.py` (integration) | `map_range`, `lox_to_hass`, `hass_to_lox`, `to_hass_color_temp`, `to_loxone_color_temp`  | Pure function tests, boundary values            |
+| `discover.py`              | UDP broadcast/response parsing, timeout handling                                         | Mock `asyncio.DatagramTransport`                |
 
 **Estimated effort:** 2–3 days. **Value:** High — these are the foundations everything else builds on, and they're fast to run.
 
 #### Tier 2 — Config Flow & Init Tests (needs HA fixtures)
 
-| Component | What to Test | Approach |
-|-----------|-------------|----------|
-| `config_flow.py` | User step with valid/invalid input, Latin-1 validation, options flow | `hass.config_entries.flow.async_init()` |
-| `__init__.py` setup | `async_setup_entry` with mocked API, platform forwarding | `init_integration` fixture |
-| `__init__.py` unload | `async_unload_entry` cleanup | Verify listeners removed |
-| `__init__.py` migration | v1→v2→v3 config migration paths | `MockConfigEntry` with old versions |
-| `__init__.py` services | `event_websocket_command`, `sync_areas`, `reload` | Service call assertions |
+| Component               | What to Test                                                         | Approach                                |
+| ----------------------- | -------------------------------------------------------------------- | --------------------------------------- |
+| `config_flow.py`        | User step with valid/invalid input, Latin-1 validation, options flow | `hass.config_entries.flow.async_init()` |
+| `__init__.py` setup     | `async_setup_entry` with mocked API, platform forwarding             | `init_integration` fixture              |
+| `__init__.py` unload    | `async_unload_entry` cleanup                                         | Verify listeners removed                |
+| `__init__.py` migration | v1→v2→v3 config migration paths                                      | `MockConfigEntry` with old versions     |
+| `__init__.py` services  | `event_websocket_command`, `sync_areas`, `reload`                    | Service call assertions                 |
 
 **Estimated effort:** 2–3 days. **Value:** High — config flow is the first user touchpoint.
 
 #### Tier 3 — Platform Entity Tests (needs HA fixtures + structure fixtures)
 
-| Platform | Key Scenarios |
-|----------|---------------|
-| `sensor` | InfoOnlyAnalog state updates, format string → unit mapping, Meter subsensors |
-| `binary_sensor` | InfoOnlyDigital, Presence, Smoke — state changes, device class |
-| `switch` | Turn on/off → correct WS command, TimedSwitch duration, Intercom |
-| `cover` | Gate/Window/Jalousie — position, tilt, sun automation service calls |
-| `light` | Dimmer brightness mapping, ColorPicker HSV/temp parsing, LightControllerV2 moods |
-| `climate` | RoomControllerV2 modes, AcControl temperature (verifies BUG-001 fix) |
-| `fan` | Ventilation speed, subsensor creation |
-| `alarm_control_panel` | Arm/disarm, code handling |
-| `media_player` | AudioZoneV2 play state mapping, volume, source |
-| `number` | Slider min/max/step, value mapping |
-| `button` | Pushbutton press → WS command |
-| `diagnostics` | Returns structure file data |
+| Platform              | Key Scenarios                                                                    |
+| --------------------- | -------------------------------------------------------------------------------- |
+| `sensor`              | InfoOnlyAnalog state updates, format string → unit mapping, Meter subsensors     |
+| `binary_sensor`       | InfoOnlyDigital, Presence, Smoke — state changes, device class                   |
+| `switch`              | Turn on/off → correct WS command, TimedSwitch duration, Intercom                 |
+| `cover`               | Gate/Window/Jalousie — position, tilt, sun automation service calls              |
+| `light`               | Dimmer brightness mapping, ColorPicker HSV/temp parsing, LightControllerV2 moods |
+| `climate`             | RoomControllerV2 modes, AcControl temperature (verifies BUG-001 fix)             |
+| `fan`                 | Ventilation speed, subsensor creation                                            |
+| `alarm_control_panel` | Arm/disarm, code handling                                                        |
+| `media_player`        | AudioZoneV2 play state mapping, volume, source                                   |
+| `number`              | Slider min/max/step, value mapping                                               |
+| `button`              | Pushbutton press → WS command                                                    |
+| `diagnostics`         | Returns structure file data                                                      |
 
 **Estimated effort:** 1 week. **Value:** Medium-high — catches regressions in entity behavior.
 
 #### Tier 4 — Connection Integration Tests (mocked WS)
 
-| Scenario | What to Test |
-|----------|-------------|
-| Happy path | `open()` → HTTP setup → WS connect → key exchange → auth → listen |
-| Auth failure | Wrong credentials → `LoxoneUnauthorisedError` |
-| Reconnect | WS disconnect → automatic reconnect with backoff |
-| Token refresh | Token approaching expiry → refresh request |
-| Out of service | `MessageType.OUT_OF_SERVICE` → graceful handling |
-| Keep-alive | Periodic keepalive sent, timeout detection |
+| Scenario       | What to Test                                                      |
+| -------------- | ----------------------------------------------------------------- |
+| Happy path     | `open()` → HTTP setup → WS connect → key exchange → auth → listen |
+| Auth failure   | Wrong credentials → `LoxoneUnauthorisedError`                     |
+| Reconnect      | WS disconnect → automatic reconnect with backoff                  |
+| Token refresh  | Token approaching expiry → refresh request                        |
+| Out of service | `MessageType.OUT_OF_SERVICE` → graceful handling                  |
+| Keep-alive     | Periodic keepalive sent, timeout detection                        |
 
 **Estimated effort:** 3–5 days. **Value:** Medium — complex to set up but critical for reliability.
 
@@ -762,6 +774,7 @@ Then progress to `message.py` parsing, then config flow, then entity platforms.
 ### ARCH-001: Separate `pyloxone_api` into its own package
 
 The API client is already quasi-independent. Making it a proper Python package with `pyproject.toml` would:
+
 - Enable independent versioning and releases
 - Allow other projects to use the Loxone API without HA
 - Enable proper CI/CD with its own test suite
@@ -770,6 +783,7 @@ The API client is already quasi-independent. Making it a proper Python package w
 ### ARCH-002: Use `DataUpdateCoordinator` properly or replace
 
 The coordinator currently only manages the connection — `_async_update_data` is a no-op. Either:
+
 - Use it for periodic polling of health/status
 - Replace with a simple connection manager class
 - Use HA's `async_setup_entry` lifecycle directly
@@ -777,6 +791,7 @@ The coordinator currently only manages the connection — `_async_update_data` i
 ### ARCH-003: Implement entity availability
 
 Entities never report themselves as unavailable. When the WebSocket disconnects, all entities should go unavailable. This requires:
+
 - Tracking connection state in the coordinator
 - Propagating availability to all entities
 - Restoring availability on reconnect
@@ -784,6 +799,7 @@ Entities never report themselves as unavailable. When the WebSocket disconnects,
 ### ARCH-004: Use entity descriptions
 
 Modern HA integrations use `EntityDescription` dataclasses for entity metadata. Most platforms here define attributes inline in `__init__`. Migrating to `SensorEntityDescription`, `BinarySensorEntityDescription`, etc. would:
+
 - Reduce boilerplate
 - Make entity configuration declarative
 - Align with HA best practices
@@ -799,6 +815,7 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 ### ARCH-007: Multi-Miniserver support
 
 Comments say "Only one Miniserver" but `hass.data[DOMAIN]` is keyed by `entry_id`, suggesting multi-instance was partially considered. Several helpers (e.g., `get_miniserver_from_hass`, diagnostics) assume a single instance. Either:
+
 - Fully support multiple Miniservers
 - Explicitly block multiple config entries
 
@@ -826,6 +843,6 @@ Tasks that can be done in under 30 minutes each:
 
 ### Completed Quick Wins
 
-| # | Task | Commit |
-|---|------|--------|
-| 3 | Change `iot_class` to `local_push` in manifest.json | `8e5fd22` |
+| #   | Task                                                | Commit    |
+| --- | --------------------------------------------------- | --------- |
+| 3   | Change `iot_class` to `local_push` in manifest.json | `8e5fd22` |

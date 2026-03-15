@@ -1,0 +1,81 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Living Room", "uuid": "room-1" }
+  },
+  "cats": {},
+  "controls": {
+    "cov10000-0000-0000-0000000000000000": {
+      "name": "Bedroom Blind",
+      "type": "Jalousie",
+      "uuidAction": "cov10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {
+        "animation": 0,
+        "isAutomatic": true
+      },
+      "states": {
+        "position": "cov10000-0000-0000-0000000000000001",
+        "shadePosition": "cov10000-0000-0000-0000000000000002",
+        "up": "cov10000-0000-0000-0000000000000003",
+        "down": "cov10000-0000-0000-0000000000000004",
+        "autoInfoText": "cov10000-0000-0000-0000000000000005",
+        "autoState": "cov10000-0000-0000-0000000000000006",
+        "targetPosition": "cov10000-0000-0000-0000000000000007"
+      }
+    },
+    "cov20000-0000-0000-0000000000000000": {
+      "name": "Kitchen Curtain",
+      "type": "Jalousie",
+      "uuidAction": "cov20000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {
+        "animation": 2,
+        "isAutomatic": false
+      },
+      "states": {
+        "position": "cov20000-0000-0000-0000000000000001",
+        "shadePosition": "cov20000-0000-0000-0000000000000002",
+        "up": "cov20000-0000-0000-0000000000000003",
+        "down": "cov20000-0000-0000-0000000000000004"
+      }
+    },
+    "cov30000-0000-0000-0000000000000000": {
+      "name": "Garage Door",
+      "type": "Gate",
+      "uuidAction": "cov30000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {
+        "animation": 0
+      },
+      "states": {
+        "position": "cov30000-0000-0000-0000000000000001",
+        "active": "cov30000-0000-0000-0000000000000002"
+      }
+    },
+    "cov40000-0000-0000-0000000000000000": {
+      "name": "Skylight",
+      "type": "Window",
+      "uuidAction": "cov40000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {},
+      "states": {
+        "position": "cov40000-0000-0000-0000000000000001",
+        "direction": "cov40000-0000-0000-0000000000000002"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

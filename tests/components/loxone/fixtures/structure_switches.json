@@ -1,0 +1,41 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Living Room", "uuid": "room-1" }
+  },
+  "cats": {
+    "cat-1": { "name": "Lighting", "uuid": "cat-1" }
+  },
+  "controls": {
+    "aaa10000-0000-0000-0000000000000000": {
+      "name": "Wall Switch",
+      "type": "Switch",
+      "uuidAction": "aaa10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "states": {
+        "active": "aaa10000-0000-0000-0000000000000001"
+      }
+    },
+    "bbb20000-0000-0000-0000000000000000": {
+      "name": "Bathroom Fan",
+      "type": "TimedSwitch",
+      "uuidAction": "bbb20000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "states": {
+        "deactivationDelay": "bbb20000-0000-0000-0000000000000010",
+        "deactivationDelayTotal": "bbb20000-0000-0000-0000000000000011"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}
