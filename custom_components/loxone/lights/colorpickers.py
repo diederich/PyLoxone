@@ -1,3 +1,4 @@
+import ast
 import logging
 from functools import cached_property
 
@@ -95,7 +96,7 @@ class TunableWhiteLight(LoxoneEntity, LightEntity):
 
             if _color.startswith("temp"):
                 _color = _color.replace("temp", "")
-                _color = eval(_color)
+                _color = ast.literal_eval(_color)
                 self._attr_color_mode = ColorMode.COLOR_TEMP
                 self._attr_color_temp_kelvin = _color[1]
                 self._attr_brightness = round(255 * _color[0] / 100)
@@ -226,14 +227,14 @@ class RGBColorPicker(LoxoneEntity, LightEntity):
 
             if _color.startswith("hsv"):
                 _color = _color.replace("hsv", "")
-                _color = eval(_color)
+                _color = ast.literal_eval(_color)
                 self._attr_color_mode = ColorMode.HS
                 self._attr_hs_color = (_color[0], _color[1])
                 self._attr_brightness = lox_to_hass(_color[2])
                 request_update = True
             elif _color.startswith("temp"):
                 _color = _color.replace("temp", "")
-                _color = eval(_color)
+                _color = ast.literal_eval(_color)
                 self._attr_color_mode = ColorMode.COLOR_TEMP
                 self._attr_color_temp_kelvin = _color[1]
                 self._attr_hs_color = None

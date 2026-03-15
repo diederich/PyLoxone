@@ -1,3 +1,4 @@
+import json
 from collections import OrderedDict
 from functools import cached_property
 
@@ -190,21 +191,15 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
             request_update = True
 
         if self.states["activeMoods"] in event.data:
-            self._active_moods = eval(event.data[self.states["activeMoods"]])
+            self._active_moods = json.loads(event.data[self.states["activeMoods"]])
             request_update = True
 
         if self.states["moodList"] in event.data:
-            event.data[self.states["moodList"]] = event.data[
-                self.states["moodList"]
-            ].replace("true", "True")
-            event.data[self.states["moodList"]] = event.data[
-                self.states["moodList"]
-            ].replace("false", "False")
-            self._moodlist = eval(event.data[self.states["moodList"]])
+            self._moodlist = json.loads(event.data[self.states["moodList"]])
             request_update = True
 
         if self.states["additionalMoods"] in event.data:
-            self._additional_moodlist = eval(event.data[self.states["additionalMoods"]])
+            self._additional_moodlist = json.loads(event.data[self.states["additionalMoods"]])
             request_update = True
 
         if request_update:

@@ -16,13 +16,6 @@ These will cause crashes or incorrect behavior for users.
 
 Both `async_forward_entry_setups(LOXONE_PLATFORMS)` and `async_load_platform()` are called for the same platforms. Remove the `async_load_platform()` calls.
 
-### BUG-008: Color picker `eval()` on external data
-
-**Files:** `lights/colorpickers.py`, `lights/lightcontroller.py`, `climate.py`
-**Impact:** Arbitrary code execution if Miniserver data is crafted
-
-`eval()` is used to parse strings like `temp(50,3000)`, `hsv(180,100,80)`, mood lists, and `overrideEntries`. Replace with `ast.literal_eval()` or purpose-built parsers.
-
 ### BUG-009: `RGBColorPicker` — `None` attribute access
 
 **File:** `lights/colorpickers.py:177-204`
@@ -70,6 +63,7 @@ The root cause is twofold:
 - ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅ (`4f97ae6`)
 - ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅ (`82c4de4`)
 - ~~BUG-007: Cover dispatcher `async_add_covers` defined but unused — `async_add_entities` passed directly (dead code, not a real bug)~~ ✅ (reclassified — no code change needed)
+- ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
 
 ---
