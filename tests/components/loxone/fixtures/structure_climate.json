@@ -1,0 +1,40 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Living Room", "uuid": "room-1" }
+  },
+  "cats": {
+    "cat-1": { "name": "Climate", "uuid": "cat-1" }
+  },
+  "controls": {
+    "ac010000-0000-0000-0000000000000000": {
+      "name": "Living Room AC",
+      "type": "AcControl",
+      "uuidAction": "ac010000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {
+        "format": "%.1f°C"
+      },
+      "states": {
+        "temperature": "ac010000-0000-0000-0000000000000001",
+        "targetTemperature": "ac010000-0000-0000-0000000000000002",
+        "status": "ac010000-0000-0000-0000000000000003",
+        "mode": "ac010000-0000-0000-0000000000000004",
+        "fan": "ac010000-0000-0000-0000000000000005",
+        "fanspeeds": "ac010000-0000-0000-0000000000000006",
+        "ventMode": "ac010000-0000-0000-0000000000000007",
+        "airflows": "ac010000-0000-0000-0000000000000008"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

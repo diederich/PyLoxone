@@ -9,7 +9,7 @@ import logging
 import json
 from abc import ABC
 
-from homeassistant.components.climate import PLATFORM_SCHEMA, ClimateEntity
+from homeassistant.components.climate import ATTR_TEMPERATURE, PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (ClimateEntityFeature,
                                                     HVACAction, HVACMode)
 from homeassistant.config_entries import ConfigEntry
@@ -586,7 +586,7 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
             SENDDOMAIN,
             dict(
                 uuid=self.uuidAction,
-                value=f'setTarget/{kwargs["targetTemperature"]}',
+                value=f'setTarget/{kwargs[ATTR_TEMPERATURE]}',
             ),
         )
 

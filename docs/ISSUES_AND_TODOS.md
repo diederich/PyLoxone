@@ -9,18 +9,7 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key
-
-**File:** `climate.py`
-**Impact:** Setting temperature on AC entities raises `KeyError`
-
-```python
-# Current (broken):
-temperature = kwargs["targetTemperature"]
-
-# Fix:
-temperature = kwargs[ATTR_TEMPERATURE]  # "temperature"
-```
+### ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
 
 ### BUG-002: Text platform never loaded
 
@@ -105,6 +94,10 @@ Docstring says `username password host port` but code reads `sys.argv[1]` as hos
 **Impact:** Unloading the integration raises `ServiceNotFound` when no cover entities with shade/sun-automation controls exist
 
 `async_unload_entry` (lines 125-127) calls `async_remove` for `quick_shade`, `enable_sun_automation`, and `disable_sun_automation`, but `async_setup_entry` never registers them — they are only registered by entity platforms when matching controls exist. If no such controls are loaded, unload crashes.
+
+### Completed
+
+- ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅
 
 ---
 
