@@ -59,6 +59,52 @@ If you encounter a Loxone entity that is currently not supported, you can post a
 - Slider
 - TextInput
 
+## Testing
+
+### Unit tests
+
+Run the standard test suite (no network required):
+
+```bash
+source .venv/bin/activate
+python -m pytest tests/ -v
+```
+
+This includes **structure dump tests** — offline regression tests that parse
+real Miniserver structure files saved in `tests/components/loxone/fixtures/dumps/`.
+They verify backwards compatibility with older Miniserver versions and report
+unrecognized control types with full JSON examples.
+
+### Creating a Miniserver dump
+
+To capture a snapshot of your Miniserver's `LoxAPP3.json` for the dump tests:
+
+```bash
+# Set credentials (or put them in .env at the repo root)
+export LOXONE_HOST=192.168.1.100
+export LOXONE_USERNAME=admin
+export LOXONE_PASSWORD=secret
+
+scripts/dump_miniserver
+```
+
+This saves the dump and auto-generates a companion `_expected.json` with entity
+counts per platform. Review the expectations file before committing both.
+
+### End-to-end Miniserver tests
+
+These live in `tests_e2e_miniserver/` (separate from the HA unit tests) and
+connect directly to a real Miniserver — no Home Assistant needed.  They
+exercise the API connection, WebSocket data path, and command round-trip:
+
+```bash
+export LOXONE_HOST=192.168.1.100
+export LOXONE_USERNAME=admin
+export LOXONE_PASSWORD=secret
+
+python -m pytest tests_e2e_miniserver/ -s -v
+```
+
 ## Known Limitations
 
 - Pushbuttons are stateless. They can not be used to reliably trigger automations. Use a Switch as a workaround and turn it off again in the Automation or in Loxone itself. 

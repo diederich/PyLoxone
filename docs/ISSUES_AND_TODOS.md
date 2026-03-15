@@ -9,22 +9,6 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
-
-### BUG-002: Text platform never loaded
-
-**File:** `const.py`
-**Impact:** `text.py` entities are never created
-
-`Platform.TEXT` is missing from `LOXONE_PLATFORMS`. The text platform file exists but is dead code.
-
-```python
-# const.py — add:
-LOXONE_PLATFORMS = [..., Platform.TEXT]
-```
-
-**Note:** `LoxoneTextSensor` in `sensor.py` also handles TextInput, creating overlap. Decide which approach to keep.
-
 ### BUG-003: `websocket_protocol.py` — `_last_header` can be `None`
 
 **File:** `pyloxone_api/websocket_protocol.py:83`
@@ -117,7 +101,7 @@ The root cause is twofold:
 
 ### Completed
 
-- ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅
+- ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅
 
 ---
@@ -249,6 +233,12 @@ async def async_added_to_hass(self):
 ---
 
 ## Medium-Priority Issues
+
+### MED-000: Text platform never loaded (dead code)
+
+**File:** `const.py`, `text.py`
+
+`Platform.TEXT` is missing from `LOXONE_PLATFORMS`. The `text.py` platform file exists but is never loaded. `LoxoneTextSensor` in `sensor.py` already handles TextInput, so this is dead code with a working alternative. Decide whether to wire up `text.py` (and remove the sensor overlap) or delete it.
 
 ### MED-001: `masterColor` filter typo
 
@@ -424,9 +414,20 @@ Infrastructure:
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `conftest.py` (component)   | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures; `structure_fixture_name` override                                                    |
 | `fixtures/structure_*.json` | `structure_minimal.json`, `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json`, `structure_fan.json`, `structure_numbers.json`, `structure_buttons.json`, `structure_media_player.json` |
-| `conftest.py` (root)        | `auto_enable_custom_integrations`                                                                                                                                |
+| `conftest.py` (root)        | Minimal root conftest (kept empty; `auto_enable_custom_integrations` lives in the component conftest)                                                            |
 | `pyproject.toml`            | pytest config (`asyncio_mode = auto`)                                                                                                                            |
 | `requirements_test.txt`     | Test dependencies                                                                                                                                                |
+
+Additional test tracks:
+
+| File / Directory                        | Purpose                                                                                                                                         |
+| --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_structure_dumps.py`               | Parametrized unit tests over real Miniserver structure dumps in `fixtures/dumps/`. Golden-file expectations ensure backwards compatibility.      |
+| `known_types.py`                        | Shared mapping of Loxone control/subcontrol types to HA platforms, used by both dump tests and e2e tests.                                       |
+| `fixtures/dumps/*.json`                 | Real `LoxAPP3.json` snapshots captured with `scripts/dump_miniserver`. Each has a companion `_expected.json` with entity counts.                |
+| `tests_e2e_miniserver/test_miniserver.py` | E2E tests against a real Miniserver (no HA needed): connection, structure, WebSocket, command round-trip, snapshot.                            |
+| `tests_e2e_miniserver/conftest.py`      | Session-scoped fixtures for live Miniserver connection (credentials from env vars or `.env`).                                                    |
+| `scripts/dump_miniserver`               | Script to fetch `LoxAPP3.json` from a real Miniserver and save it as a dump fixture with auto-generated expectations.                           |
 
 Legacy test files (still present in `pyloxone_api/tests/`):
 

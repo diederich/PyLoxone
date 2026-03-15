@@ -1,0 +1,5453 @@
+{
+  "lastModified": "2026-03-15 05:23:26",
+  "msInfo": {
+    "serialNr": "AABBCCDDEEFF",
+    "msName": "Loxone Campus",
+    "projectName": "Kollerschlag",
+    "localUrl": "campus.local",
+    "remoteUrl": "dns.loxonecloud.com/AABBCCDDEEFF",
+    "hostname": "CAMPUS",
+    "tempUnit": 0,
+    "currency": "€",
+    "squareMeasure": "m²",
+    "location": "Kollerschlag",
+    "latitude": 48.6082,
+    "longitude": 13.8384,
+    "altitude": 94,
+    "languageCode": "DEU",
+    "heatPeriodStart": "10-01",
+    "heatPeriodEnd": "04-30",
+    "coolPeriodStart": "05-01",
+    "coolPeriodEnd": "09-30",
+    "catTitle": "Kategorien",
+    "roomTitle": "Räume",
+    "miniserverType": 4,
+    "deviceMonitor": "6f591d5c-8d96-90bd-4e40eab47b1d",
+    "currentUser": {
+      "name": "thomas.moser",
+      "uuid": "56a2aa45-d9ae-96d7-21d7aff0c250",
+      "isAdmin": true,
+      "changePassword": true,
+      "userRights": 4294967295
+    }
+  },
+  "globalStates": {
+    "operatingMode": "8c957f0d-d552-0fac-9adf86157bf1",
+    "sunrise": "eade2c6b-7ba6-7ec7-e37d7a507ee6",
+    "sunset": "0cb4cd2b-8f64-ed94-8c7ef652e520",
+    "pastTasks": "cff718c9-d999-34eb-2d2713247486",
+    "plannedTasks": "54389f58-66fd-405c-623ec417cd42",
+    "notifications": "c1c16534-ab9f-aff4-47acc2a8b28f",
+    "modifications": "78201ad0-79b3-45bd-1c57687302df",
+    "favColorSequences": "52ee625d-ce64-5c8d-96f606c9e754",
+    "favColors": "85b6ae0e-704a-d355-a62df6aabca1",
+    "miniserverTime": "de6b9419-4708-540d-1b953837778c",
+    "liveSearch": "543e7ee4-8757-ad1d-a59d8e2daade",
+    "userSettings": "fc339a80-a061-2541-02b1902fe53b",
+    "userSettingsTs": "cb51ccc8-a69d-b92f-1995b6c1a4bd",
+    "cloudservice": "aae3fa8d-618a-2193-b34a10291bdd",
+    "trustVersion": "66a353c9-daa4-85bf-1e9db7eaafe9",
+    "propsVersion": "fa02cee4-7495-7de8-1a4bd5aaf1f2",
+    "hasInternet": "865a8f22-ec47-62f5-f45a4ffaaf62"
+  },
+  "operatingModes": {
+    "0": "Feiertag",
+    "1": "Urlaub",
+    "2": "Freier Tag/Schulferien",
+    "3": "Montag",
+    "4": "Dienstag",
+    "5": "Mittwoch",
+    "6": "Donnerstag",
+    "7": "Freitag",
+    "8": "Samstag",
+    "9": "Sonntag",
+    "10": "Heizperiode",
+    "11": "Kühlperiode",
+    "-1": "Alarm",
+    "-2": "Anwesenheitssimulation",
+    "-3": "Haus im Tiefschlaf",
+    "-4": "Erhöhter Wärmebedarf",
+    "-5": "Party",
+    "-6": "Abwesend",
+    "-1000": "Schlafen",
+    "-1003": "Technischer Alarm",
+    "-1002": "Frostsicherung",
+    "-1001": "Sturmschutz",
+    "-1004": "Anwesend"
+  },
+  "rooms": {
+    "4f827217-3791-c063-bdc326117805": {
+      "uuid": "4f827217-3791-c063-bdc326117805",
+      "name": "Tokyo",
+      "image": "IconsFilled/location-pin.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "default": true,
+      "type": 2,
+      "color": "#69C350"
+    },
+    "a2dc8779-b27f-cdea-4620a461cfd3": {
+      "uuid": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "name": "London",
+      "image": "",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "type": 4,
+      "color": "#69C350"
+    },
+    "2c5e8de7-a640-0974-4e3bf6ca7177": {
+      "uuid": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "name": "Madrid",
+      "image": "IconsFilled/sofa-3.svg",
+      "defaultRating": 10,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#69C350"
+    },
+    "b9b7abf5-8714-4548-d2b0b55ef4be": {
+      "uuid": "b9b7abf5-8714-4548-d2b0b55ef4be",
+      "name": "Philadelphia",
+      "image": "IconsFilled/food-dome-serving-2.svg",
+      "defaultRating": 6,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#69C350"
+    },
+    "69cc8b4f-f1b0-0c79-ab7db12b659e": {
+      "uuid": "69cc8b4f-f1b0-0c79-ab7db12b659e",
+      "name": "Shanghai",
+      "image": "IconsFilled/toilet-sink.svg",
+      "defaultRating": 3,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#00C7E6"
+    },
+    "e56299f0-deac-13a8-f606414795c1": {
+      "uuid": "e56299f0-deac-13a8-f606414795c1",
+      "name": "Milan",
+      "image": "IconsFilled/bed-double.svg",
+      "defaultRating": 10,
+      "isFavorite": false,
+      "type": 1,
+      "color": "#69C350"
+    },
+    "a886bcb3-a261-271b-bf40b1af277c": {
+      "uuid": "a886bcb3-a261-271b-bf40b1af277c",
+      "name": "Marrakech",
+      "image": "IconsFilled/bed-single.svg",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "type": 1,
+      "color": "#69C350"
+    },
+    "552cab82-c623-7956-5fcef6a33468": {
+      "uuid": "552cab82-c623-7956-5fcef6a33468",
+      "name": "Oslo",
+      "image": "IconsFilled/toilet.svg",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "type": 3,
+      "color": "#69C350"
+    },
+    "00f05d36-913b-05b4-b32cc4af134b": {
+      "uuid": "00f05d36-913b-05b4-b32cc4af134b",
+      "name": "Vancouver",
+      "image": "IconsFilled/hallway.svg",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "type": 3,
+      "color": "#69C350"
+    },
+    "987491d4-c104-688a-95cf0a27fc32": {
+      "uuid": "987491d4-c104-688a-95cf0a27fc32",
+      "name": "Auditorium",
+      "image": "IconsFilled/terrace.svg",
+      "defaultRating": 6,
+      "isFavorite": false,
+      "type": 5,
+      "color": "#69C350"
+    },
+    "57e44f2f-324b-7887-c844d653135f": {
+      "uuid": "57e44f2f-324b-7887-c844d653135f",
+      "name": "Seminar Suite",
+      "image": "IconsFilled/cellar.svg",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "type": 5,
+      "color": "#69C350"
+    },
+    "75729c18-148d-afdc-85de0ac42c7c": {
+      "uuid": "75729c18-148d-afdc-85de0ac42c7c",
+      "name": "Break Area",
+      "image": "IconsFilled/door-enter.svg",
+      "defaultRating": 3,
+      "isFavorite": false,
+      "type": 3,
+      "color": "#69C350"
+    },
+    "d5a5266a-6cd2-9b98-f238ed2aad8f": {
+      "uuid": "d5a5266a-6cd2-9b98-f238ed2aad8f",
+      "name": "Experience Zone",
+      "image": "IconsFilled/washing-machine.svg",
+      "defaultRating": 3,
+      "isFavorite": false,
+      "type": 5,
+      "color": "#69C350"
+    },
+    "0976d51b-413b-2551-db8673f2d299": {
+      "uuid": "0976d51b-413b-2551-db8673f2d299",
+      "name": "Restaurant",
+      "image": "IconsFilled/hallway.svg",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "type": 3,
+      "color": "#69C350"
+    },
+    "539a68b4-cd01-92de-7b3b4f91fc2f": {
+      "uuid": "539a68b4-cd01-92de-7b3b4f91fc2f",
+      "name": "Rooftop Terrace",
+      "image": "IconsFilled/bathtub.svg",
+      "defaultRating": 4,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#00C7E6"
+    },
+    "d2a5e1b4-3479-42c2-3888b6a37074": {
+      "uuid": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "name": "Lobby",
+      "image": "IconsFilled/computer-imac-1.svg",
+      "defaultRating": 7,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#69C350"
+    },
+    "45e50183-42cd-cbef-5829a7e0c8df": {
+      "uuid": "45e50183-42cd-cbef-5829a7e0c8df",
+      "name": "Wellness",
+      "image": "IconsFilled/tree-big-4.svg",
+      "defaultRating": 5,
+      "isFavorite": false,
+      "type": 5,
+      "color": "#69C350"
+    },
+    "fef93ae2-ae26-536d-0a1751151dc4": {
+      "uuid": "fef93ae2-ae26-536d-0a1751151dc4",
+      "name": "Fitness Studio",
+      "image": "IconsFilled/sauna.svg",
+      "defaultRating": 3,
+      "isFavorite": false,
+      "type": 5,
+      "color": "#69C350"
+    },
+    "865a7ee8-b9d3-f426-62b7e845f6da": {
+      "uuid": "865a7ee8-b9d3-f426-62b7e845f6da",
+      "name": "Park Pavilion",
+      "image": "IconsFilled/stove.svg",
+      "defaultRating": 6,
+      "isFavorite": false,
+      "type": 2,
+      "color": "#69C350"
+    }
+  },
+  "cats": {
+    "1a9031c6-d2cd-ffee-12a16d4e2415": {
+      "uuid": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "name": "Smart Lighting",
+      "image": "IconsFilled/binders.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "default": true,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "1bf00d35-c825-9dbf-d0455c0f01ff": {
+      "uuid": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "name": "Auto Shading",
+      "image": "IconsFilled/lightbulb-3.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "lights",
+      "color": "#FEE502"
+    },
+    "5c8f861c-b5ff-2a3f-19d91d9f7834": {
+      "uuid": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "name": "Climate Control",
+      "image": "IconsFilled/blinds-half-closed.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "shading",
+      "color": "#00C7E6"
+    },
+    "55579292-68f8-0409-cb8f88a54e41": {
+      "uuid": "55579292-68f8-0409-cb8f88a54e41",
+      "name": "Security & Access",
+      "image": "IconsFilled/radiator.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "c39bbb5b-6807-a301-d0a5c949ee8e": {
+      "uuid": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "name": "Multiroom Audio",
+      "image": "IconsFilled/thermometer.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#F7B55C"
+    },
+    "2c7ed910-e0a7-f572-9b45fc24045c": {
+      "uuid": "2c7ed910-e0a7-f572-9b45fc24045c",
+      "name": "Energy Management",
+      "image": "IconsFilled/music-note.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "multimedia",
+      "color": "#B64D9E"
+    },
+    "f4710694-341d-57d3-a669163bee62": {
+      "uuid": "f4710694-341d-57d3-a669163bee62",
+      "name": "Intercom & Entry",
+      "image": "IconsFilled/meter.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "dbcfa2f1-16e4-7409-ba950ee63dc4": {
+      "uuid": "dbcfa2f1-16e4-7409-ba950ee63dc4",
+      "name": "Building Monitoring",
+      "image": "IconsFilled/valve-actuator-1.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "0e8111ef-108c-7192-854c6e02da8f": {
+      "uuid": "0e8111ef-108c-7192-854c6e02da8f",
+      "name": "Automation Logic",
+      "image": "IconsFilled/thermometer.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "indoortemperature",
+      "color": "#69C350"
+    },
+    "727459a5-d982-8959-0ca2d579d63a": {
+      "uuid": "727459a5-d982-8959-0ca2d579d63a",
+      "name": "Comfort & Wellness",
+      "image": "IconsFilled/megaphone.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#ED5B98"
+    },
+    "8668a54e-bd45-a6ab-fa4756cd3172": {
+      "uuid": "8668a54e-bd45-a6ab-fa4756cd3172",
+      "name": "Presence Simulation",
+      "image": "IconsFilled/fan-1.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "a6ee0745-ed9e-5959-edf183698bad": {
+      "uuid": "a6ee0745-ed9e-5959-edf183698bad",
+      "name": "Storm Protection",
+      "image": "IconsFilled/window-1.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "390281ec-9829-e069-83aa4f69c945": {
+      "uuid": "390281ec-9829-e069-83aa4f69c945",
+      "name": "Alarm Systems",
+      "image": "IconsFilled/cc-camera.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "0bc5575e-6cb4-6815-bec3c19bb47f": {
+      "uuid": "0bc5575e-6cb4-6815-bec3c19bb47f",
+      "name": "Pool & Garden",
+      "image": "IconsFilled/snowflake.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "766ca969-fe3c-ad22-826333defdc2": {
+      "uuid": "766ca969-fe3c-ad22-826333defdc2",
+      "name": "Scheduling",
+      "image": "IconsFilled/alarm-1.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "undefined",
+      "color": "#F94D5F"
+    },
+    "7c0801b5-8b91-360f-68a72140c0ab": {
+      "uuid": "7c0801b5-8b91-360f-68a72140c0ab",
+      "name": "Visualisation",
+      "image": "IconsFilled/garage-closed-2.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "07b9e40e-26e3-503b-94576e07e088": {
+      "uuid": "07b9e40e-26e3-503b-94576e07e088",
+      "name": "Category 17",
+      "image": "IconsFilled/rock.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "d7f476fd-15c5-a6c5-e40ab995c790": {
+      "uuid": "d7f476fd-15c5-a6c5-e40ab995c790",
+      "name": "Category 18",
+      "image": "IconsFilled/cog-double.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "ff9034f6-44a0-fbd3-ce4bd06f1aa3": {
+      "uuid": "ff9034f6-44a0-fbd3-ce4bd06f1aa3",
+      "name": "Category 19",
+      "image": "IconsFilled/valve-actuator-2.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "64fdec6a-607d-bb77-8a85979c6cc5": {
+      "uuid": "64fdec6a-607d-bb77-8a85979c6cc5",
+      "name": "Category 20",
+      "image": "IconsFilled/gate-closed-3.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "89a0b3b3-9e20-e6d2-1bffceceae35": {
+      "uuid": "89a0b3b3-9e20-e6d2-1bffceceae35",
+      "name": "Category 21",
+      "image": "IconsFilled/computer.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "4dfa0c81-f0a7-5715-4b25afa4e861": {
+      "uuid": "4dfa0c81-f0a7-5715-4b25afa4e861",
+      "name": "Category 22",
+      "image": "IconsFilled/door-open.svg",
+      "defaultRating": 1,
+      "isFavorite": true,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "f0b3d657-3373-c725-4e65792c4516": {
+      "uuid": "f0b3d657-3373-c725-4e65792c4516",
+      "name": "Category 23",
+      "image": "IconsFilled/electricity-outlet-4.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "8ce47216-8323-bc4f-252f14ef6ebd": {
+      "uuid": "8ce47216-8323-bc4f-252f14ef6ebd",
+      "name": "Category 24",
+      "image": "IconsFilled/water-hose.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "708d4e31-9cf0-6841-d738de13ddbb": {
+      "uuid": "708d4e31-9cf0-6841-d738de13ddbb",
+      "name": "Category 25",
+      "image": "IconsFilled/solar-panel.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "9dd3a8fe-9f74-af8d-77606c28c183": {
+      "uuid": "9dd3a8fe-9f74-af8d-77606c28c183",
+      "name": "Category 26",
+      "image": "IconsFilled/windbag.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "20992236-4394-97b5-1d80d9800b35": {
+      "uuid": "20992236-4394-97b5-1d80d9800b35",
+      "name": "Category 27",
+      "image": "IconsFilled/clock.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "c1605af5-053f-ebc9-8b52bb0560e8": {
+      "uuid": "c1605af5-053f-ebc9-8b52bb0560e8",
+      "name": "Category 28",
+      "image": "IconsFilled/electric-car.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "f7d3a3f0-7968-6130-b7fd65bb75cc": {
+      "uuid": "f7d3a3f0-7968-6130-b7fd65bb75cc",
+      "name": "Category 29",
+      "image": "IconsFilled/sun.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "6f2b2e5b-5c24-546d-1ef1b226c533": {
+      "uuid": "6f2b2e5b-5c24-546d-1ef1b226c533",
+      "name": "Category 30",
+      "image": "IconsFilled/alarm-clock.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "2918e062-92df-c1eb-b052711158be": {
+      "uuid": "2918e062-92df-c1eb-b052711158be",
+      "name": "Category 31",
+      "image": "IconsFilled/flash-1.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "6de5ad82-2d56-86f3-e8708c3c09ce": {
+      "uuid": "6de5ad82-2d56-86f3-e8708c3c09ce",
+      "name": "Category 32",
+      "image": "IconsFilled/information-circle.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "0ca65813-e285-1876-277b4e85748c": {
+      "uuid": "0ca65813-e285-1876-277b4e85748c",
+      "name": "Category 33",
+      "image": "IconsFilled/circulation-pump.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "51a7eda5-eb59-3e87-b7a6fa889135": {
+      "uuid": "51a7eda5-eb59-3e87-b7a6fa889135",
+      "name": "Category 34",
+      "image": "IconsFilled/heat-pump.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "31c3b10e-e0a9-8001-c1fe893350c9": {
+      "uuid": "31c3b10e-e0a9-8001-c1fe893350c9",
+      "name": "Category 35",
+      "image": "IconsFilled/day-cloud.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "c0fcffa1-b2a3-cfca-8ef9576995ce": {
+      "uuid": "c0fcffa1-b2a3-cfca-8ef9576995ce",
+      "name": "Category 36",
+      "image": "IconsFilled/water-drops.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "fc62486f-c651-5b5b-59d2a027e2ab": {
+      "uuid": "fc62486f-c651-5b5b-59d2a027e2ab",
+      "name": "Category 37",
+      "image": "IconsFilled/video-clip.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "multimedia",
+      "color": "#69C350"
+    },
+    "0984b11e-26bf-b51e-2f375cbeeea0": {
+      "uuid": "0984b11e-26bf-b51e-2f375cbeeea0",
+      "name": "Category 38",
+      "image": "IconsFilled/flash-1.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#008FBB"
+    },
+    "47a99a6f-137a-853c-3006d1ee04c6": {
+      "uuid": "47a99a6f-137a-853c-3006d1ee04c6",
+      "name": "Category 39",
+      "image": "IconsFilled/cog.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "cfad2e76-a2f7-ffe6-82b3a8c58796": {
+      "uuid": "cfad2e76-a2f7-ffe6-82b3a8c58796",
+      "name": "Category 40",
+      "image": "IconsFilled/night-mode.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "d5ecb065-c2c6-e854-d37155923df6": {
+      "uuid": "d5ecb065-c2c6-e854-d37155923df6",
+      "name": "Category 41",
+      "image": "IconsFilled/party-mode.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "72b85530-a33f-803a-dd2b10743859": {
+      "uuid": "72b85530-a33f-803a-dd2b10743859",
+      "name": "Category 42",
+      "image": "IconsFilled/deep-sleep-mode.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "c4dc8ed6-4b5d-005b-4f7c3981adcf": {
+      "uuid": "c4dc8ed6-4b5d-005b-4f7c3981adcf",
+      "name": "Category 43",
+      "image": "IconsFilled/away-mode.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "b6df14a5-d74b-8f12-2b6af5397b07": {
+      "uuid": "b6df14a5-d74b-8f12-2b6af5397b07",
+      "name": "Category 44",
+      "image": "IconsFilled/finger-tapping.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "324a8b8c-4319-17d1-c916979f316e": {
+      "uuid": "324a8b8c-4319-17d1-c916979f316e",
+      "name": "Category 45",
+      "image": "IconsFilled/shield-storm.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    },
+    "22b1550c-67a9-63bc-c9046a95ba50": {
+      "uuid": "22b1550c-67a9-63bc-c9046a95ba50",
+      "name": "Category 46",
+      "image": "IconsFilled/shield-frost.svg",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "type": "undefined",
+      "color": "#69C350"
+    }
+  },
+  "modes": {
+    "00000000-0000-0001-1500000000000000": {
+      "id": 0,
+      "name": "Feiertag"
+    },
+    "00000000-0000-0002-1500000000000000": {
+      "id": 1,
+      "name": "Urlaub"
+    },
+    "00000000-0000-0003-1500000000000000": {
+      "id": 2,
+      "name": "Freier Tag/Schulferien"
+    },
+    "00000000-0000-0004-1500000000000000": {
+      "id": 3,
+      "name": "Montag"
+    },
+    "00000000-0000-0005-1500000000000000": {
+      "id": 4,
+      "name": "Dienstag"
+    },
+    "00000000-0000-0006-1500000000000000": {
+      "id": 5,
+      "name": "Mittwoch"
+    },
+    "00000000-0000-0007-1500000000000000": {
+      "id": 6,
+      "name": "Donnerstag"
+    },
+    "00000000-0000-0008-1500000000000000": {
+      "id": 7,
+      "name": "Freitag"
+    },
+    "00000000-0000-0009-1500000000000000": {
+      "id": 8,
+      "name": "Samstag"
+    },
+    "00000000-0000-000a-1500000000000000": {
+      "id": 9,
+      "name": "Sonntag"
+    },
+    "00000000-0000-000b-1500000000000000": {
+      "id": 10,
+      "name": "Heizperiode"
+    },
+    "00000000-0000-000c-1500000000000000": {
+      "id": 11,
+      "name": "Kühlperiode"
+    },
+    "1f32b00e-008c-540f-ffffd0b61f059ee4": {
+      "id": -1,
+      "name": "Alarm",
+      "locked": true
+    },
+    "1f32b00e-008c-5413-ffffd0b61f059ee4": {
+      "id": -2,
+      "name": "Anwesenheitssimulation",
+      "locked": true
+    },
+    "1f32b00e-008c-5417-ffffd0b61f059ee4": {
+      "id": -3,
+      "name": "Haus im Tiefschlaf",
+      "locked": true
+    },
+    "1f32b00e-008c-541b-ffffd0b61f059ee4": {
+      "id": -4,
+      "name": "Erhöhter Wärmebedarf"
+    },
+    "1f32b00e-008d-541f-ffffd0b61f059ee4": {
+      "id": -5,
+      "name": "Party",
+      "locked": true
+    },
+    "1f32b00e-008d-5423-ffffd0b61f059ee4": {
+      "id": -6,
+      "name": "Abwesend",
+      "locked": true
+    },
+    "1f33b70d-027f-ad8d-ffffd0b61f059ee4": {
+      "id": -1000,
+      "name": "Schlafen",
+      "locked": true
+    },
+    "1f33cb7e-02a1-c9c0-ffffd0b61f059ee4": {
+      "id": -1003,
+      "name": "Technischer Alarm"
+    },
+    "1f33cb7f-00b6-d4fb-ffffd0b61f059ee4": {
+      "id": -1002,
+      "name": "Frostsicherung"
+    },
+    "1f33cb7f-00db-d54c-ffffd0b61f059ee4": {
+      "id": -1001,
+      "name": "Sturmschutz"
+    },
+    "1fa6a1ed-0167-877c-ffffd0b61f059ee4": {
+      "id": -1004,
+      "name": "Anwesend",
+      "locked": true
+    }
+  },
+  "controls": {
+    "e5f24a85-7c2d-6d4b-90cecef90913": {
+      "name": "Tree Analog Sensor",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "e5f24a85-7c2d-6d4b-90cecef90913",
+      "room": "57e44f2f-324b-7887-c844d653135f",
+      "cat": "0e8111ef-108c-7192-854c6e02da8f",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "e5f24a85-7c2d-6d4b-90cecef90913",
+        "error": "affe14e6-e649-137d-02d88933531d"
+      }
+    },
+    "9ca6f22c-890c-1c92-92fc31786832": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "9ca6f22c-890c-1c92-92fc31786832",
+      "room": "539a68b4-cd01-92de-7b3b4f91fc2f",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "ccec1018-0cae-e351-4040630534f9",
+        "activeMoods": "c481f2b6-b241-4125-9cfd1ea14fef",
+        "moodList": "cc09a099-fb06-5ba2-c3ef763ec725",
+        "activeMoodsNum": "07bf034e-7c6c-d159-bfa2c50833f8",
+        "favoriteMoods": "f8443c84-fa9f-2221-daf50ee99bcf",
+        "additionalMoods": "edd53ee9-1035-a863-7ddffa138bc7",
+        "circuitNames": "8357e5aa-70fa-0bb0-ee816c27bbe4",
+        "daylightConfig": "83524cfc-151d-1b71-c915da50ae4d",
+        "presence": "5a909970-4aeb-4d9a-836e4a94f8bc",
+        "presenceFrom": "a4f39ce7-fe28-23d9-5d9ae208ca32",
+        "presenceTo": "a9255b67-ae7a-7f4e-0aba3ab1c889"
+      },
+      "subControls": {
+        "7f8ef402-995c-0ef9-3320938e4c24": {
+          "name": "Nano Device",
+          "type": "ColorPickerV2",
+          "uuidAction": "7f8ef402-995c-0ef9-3320938e4c24",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "details": {
+            "pickerType": "Rgb"
+          },
+          "states": {
+            "color": "01a24ffc-ccf5-7dbb-a2c1ae94d757",
+            "sequence": "231bf639-6364-7a31-9ce17ab62262",
+            "sequenceColorIdx": "e81b2830-5058-1ec6-c33ef8eec024"
+          }
+        }
+      }
+    },
+    "4f829108-b0b3-ac30-17cfb044702c": {
+      "name": "Link Blind",
+      "type": "Jalousie",
+      "uuidAction": "4f829108-b0b3-ac30-17cfb044702c",
+      "room": "539a68b4-cd01-92de-7b3b4f91fc2f",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "4c06f2cb-5d37-8059-f9d677ef053f",
+        "infoText": "5f407659-318f-797a-84ada299dfce",
+        "up": "611cb94a-6048-6648-27bd38e799bf",
+        "down": "3d96a1d6-5358-7a6c-ed2a38c92b1a",
+        "position": "0e3a2b3f-79d0-42ee-71e1c13df4a0",
+        "shadePosition": "ca7eded1-8152-0bd5-681166aa947a",
+        "safetyActive": "ce4c3947-857f-d77f-241f62b3ea18",
+        "autoAllowed": "782f9bb8-f033-74c5-6bd3d219770c",
+        "autoActive": "0b2870cb-8437-da4b-9052cfdc757c",
+        "locked": "7a2bb13b-f7f4-3e19-9ec346b93213",
+        "autoInfoText": "8c6a8aa7-fcfc-b3f7-a9965147a218",
+        "autoState": "9e6905d4-1938-ec94-66a02a3607d3",
+        "deviceState": "c95fd749-7d15-8119-37a1a15c2f2d",
+        "targetPosition": "25696ed5-7db7-af28-3da54a276e6b",
+        "targetPositionLamelle": "75b5ca51-ec94-35b6-bb37ce609d8a",
+        "adjustingEndPos": "a4efae95-070c-ee9a-eb824c9a3ce2"
+      }
+    },
+    "38f21171-6dad-017a-148ccc6bd12a": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "38f21171-6dad-017a-148ccc6bd12a",
+      "room": "539a68b4-cd01-92de-7b3b4f91fc2f",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "34dfaf29-1264-af0c-3b0d69551721",
+        "tempActual": "b52b7006-315d-b8ac-c0f1d063a818",
+        "tempTarget": "85965bc9-0b61-b852-f6c7443ae589",
+        "comfortTemperature": "15351604-38a1-f72a-43a6961d0ae8",
+        "comfortTemperatureCool": "61611f6f-f7f2-a685-a72928e04eb7",
+        "comfortTolerance": "8b170174-ceb4-4431-647877a32caf",
+        "absentMinOffset": "3fb92d28-09c4-6511-8844736492b6",
+        "absentMaxOffset": "02cfbcd7-0aa6-e0ba-de94e68b5436",
+        "frostProtectTemperature": "07da7b63-9616-001d-26464698ca0e",
+        "heatProtectTemperature": "31e6cc66-0bc5-bc23-795207d834aa",
+        "shadingCoolTemp": "9305aef8-ed89-aace-6d91d85037d4",
+        "shadingHeatTemp": "42e79593-974f-1c82-4fa9be160c98",
+        "co2": "0caba3d5-f8e8-326c-1d685c739cd5",
+        "humidityActual": "68553b49-0f9a-7434-4e428ebe424d",
+        "actualOutdoorTemp": "5e8d4cea-0124-d1b8-4f5739c8e89e",
+        "currentMode": "a3fb8436-35a3-30d0-4e655ac96518",
+        "shadingOut": "c1d4bb36-de64-e43b-5898a54e04b3",
+        "activeMode": "cc717892-9037-e580-4e99eb4b435b",
+        "comfortTemperatureOffset": "c4471113-0d15-2255-13d71f5ddb77",
+        "overrideEntries": "60eca5e5-1925-c528-2028e32ebaaf",
+        "prepareState": "96609321-5ab7-80c5-af14809010d3",
+        "useOutdoor": "bfafabd6-5f82-2295-9adcaff16e4c",
+        "operatingMode": "494babf0-2e14-c7a0-d3b60071775a",
+        "overrideReason": "5d253ef8-42aa-34ff-7ebde4aaf0ae",
+        "excessEnergyTempOffset": "6637922b-dc8e-25de-ecef4ffedfc8",
+        "averageOutdoorTemp": "2982d01d-c7eb-9884-681d68372232",
+        "temperatureBoundaryInfo": "522833df-edb8-dfbe-177f7b95949d",
+        "capabilities": "19bb0d79-92e1-bfde-33f8605c9a30",
+        "openWindow": "b56b40c3-5df4-14e4-f9382ba4af81"
+      },
+      "subControls": {
+        "00a24eef-f435-8be0-0b10720945a4": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "00a24eef-f435-8be0-0b10720945a4",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "00a24eef-f435-8be0-0b10720945a4",
+            "mode": "0177d389-9023-5223-0b46fcada3b9",
+            "modeList": "a9e418c0-b82d-d0c4-ae5d5332c4a5",
+            "value": "8b661812-2ff7-1db7-02c73754e361",
+            "needsActivation": "849c77cc-086c-670c-239cfe3a44c7"
+          }
+        }
+      }
+    },
+    "4be42ab3-93bb-3a40-21b1f92e299c": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "4be42ab3-93bb-3a40-21b1f92e299c",
+      "room": "539a68b4-cd01-92de-7b3b4f91fc2f",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "76b87ff6-58bc-4278-382c646bdc8d",
+        "active": "7028011a-9042-0f26-9cdcf5d88525",
+        "locked": "dd20b82b-94ef-7038-b4f697e378ba",
+        "events": "c58bdd32-4dcd-d793-963f652e7671",
+        "time": "3f6b520e-07c6-5f47-b073b9d8b78e",
+        "activeSince": "c7671176-9217-6b01-6fe8437defb3",
+        "infoText": "d34a4a7d-20d6-3688-cfccf6bc3432"
+      },
+      "subControls": {
+        "9a4b8545-e606-9650-8276f18e7781": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "9a4b8545-e606-9650-8276f18e7781",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "c8663f79-9385-5f0a-a14dc26d1758"
+          }
+        }
+      }
+    },
+    "ed3ca98b-39ed-f23d-fa9452a9853d": {
+      "name": "Aqua Blind 2",
+      "type": "Jalousie",
+      "uuidAction": "ed3ca98b-39ed-f23d-fa9452a9853d",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "f7153cca-e6dd-5fbb-27e875caa344",
+        "infoText": "b5a13450-f2e0-eecf-10c71281ebbf",
+        "up": "f43373a0-b521-8d21-e16befd95382",
+        "down": "cd97e57b-fe7f-90fe-273258b6779e",
+        "position": "6f3e0835-18f9-a40b-6d393e41fc9e",
+        "shadePosition": "02ad4332-f834-0694-b4e3ff375c1c",
+        "safetyActive": "e28b6c0a-9e53-226f-958362744be4",
+        "autoAllowed": "6a650282-7753-2286-267af15d478b",
+        "autoActive": "561ac00c-fc18-a6ba-e2f8d8acb03e",
+        "locked": "fea7f315-1b30-62d7-f79d9787aeae",
+        "autoInfoText": "24706e32-0fdb-1221-1d8f16c31bed",
+        "autoState": "ae8297be-025c-8ccb-6306226a0d2c",
+        "deviceState": "ddb949a6-9ef2-e541-ca068e82f012",
+        "targetPosition": "3c445385-6948-a243-3e3390483bff",
+        "targetPositionLamelle": "3874d801-5d91-2015-5940e9644021",
+        "adjustingEndPos": "36b13bc6-c441-507c-fee3e292a33f"
+      }
+    },
+    "8c7959fd-b782-e053-bf5bcfe9d02b": {
+      "name": "Modbus Blind 3",
+      "type": "Jalousie",
+      "uuidAction": "8c7959fd-b782-e053-bf5bcfe9d02b",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "c318ece4-9153-39cb-38fae2214f85",
+        "infoText": "c6992f65-948f-fdd4-4c81289d8703",
+        "up": "5a2c80c8-d8cd-229b-06eb09a0708e",
+        "down": "a0327880-3238-36f7-5c3cfc34b087",
+        "position": "f787d10e-da18-060b-f1ced3992f04",
+        "shadePosition": "5d7e7b34-8aa4-adc5-77bd3ec4c086",
+        "safetyActive": "57856431-b8fc-fba6-c1976dcd7873",
+        "autoAllowed": "ad84ffcd-42c8-64c5-5e84cf927b32",
+        "autoActive": "5910184f-13b9-226c-d5c5e946e3de",
+        "locked": "9df0030f-cf22-d95c-cc0ddfec8657",
+        "autoInfoText": "3d699976-c297-1174-ecbee9977bae",
+        "autoState": "2ea9d7d2-5532-9926-bb8e3773fabd",
+        "deviceState": "4b7941ed-a564-e7ba-94244b7a03b9",
+        "targetPosition": "0e3b532d-013e-7314-5c0e265bd16c",
+        "targetPositionLamelle": "7b1c93dd-eb3e-f7ee-1ce1028e43bf",
+        "adjustingEndPos": "bd603e1c-a1e6-dc9e-4b1ab8045656"
+      }
+    },
+    "45b6d52c-1f8d-fb6d-3db77168e6cf": {
+      "name": "KNX Blind 4",
+      "type": "Jalousie",
+      "uuidAction": "45b6d52c-1f8d-fb6d-3db77168e6cf",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "37bbc890-43ef-7f42-acb8d43deff6",
+        "infoText": "7b6a7224-4376-9655-7cce478d21ac",
+        "up": "474855e6-df06-ee91-651850e485af",
+        "down": "612d0ffe-9d86-4a81-8494789474ad",
+        "position": "bb00b36c-de9e-026b-b13f74a87654",
+        "shadePosition": "ff540623-bd20-07a0-b39c94f59bc9",
+        "safetyActive": "6d95bd46-5cbb-b98a-cd4ac77c0d25",
+        "autoAllowed": "fbf5ecf2-70dd-e2cb-eb0006b1a71d",
+        "autoActive": "92dca672-26e4-3d5b-dad38bfe9ec3",
+        "locked": "a450cc80-e3eb-7aa9-f2176fc118f7",
+        "autoInfoText": "19b968dd-ee0e-402e-59d32b38ee18",
+        "autoState": "9ef2c541-010c-7559-a738e7957bc2",
+        "deviceState": "a46f4ec9-e486-d761-4de67434aeea",
+        "targetPosition": "059f1e7f-7427-5e21-cb0edb78496d",
+        "targetPositionLamelle": "87f8e32e-1730-87c2-9738b35a7f64",
+        "adjustingEndPos": "1de2fede-43e2-0a56-81c7adc5121f"
+      }
+    },
+    "ba22d041-cfe5-712b-16e8c47f30bf": {
+      "name": "RGBW Device",
+      "type": "CentralJalousie",
+      "uuidAction": "ba22d041-cfe5-712b-16e8c47f30bf",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controls": [
+          {
+            "id": 0,
+            "uuid": "ed3ca98b-39ed-f23d-fa9452a9853d"
+          },
+          {
+            "id": 1,
+            "uuid": "8c7959fd-b782-e053-bf5bcfe9d02b"
+          },
+          {
+            "id": 2,
+            "uuid": "45b6d52c-1f8d-fb6d-3db77168e6cf"
+          }
+        ],
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "09b15aa9-177f-836a-c62d00495bd6",
+        "events": "c904151a-6979-e255-b819c994cb2e"
+      }
+    },
+    "96a4f0ea-760e-d47b-8374aa0d2660": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "96a4f0ea-760e-d47b-8374aa0d2660",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "1a369ba7-4b34-87b2-9ec7e07e61bb",
+        "tempActual": "b2b38483-cacf-862a-f8515725333e",
+        "tempTarget": "30cc7968-a04b-fd90-efc066c8796b",
+        "comfortTemperature": "cbdee3fe-acac-bef5-1c883372bc9b",
+        "comfortTemperatureCool": "b345e28a-1dc2-9ab6-493896579372",
+        "comfortTolerance": "8fb4f1d4-0639-cbc2-41c004d991e0",
+        "absentMinOffset": "3b7c3210-c333-441d-53ad606f4238",
+        "absentMaxOffset": "d1033f05-96d1-1ff0-67680887fda5",
+        "frostProtectTemperature": "9f1fd0ac-c967-0aa3-50a80477e7f6",
+        "heatProtectTemperature": "290c8ce6-8c1e-0416-be4ec27b4e74",
+        "shadingCoolTemp": "7d4ab20e-e131-dec4-e0b6f5184b8e",
+        "shadingHeatTemp": "ac43dce8-a4fa-4edd-9d7a4ebd8baa",
+        "co2": "e8df4da9-a822-8b4a-9b0c0506c770",
+        "humidityActual": "561c2b44-3913-acc1-d62ca12b7ebf",
+        "actualOutdoorTemp": "9b72c5b5-6d24-5021-ab63907e0862",
+        "currentMode": "40a3ae43-bf2b-f296-63e5fe817fec",
+        "shadingOut": "b4f867b9-f2d8-5369-247fc7bc0687",
+        "activeMode": "f867712f-e258-8c4a-a824b461341a",
+        "comfortTemperatureOffset": "63e8b323-a060-f42d-338fa835c6c8",
+        "overrideEntries": "5ace9a55-0492-fa78-fd8e3e5d7ae5",
+        "prepareState": "f122e279-059e-50c5-f8655d158631",
+        "useOutdoor": "1bae621e-dcd8-07f6-79265106ae09",
+        "operatingMode": "c1c2cf03-b37c-2ca5-8d066e29c5a8",
+        "overrideReason": "8543b0e7-763b-1070-b3f89f3ceb60",
+        "excessEnergyTempOffset": "659d2ff6-7099-5f33-b0eeb99bac08",
+        "averageOutdoorTemp": "e99edb6a-bd7b-997e-e5580c5652e5",
+        "temperatureBoundaryInfo": "576bb32b-4cca-7cc3-09af4bbbca0e",
+        "capabilities": "5c022cd7-4175-576d-9604f9c65a3b",
+        "openWindow": "25c8972c-fe09-8fa5-89395311c530"
+      },
+      "subControls": {
+        "801d5abf-9412-e95e-5cb09c02783e": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "801d5abf-9412-e95e-5cb09c02783e",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "801d5abf-9412-e95e-5cb09c02783e",
+            "mode": "ee7a6886-0a3e-e3d7-3c6863d144ae",
+            "modeList": "b9c1b550-e255-20d1-6a703883e2bf",
+            "value": "5064bd97-0327-ee59-087e845ee417",
+            "needsActivation": "64f57084-116d-0b7b-31d60750aa8a"
+          }
+        }
+      }
+    },
+    "602ff55b-a668-2146-a368df956dbe": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "602ff55b-a668-2146-a368df956dbe",
+      "room": "e56299f0-deac-13a8-f606414795c1",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "2d6c8d7d-8fe1-41a9-4e2e8139c76f",
+        "active": "ad8e2292-625a-5c28-bebbe0ac43e1",
+        "locked": "700ed06d-183b-fafd-bc2b107ddb07",
+        "events": "d7a7362c-3c45-a528-d73d87c5145d",
+        "time": "211de086-f195-62e6-89f13a2822a3",
+        "activeSince": "c7a68839-3eb8-0261-6382c2060b98",
+        "infoText": "8bd874f1-2f9b-f5e9-1dfc3bd05a78"
+      },
+      "subControls": {
+        "5a41e4ce-d2a7-76e9-e84ab6b96dd1": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "5a41e4ce-d2a7-76e9-e84ab6b96dd1",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "43658626-0a92-3493-e333a85b06da"
+          }
+        }
+      }
+    },
+    "26e3c3e8-2a6c-5c1c-2c97b08aee09": {
+      "name": "Dali Blind 5",
+      "type": "Jalousie",
+      "uuidAction": "26e3c3e8-2a6c-5c1c-2c97b08aee09",
+      "room": "b9b7abf5-8714-4548-d2b0b55ef4be",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "d65afc9e-f26d-7b15-141ae8a64a99",
+        "infoText": "9152372e-8fb1-a7d9-8da57b56a3ef",
+        "up": "ef2689a3-ad8d-9d7c-560c46f080e0",
+        "down": "6ce058b7-a92b-8386-3ce986b9eed0",
+        "position": "75d4e412-afcd-a604-2347f32ba331",
+        "shadePosition": "3b3a0606-d57b-ef85-138a1977cb9b",
+        "safetyActive": "52c4496c-6d67-e574-47c7d9082ec6",
+        "autoAllowed": "f8ebf5e5-2671-6ddd-6edaff857002",
+        "autoActive": "97643f96-bb0a-6781-7c88e7b90a07",
+        "locked": "38245520-74a3-3558-1d08716ca161",
+        "autoInfoText": "23886e1a-b17c-3ee9-1335490e2b5f",
+        "autoState": "3947744b-5705-bb58-6aac9d4c5ed3",
+        "deviceState": "052ad9b3-716c-cdd7-317f435fdf2e",
+        "targetPosition": "6a1caf1d-9eca-8e1d-b3fc915ebe78",
+        "targetPositionLamelle": "18d60cbf-0adf-fe7a-ceebe8ce7fe0",
+        "adjustingEndPos": "f667c782-d38f-aa30-78d0b9979bcf"
+      }
+    },
+    "46696833-599a-78aa-1970080e6ef0": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "46696833-599a-78aa-1970080e6ef0",
+      "room": "b9b7abf5-8714-4548-d2b0b55ef4be",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "4a59af81-02b5-4c1f-b28d1616e46c",
+        "tempActual": "c3b72e4a-7548-e283-84e9350194d4",
+        "tempTarget": "1ca972e4-48b6-f2e3-7a4e2b1ad3a3",
+        "comfortTemperature": "0c873a17-769a-ea9a-6b01252ab725",
+        "comfortTemperatureCool": "e6d98ebf-8357-6ed1-b488863fbe8c",
+        "comfortTolerance": "6c97ec7c-1750-2453-67fefcfd611f",
+        "absentMinOffset": "a1e9a37e-c32e-ea4b-e591659783b6",
+        "absentMaxOffset": "9a1e8e83-05c4-7d54-592cf44f399b",
+        "frostProtectTemperature": "ccc91182-013c-1543-2b3e67db0e06",
+        "heatProtectTemperature": "abaa4a30-0184-6e21-a0456839c8ab",
+        "shadingCoolTemp": "bf7fedcd-9d91-c702-91f3acbbeffe",
+        "shadingHeatTemp": "bb035279-ebc7-dc2e-f8e5275cf3e5",
+        "co2": "6edeb6aa-2e72-48aa-3a0791ee1395",
+        "humidityActual": "2af4cfaa-56d1-60e3-5bfe43ae50c2",
+        "actualOutdoorTemp": "03fb169f-54c2-6d0b-5a51696b4eb6",
+        "currentMode": "865337af-a037-d1d4-99ecb54c12ae",
+        "shadingOut": "1087bee1-e1b5-5118-2b147c7653a2",
+        "activeMode": "523d3ae1-ab4d-8a67-e360235c69d9",
+        "comfortTemperatureOffset": "01276f20-458b-07f9-5c0ac2ed1d70",
+        "overrideEntries": "7fe53b59-1921-992d-d3f45bb7bd24",
+        "prepareState": "9f2da3fe-91a9-0d39-1a7570f41a9b",
+        "useOutdoor": "5a0d5670-8a73-576c-eaaa4ee8291b",
+        "operatingMode": "5acc08be-0f53-eca7-24bc043ba72a",
+        "overrideReason": "1efcb74b-0e70-f820-db7a2ab35d22",
+        "excessEnergyTempOffset": "191f3169-5128-e7d0-d3840079f3e4",
+        "averageOutdoorTemp": "f4df4a92-1d81-55e5-4948f7a88297",
+        "temperatureBoundaryInfo": "9e390bf6-8e0f-fae1-1191867b16f5",
+        "capabilities": "494bde98-4746-3bd3-ce8d76931038",
+        "openWindow": "b443edf2-319e-edd0-0e9f59023e38"
+      },
+      "subControls": {
+        "240ea3f2-05fd-e0c2-4b6c57987329": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "240ea3f2-05fd-e0c2-4b6c57987329",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "240ea3f2-05fd-e0c2-4b6c57987329",
+            "mode": "7b10b3f6-012d-5798-647548d5c201",
+            "modeList": "12864d91-eb19-4d2c-6e283f6e2eb3",
+            "value": "e55e0943-667e-04ed-466e684e1d1c",
+            "needsActivation": "90eee5e2-fe93-2093-35bc52d3529a"
+          }
+        }
+      }
+    },
+    "6a7df28b-2b9f-fe87-1d1082f059d2": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "6a7df28b-2b9f-fe87-1d1082f059d2",
+      "room": "b9b7abf5-8714-4548-d2b0b55ef4be",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "b8029ea8-6341-17d4-c439448cc1d3",
+        "active": "866511a0-cbc7-fdd1-03d9b4bbbc25",
+        "locked": "ecca0712-532d-3ead-5b03de454c94",
+        "events": "d5154497-23e1-11dc-935573f72623",
+        "time": "22cf34bf-acba-7af6-1fb27845b80d",
+        "activeSince": "be11639c-f52d-b0c3-7761e18afc39",
+        "infoText": "73d6a987-19c3-fcef-525fd076eb60"
+      },
+      "subControls": {
+        "6e57efdf-f9d2-014c-aabf7c33fe48": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "6e57efdf-f9d2-014c-aabf7c33fe48",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "5d245342-6786-d5e5-5130290322a7"
+          }
+        }
+      }
+    },
+    "4c7c400a-ce9f-c5d7-111ba34b1e70": {
+      "name": "Link Blind",
+      "type": "Jalousie",
+      "uuidAction": "4c7c400a-ce9f-c5d7-111ba34b1e70",
+      "room": "75729c18-148d-afdc-85de0ac42c7c",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "d53c9b0f-d88a-e05f-a753515257fd",
+        "infoText": "bf2742f5-7326-68d5-3436942b7558",
+        "up": "e393c6de-e715-8b10-fbf29dcdec26",
+        "down": "cf33cac4-dc96-152b-3a0a98848960",
+        "position": "a164b228-0aff-25a8-10cbfd3a1931",
+        "shadePosition": "fa69d826-2475-be08-29dce3a84b1f",
+        "safetyActive": "ee189fed-8d3a-35c8-3380bbefe5a6",
+        "autoAllowed": "972e89bd-e32f-0d61-e187604de44a",
+        "autoActive": "63eab8de-e437-184a-d23788f7b841",
+        "locked": "987cb7a7-6b0f-5611-99fab40e4b31",
+        "autoInfoText": "a9a11dc4-6e88-bee9-d80d695e2b7b",
+        "autoState": "2e0e4e5c-8b56-ba5d-bb0d6462d970",
+        "deviceState": "287fa326-cfcb-1c67-e1ca8f0bb6ed",
+        "targetPosition": "02a8ef5e-19fe-3c48-c2d9c08910a6",
+        "targetPositionLamelle": "0ab61def-84eb-6626-82572462bfe8",
+        "adjustingEndPos": "76caa2f3-efe7-d2da-367349b78693"
+      }
+    },
+    "1a6718e3-44a7-d14a-0a49639e8a6a": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "1a6718e3-44a7-d14a-0a49639e8a6a",
+      "room": "75729c18-148d-afdc-85de0ac42c7c",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "e03972c1-4bf8-0e61-d6220e579254",
+        "tempActual": "af4fe098-deb4-3ef8-c6c118f4f568",
+        "tempTarget": "f61802a1-dc24-313a-69a7c5934fdd",
+        "comfortTemperature": "b4e1710c-7422-2a8d-6fadc23bd5b4",
+        "comfortTemperatureCool": "d144bc66-e801-95da-33ae4d5041f1",
+        "comfortTolerance": "6050c9a8-0e58-439f-100ec8138bb5",
+        "absentMinOffset": "c2c24d7d-684f-d501-63d2aaa6be2d",
+        "absentMaxOffset": "6a374f9a-77fb-3faf-cfccb9df6e58",
+        "frostProtectTemperature": "9fdde8f7-eed6-5cc0-1a2079742e56",
+        "heatProtectTemperature": "b1501729-183b-bfea-e2d92d8c9551",
+        "shadingCoolTemp": "2d981284-1445-25fd-b44e789d08a2",
+        "shadingHeatTemp": "a5da189a-2f39-7ae3-4fa221e18007",
+        "co2": "348af94d-9e37-4929-fd3481cde7b6",
+        "humidityActual": "c4a2e097-54c6-d596-40f19c684942",
+        "actualOutdoorTemp": "40236c0d-7efb-a1e4-58705123c6c2",
+        "currentMode": "4b358dc0-b1fd-9247-b6940341906c",
+        "shadingOut": "5c5278d8-1406-82df-3324b0a99794",
+        "activeMode": "5db3ce80-7ce0-bc74-243f0f69b9ed",
+        "comfortTemperatureOffset": "f1413fc4-3124-9091-832877ee8623",
+        "overrideEntries": "c843b56d-a041-2167-a158d2c15f56",
+        "prepareState": "3ecf60b9-2c70-a912-f1b37502acd2",
+        "useOutdoor": "a305398d-4d99-ed9b-4ab2768a0947",
+        "operatingMode": "57667d9a-9ecd-5153-2e2862e511e2",
+        "overrideReason": "e564a6d4-c2dc-6547-e53b302ede50",
+        "excessEnergyTempOffset": "354b56f7-ef0d-da6c-374e522bad51",
+        "averageOutdoorTemp": "c9505ac2-9463-7e0c-7d03b870962e",
+        "temperatureBoundaryInfo": "8e2b16f5-2210-1e8e-0a80a9e159fc",
+        "capabilities": "ba824d23-9d85-0879-51da581c60be",
+        "openWindow": "a993cdc9-8d2a-a799-3815ba92edf1"
+      },
+      "subControls": {
+        "49309c36-7e52-05fe-4922da492248": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "49309c36-7e52-05fe-4922da492248",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "49309c36-7e52-05fe-4922da492248",
+            "mode": "7abac7ae-5003-a8e3-ba0e0339dfe6",
+            "modeList": "83d2f48a-5cc2-09a1-1ba46639b9bf",
+            "value": "24a15850-d527-04f7-dc014542ea58",
+            "needsActivation": "2a23e23a-60dc-c28f-0f97028cf128"
+          }
+        }
+      }
+    },
+    "0fd17440-0c41-803c-de2c19f5f0e1": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "0fd17440-0c41-803c-de2c19f5f0e1",
+      "room": "75729c18-148d-afdc-85de0ac42c7c",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "ea534b7b-e8cc-cc2f-1a50d6d8607f",
+        "active": "ca3c278e-fdb9-2045-6f8865b16b4c",
+        "locked": "5c70b400-4d42-456c-880c8312aa0a",
+        "events": "6ecd3a39-0125-04e0-7f4acf2aaaa5",
+        "time": "36d1b9f1-fba3-0fb8-a75e0bcaa643",
+        "activeSince": "e47160fc-fe54-2011-ab8adc6af8e1",
+        "infoText": "914a2322-51f0-e653-331eedd51a67"
+      },
+      "subControls": {
+        "b7ae71e2-3f27-1f62-88691e64fe45": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "b7ae71e2-3f27-1f62-88691e64fe45",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "e26db8d7-11b7-41d1-f9a3a7d9b833"
+          }
+        }
+      }
+    },
+    "7c05319f-b359-b2cc-0a597b033ddd": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "7c05319f-b359-b2cc-0a597b033ddd",
+      "room": "a886bcb3-a261-271b-bf40b1af277c",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "a8f5272f-26ee-1cc6-a008dd51c4b4",
+        "activeMoods": "9afe4792-4a8b-fe10-0cef36c560a6",
+        "moodList": "491ba3a9-2e56-2f57-3a52bbbce155",
+        "activeMoodsNum": "79fc1de0-5b5b-8d03-576998a83455",
+        "favoriteMoods": "7d537942-7374-4278-717a9f1086fd",
+        "additionalMoods": "1bf705c0-ad74-ce67-6602799efd80",
+        "circuitNames": "5c76dfc3-c88a-2929-e36800acb320",
+        "daylightConfig": "1a3754a9-9818-826c-85dbcff90d49",
+        "presence": "e1a1a3bd-1f48-d8c3-c7b0faa86397"
+      },
+      "subControls": {}
+    },
+    "54cacc5f-fab7-81b2-854609630fb8": {
+      "name": "Pulse Blind 6",
+      "type": "Jalousie",
+      "uuidAction": "54cacc5f-fab7-81b2-854609630fb8",
+      "room": "a886bcb3-a261-271b-bf40b1af277c",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "4430bc18-4a07-3a2f-ec701ddcab20",
+        "infoText": "053e35d6-43cc-d3ee-1b7e9ed86352",
+        "up": "d94dc5fe-df9b-10ab-19e21cab8c99",
+        "down": "8d994382-bfa8-bd0a-e5d912f89a68",
+        "position": "22c134f1-f096-c693-8faab5b6acd1",
+        "shadePosition": "0a1ef81a-8b0e-9ab0-45b90c68ef48",
+        "safetyActive": "5ee71481-1078-d0a0-301663edfd4d",
+        "autoAllowed": "6b33b4f5-5ed9-1616-1ae3d7399e8d",
+        "autoActive": "91cfa74a-b85c-01dd-8471e5fe1b86",
+        "locked": "5afe472b-ec67-ac36-8e79a2bfde04",
+        "autoInfoText": "9aaccc6a-99fb-a93a-e055720c1e32",
+        "autoState": "47bf7493-db08-842d-09a4209a06f7",
+        "deviceState": "bdc396a3-a22f-a012-1a628253cee0",
+        "targetPosition": "464cf9f7-74b0-4557-a3257e481a54",
+        "targetPositionLamelle": "9c836499-b050-d3a5-322b17da777f",
+        "adjustingEndPos": "33651c0a-dcd2-20b4-eea43bfb5748"
+      }
+    },
+    "c4123d36-83cc-8715-d0bccfb52b19": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "c4123d36-83cc-8715-d0bccfb52b19",
+      "room": "a886bcb3-a261-271b-bf40b1af277c",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "9e5165ba-9550-6bbd-c14958d8f21f",
+        "tempActual": "cfb88126-ec3b-03d8-e00b4127702f",
+        "tempTarget": "68e70955-7952-f1e3-b20d14d7d2ac",
+        "comfortTemperature": "e2bd96ac-8bcd-d8b6-d4d53a404ab1",
+        "comfortTemperatureCool": "539ac417-5bce-791c-9c9755d7b73b",
+        "comfortTolerance": "11bf93b6-54ea-426e-fc3adb880d78",
+        "absentMinOffset": "2980fd2c-97fc-1ed3-c82cdf7d07e2",
+        "absentMaxOffset": "7f14dc18-fb39-f661-069679d509f9",
+        "frostProtectTemperature": "488d2b2a-73f2-5a31-b738caf66a95",
+        "heatProtectTemperature": "525f1378-15d0-891d-4b43ef3899d0",
+        "shadingCoolTemp": "fe07b84a-b31c-60c6-3c5ef347b8ed",
+        "shadingHeatTemp": "b4d17c18-9cbe-a602-bcd41fa984f3",
+        "co2": "0ea368df-051d-1d92-242a4877009d",
+        "humidityActual": "db916ed0-599d-3e32-1179f95c356c",
+        "actualOutdoorTemp": "017a3b5b-f338-d77b-acf91f3c9992",
+        "currentMode": "8e3ef1e6-61ea-6820-507a8f74d140",
+        "shadingOut": "ae2524ac-6a29-c1b0-a797c5db274a",
+        "activeMode": "746a37bc-2999-1255-fa3a50a4ebe9",
+        "comfortTemperatureOffset": "a92640b8-893f-d094-f5f0bed397fd",
+        "overrideEntries": "30b4dec2-b1b3-81d2-8a5599d5aceb",
+        "prepareState": "84c5eabb-1c84-628e-5603f4436c03",
+        "useOutdoor": "405962a0-a6a8-fd5c-d00e963c542c",
+        "operatingMode": "cf1811f3-394f-03ee-f5fc11d24594",
+        "overrideReason": "c9180d61-6de3-02db-0d87ab8a2b61",
+        "excessEnergyTempOffset": "e496d934-9166-76a5-548b6ba1521b",
+        "averageOutdoorTemp": "ce4d95c4-653b-b560-3f0eb6469a3c",
+        "temperatureBoundaryInfo": "9463dd60-b888-19e3-ea8a92cce617",
+        "capabilities": "5b231023-e1e5-91a5-019a64e2fd00",
+        "openWindow": "f813a036-b982-fed4-8b0f525145a5"
+      },
+      "subControls": {
+        "9ec2a881-06d5-63b8-fd1212f59bb5": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "9ec2a881-06d5-63b8-fd1212f59bb5",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "9ec2a881-06d5-63b8-fd1212f59bb5",
+            "mode": "8de643c4-01ed-2243-1be33f055c7c",
+            "modeList": "6b807503-8f92-2c0d-728309198fb9",
+            "value": "37b59638-5d99-118f-efda66b804d7",
+            "needsActivation": "87f9006c-4586-40d0-3fae79166b62"
+          }
+        }
+      }
+    },
+    "25ec2c07-2aca-849a-9ea93e4cf708": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "25ec2c07-2aca-849a-9ea93e4cf708",
+      "room": "a886bcb3-a261-271b-bf40b1af277c",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "c63bc8d8-0a3c-4692-69ee03a5b10f",
+        "active": "401b23de-11d4-4413-3d726150fdae",
+        "locked": "40ad03da-d5c1-7f5d-f48f6723ddef",
+        "events": "abd964ea-adeb-290f-f202a516d01f",
+        "time": "ded81b5a-7f2d-c0bb-11857d3307b6",
+        "activeSince": "127488e1-ce47-c259-7f1efc6390a4",
+        "infoText": "9dbc5193-7319-267a-abd3643f6a4b"
+      },
+      "subControls": {
+        "fd239c86-4a13-47e0-5e7d1b09d8d2": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "fd239c86-4a13-47e0-5e7d1b09d8d2",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "a91182e2-54b1-fb3e-ceb53423855f"
+          }
+        }
+      }
+    },
+    "73aaf745-1175-fc49-d2db2aba7d89": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "73aaf745-1175-fc49-d2db2aba7d89",
+      "room": "d5a5266a-6cd2-9b98-f238ed2aad8f",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "254019dd-1351-e71f-f428b0e89b26",
+        "activeMoods": "a360c192-cd45-7a03-1939094ea9e7",
+        "moodList": "07d52e0c-4559-4365-ae030d2eb35b",
+        "activeMoodsNum": "3e53e89f-c367-2ebe-16f1f54e1d57",
+        "favoriteMoods": "1635e929-5fa6-7546-5db866b76d96",
+        "additionalMoods": "c909771a-c57c-251e-99109921768a",
+        "circuitNames": "666b452a-842f-7ebc-9cf5949de99d",
+        "daylightConfig": "def8c43e-9ada-164e-48da0d0337c7",
+        "presence": "b11ef41e-0c1a-d7ba-84bd11cd3c9d",
+        "presenceFrom": "f4c714b4-9317-8fc0-9d9c92edfaef",
+        "presenceTo": "030cf4bb-e184-44eb-f62dd572ea65"
+      },
+      "subControls": {}
+    },
+    "ce00cff3-e04a-53a2-2ed8f0f1d80a": {
+      "name": "Dali Blind 5",
+      "type": "Jalousie",
+      "uuidAction": "ce00cff3-e04a-53a2-2ed8f0f1d80a",
+      "room": "d5a5266a-6cd2-9b98-f238ed2aad8f",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 1,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "d73fdd0f-30a5-5449-aa0160a362c2",
+        "infoText": "9b8a668b-3bb1-0fd7-32f6e4194e24",
+        "up": "8524e36d-3b08-a5dd-ab398f9f8e11",
+        "down": "a3a162b5-2027-4697-13057f69e3ce",
+        "position": "1906d99f-d2e2-9664-68548a5fdb8b",
+        "shadePosition": "297901f6-2d1e-c29b-4c136c49c559",
+        "safetyActive": "c60c8d26-e079-98ba-2234d3bfe6c2",
+        "autoAllowed": "d276f490-b4e1-3ab9-48ce0fbce175",
+        "autoActive": "c5dac625-f645-e964-4b5f05c9e110",
+        "locked": "5528000e-15a4-51c2-88999c7dc0cb",
+        "autoInfoText": "8105e4aa-295c-1d27-4e1b215cbd29",
+        "autoState": "c9e400f3-5092-c48d-b2331bd63e91",
+        "deviceState": "5d923a68-7d55-76fd-405b896540c8",
+        "targetPosition": "72f8988a-7211-3a45-38b813dcbd41",
+        "targetPositionLamelle": "7f7ff4d1-87ba-2393-28e76d900476",
+        "adjustingEndPos": "0eb7c231-bb51-3a5a-b1f0ea614669"
+      }
+    },
+    "e7594f78-c42d-5361-9dfb728de4f6": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "e7594f78-c42d-5361-9dfb728de4f6",
+      "room": "d5a5266a-6cd2-9b98-f238ed2aad8f",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "d92d8298-4428-a6e4-c4db869b66fc",
+        "tempActual": "2fbbe159-2398-90ee-2a88d261dbe8",
+        "tempTarget": "7003cc75-f457-bcda-3507f874738c",
+        "comfortTemperature": "f97c4858-6ab7-c1a7-aee655285eb0",
+        "comfortTemperatureCool": "bfe163d1-c69a-1fcb-4b5dec83ae55",
+        "comfortTolerance": "bf8ca814-21c6-1037-9f4533de0ddf",
+        "absentMinOffset": "661efec6-c26c-107e-fba4e3deba2a",
+        "absentMaxOffset": "1268b975-b29d-e298-09b08e2c25ef",
+        "frostProtectTemperature": "aa5c8054-3e2b-5944-b74b4441979d",
+        "heatProtectTemperature": "4793367d-b8eb-aa1f-020a5f46519a",
+        "shadingCoolTemp": "ee054ab2-bd56-296a-eb5164aeed71",
+        "shadingHeatTemp": "8ee71db4-a4af-ec3d-39523cf69ac3",
+        "co2": "9e671287-d6f6-f7c4-5f9ba8b5dfa6",
+        "humidityActual": "c7dfba8a-477e-0aa2-cc3b3f77c95c",
+        "actualOutdoorTemp": "593d4e86-0387-9ff6-7d44a12036a6",
+        "currentMode": "d66d8b40-b097-6e4b-5cf717706c48",
+        "shadingOut": "b3f6b324-b592-626b-6ee8e2d0795a",
+        "activeMode": "865bbaca-287a-4435-1cd50cbc5a71",
+        "comfortTemperatureOffset": "e5ad62b7-00dc-17b2-f7270fb6bf3f",
+        "overrideEntries": "143007c6-2b11-e6b3-2f2b3c37922d",
+        "prepareState": "c3dd54a6-1192-0426-ca49a1e74155",
+        "useOutdoor": "39ff281e-e03f-d591-0392b0e81fb3",
+        "operatingMode": "b808a840-a2dc-d5cd-6966440aaeb8",
+        "overrideReason": "73b43755-2663-7a74-daec707b599d",
+        "excessEnergyTempOffset": "eedb0038-ddd8-110d-65623ce18916",
+        "averageOutdoorTemp": "cebf91c6-c7ea-f8d4-7e34d052dcf1",
+        "temperatureBoundaryInfo": "070b6ce0-ba46-ba30-822df3361731",
+        "capabilities": "cb85a534-a0a5-d2b1-8cea1cdc4aba",
+        "openWindow": "0ad059eb-e0ed-7a66-0fa46cf88da1"
+      },
+      "subControls": {
+        "ae561902-1c27-5fae-a64db54718dc": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "ae561902-1c27-5fae-a64db54718dc",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "ae561902-1c27-5fae-a64db54718dc",
+            "mode": "620c3389-f128-407b-b10d74c127af",
+            "modeList": "4d953415-0a65-385f-c11fdbc6e7c9",
+            "value": "94f2d4d0-2130-34f5-ac512544d81c",
+            "needsActivation": "31ed30e8-d7e2-5c88-e33cffa0ea13"
+          }
+        }
+      }
+    },
+    "1b6fb979-b679-0591-afb8a334b938": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "1b6fb979-b679-0591-afb8a334b938",
+      "room": "d5a5266a-6cd2-9b98-f238ed2aad8f",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "564126e4-1f48-c6ff-bc937c17f32c",
+        "active": "390ffff1-a7f2-1f6f-ff3eb52d150e",
+        "locked": "82b454e0-71c5-9299-bf259775fc74",
+        "events": "bd037a68-d339-d4f4-380500ae2197",
+        "time": "abd79c3b-d346-de4e-bba1137b3d7a",
+        "activeSince": "4b155b88-7599-154a-6eadc126c26a",
+        "infoText": "505c6203-51b6-a2d5-3d05e0bd5328"
+      },
+      "subControls": {
+        "c854fdee-7141-40f2-9684d316e7ca": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "c854fdee-7141-40f2-9684d316e7ca",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "415ac9fa-1c99-1c11-b53f3c832100"
+          }
+        }
+      }
+    },
+    "59abb603-feeb-4575-1c4e9af77fb0": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "59abb603-feeb-4575-1c4e9af77fb0",
+      "room": "0976d51b-413b-2551-db8673f2d299",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "masterValue": "1fa6a0b6-03d0-26c8-ffffd0b61f059ee4/masterValue"
+      },
+      "states": {
+        "jLocked": "1d2fecb3-167e-93f7-1296b6f325fb",
+        "activeMoods": "be0687d6-58b4-f03e-3d9d9348b303",
+        "moodList": "2ec01bae-59f3-b1bd-877110478c7d",
+        "activeMoodsNum": "10e4004f-e27b-26e3-ecb9ac58de7f",
+        "favoriteMoods": "6066843d-0647-29bd-c7b8e55edd9f",
+        "additionalMoods": "cbd5b7d5-2de2-b983-93bf77c89667",
+        "circuitNames": "010d49cb-862f-44c5-f5c0ee7818ec",
+        "daylightConfig": "8871dea4-4495-b17c-1664a375ac2c",
+        "presence": "e448540b-ec60-05f2-d781c1cdd3c1",
+        "presenceFrom": "541c63d9-166f-e30a-6691b8794e5e",
+        "presenceTo": "64716a14-52c6-82c5-2f567596b5df"
+      },
+      "subControls": {
+        "d424f880-f8b0-e615-09a08a03300a": {
+          "name": "Compact Dimmer",
+          "type": "Dimmer",
+          "uuidAction": "d424f880-f8b0-e615-09a08a03300a",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "states": {
+            "position": "8ba43db4-d71b-9484-365a9c94e898",
+            "min": "b30e8008-7593-e8b4-dd105e9a0cf0",
+            "max": "8f23ac4b-76d9-a87d-b2551c03a5f5",
+            "step": "d535c5cc-bb18-39cc-5270f015ae99"
+          }
+        },
+        "7c32c407-9cee-656d-044c9006029d": {
+          "name": "Extension Switch",
+          "type": "Switch",
+          "uuidAction": "7c32c407-9cee-656d-044c9006029d",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "states": {
+            "active": "62b5645c-e785-9bbf-91c3eaf12d18"
+          }
+        },
+        "566c3a49-533b-cf61-fb4300054e0f": {
+          "name": "Dimmer Device 2",
+          "type": "ColorPickerV2",
+          "uuidAction": "566c3a49-533b-cf61-fb4300054e0f",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "details": {
+            "pickerType": "Rgb"
+          },
+          "states": {
+            "color": "585f519a-7704-a7be-ebe0a3066a3b",
+            "sequence": "e18f85a9-5cad-627c-abe7c3afaa21",
+            "sequenceColorIdx": "f8a922d7-3396-d359-d8153ece8965"
+          }
+        }
+      }
+    },
+    "f160207c-0351-d91a-2467dba3f6b0": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "f160207c-0351-d91a-2467dba3f6b0",
+      "room": "0976d51b-413b-2551-db8673f2d299",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 0,
+        "possibleCapabilities": 1,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "832ba0b4-8a0e-32d7-3a7cc1ab7c51",
+        "tempActual": "1f9a5f33-0013-d89b-7c9f392578f3",
+        "tempTarget": "6aeebb7e-ba7f-1b73-25355fd88d61",
+        "comfortTemperature": "84998cb3-6f99-7f89-7d012f61b0e9",
+        "comfortTemperatureCool": "7b73afeb-8414-5dca-e369f40ca5a0",
+        "comfortTolerance": "f00f6a17-5b91-e621-62d33fc8c420",
+        "absentMinOffset": "ab50f3f7-4c0d-968d-811a284910ea",
+        "absentMaxOffset": "ff66ef31-51fb-33f7-c9e874c524e4",
+        "frostProtectTemperature": "b4a5f095-776b-8c0c-dc25ac6b4f24",
+        "heatProtectTemperature": "9ed89abb-cb24-1a06-de4549800d13",
+        "shadingCoolTemp": "e570dedf-eb5f-1ac1-672826a16268",
+        "shadingHeatTemp": "3379961f-fc80-cdf7-830d10d20c24",
+        "co2": "9ed5f745-6dff-d763-e82e81389362",
+        "humidityActual": "a4d6f951-c3d4-3a5e-08a6bb747390",
+        "actualOutdoorTemp": "b540fb0d-371a-9c20-19e7ef42a885",
+        "currentMode": "2b0792e4-c167-c721-56af2eec7248",
+        "shadingOut": "a63c9130-f440-714c-3008de717634",
+        "activeMode": "8975791b-a51a-35e9-887b35779d42",
+        "comfortTemperatureOffset": "ef22df57-f372-8e25-402689a5a757",
+        "overrideEntries": "fcb7a485-9255-f3b9-8ca8e459e8c9",
+        "prepareState": "678a6405-1d4f-2063-a421a818df44",
+        "useOutdoor": "c0a79102-52ce-742f-02487cb7b323",
+        "operatingMode": "3315cd3e-dabb-5ffa-b9f6a23843a2",
+        "overrideReason": "45f4f1af-27d4-0abe-f8cd15de506f",
+        "excessEnergyTempOffset": "2fe8c7e2-9edb-fe2e-9ae3ea915c83",
+        "averageOutdoorTemp": "5c90d5f7-0ea1-b79c-4a6b1da9592a",
+        "temperatureBoundaryInfo": "3053301a-a2f3-474a-08ea2c2afecf",
+        "capabilities": "008a54f2-267e-5778-e5f4828b7652",
+        "openWindow": "da38d0d6-3258-28e0-0ced9ee73ca8"
+      },
+      "subControls": {
+        "ca10ef52-2bfa-daa3-98492897082c": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "ca10ef52-2bfa-daa3-98492897082c",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "ca10ef52-2bfa-daa3-98492897082c",
+            "mode": "9f8d74c1-2d53-38e0-074bad140e1f",
+            "modeList": "8f921ec0-0b82-b3e1-703c59c120ea",
+            "value": "39f91e51-f9ba-ef77-badded37541a",
+            "needsActivation": "5b56af93-7732-e354-4206403e2db7"
+          }
+        }
+      }
+    },
+    "828bd060-5a44-61e3-455783966e98": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "828bd060-5a44-61e3-455783966e98",
+      "room": "0976d51b-413b-2551-db8673f2d299",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "6d4863f0-8cbe-a1e8-40986b60d5c4",
+        "active": "7f8357c2-9c49-9bb9-46af78f25e29",
+        "locked": "bbaa9f9f-d595-273c-adf63fda8048",
+        "events": "642096f5-2940-bb28-198ae3cdb9f1",
+        "time": "1f65e8c8-6f7f-ca4e-2d844b9dce01",
+        "activeSince": "4e7afb5f-9e83-39bf-2efa206b70a5",
+        "infoText": "3e963651-4559-4010-a8372dac25df"
+      },
+      "subControls": {
+        "4d1300cc-08ed-31e8-1fb4697c0e79": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "4d1300cc-08ed-31e8-1fb4697c0e79",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "b1fb188a-6236-d763-eedb29585ad5"
+          }
+        }
+      }
+    },
+    "37061846-d7f7-b9b9-2777c15c6575": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "37061846-d7f7-b9b9-2777c15c6575",
+      "room": "00f05d36-913b-05b4-b32cc4af134b",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "masterValue": "1fa20f26-0092-f8ab-ffffd0b61f059ee4/masterValue"
+      },
+      "states": {
+        "jLocked": "b4e4d5ca-7311-1d4b-91af920f4f50",
+        "activeMoods": "8ece949c-9cce-4a24-c5822e60df15",
+        "moodList": "12236f38-e276-f76e-60ead92c92c3",
+        "activeMoodsNum": "edeabc6b-8960-b12d-b5f9bdec7662",
+        "favoriteMoods": "043564b6-ee9a-2ddf-2d3c129aece5",
+        "additionalMoods": "cee6279f-d60c-5432-41ae1c085975",
+        "circuitNames": "cbc70669-80b9-470a-d061770ee1a3",
+        "daylightConfig": "7e604a36-3841-9c4c-a79d39950138",
+        "presence": "dec87a52-8414-66c9-dcc2bd09f718",
+        "presenceFrom": "0516949a-0de7-efe9-c3414db468c5",
+        "presenceTo": "7ab558f7-2a74-7a01-44e7ca70130b"
+      },
+      "subControls": {
+        "6fc84947-8127-4e4c-4be782ed4b68": {
+          "name": "Compact Dimmer",
+          "type": "Dimmer",
+          "uuidAction": "6fc84947-8127-4e4c-4be782ed4b68",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "states": {
+            "position": "c7f9dea8-36e3-47f5-444c33c88fca",
+            "min": "d6bdf672-6d31-375c-b967e9ec8940",
+            "max": "27441a1f-b261-50f3-aa9eec775d13",
+            "step": "56266627-e9e0-d543-bfd829ab96cf"
+          }
+        },
+        "65a8bf0d-33c9-9762-90dfde5b857b": {
+          "name": "Extension Switch",
+          "type": "Switch",
+          "uuidAction": "65a8bf0d-33c9-9762-90dfde5b857b",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "states": {
+            "active": "a7031cac-7647-b84b-02c691a94982"
+          }
+        },
+        "9156acab-9b27-67c4-6e062fcdc8b0": {
+          "name": "Flex Device 3",
+          "type": "ColorPickerV2",
+          "uuidAction": "9156acab-9b27-67c4-6e062fcdc8b0",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "details": {
+            "pickerType": "Rgb"
+          },
+          "states": {
+            "color": "ed40a38a-ca4d-b0fa-2799cb0fb0ab",
+            "sequence": "d043b0dd-398a-0e79-7bacb1f64cf2",
+            "sequenceColorIdx": "0b3efcc4-27ac-61b3-d63c30e9631e"
+          }
+        }
+      }
+    },
+    "9db47800-d2e1-e9ce-ca2d322f7537": {
+      "name": "Pulse Blind 6",
+      "type": "Jalousie",
+      "uuidAction": "9db47800-d2e1-e9ce-ca2d322f7537",
+      "room": "00f05d36-913b-05b4-b32cc4af134b",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "f2cab8e8-d12d-43a0-5c1593987dd3",
+        "infoText": "d11085d6-30e3-67a7-100504ba8a18",
+        "up": "e832b411-c5ba-e795-76db1d4cc8d1",
+        "down": "1377f883-24a2-e800-5fbf9089fe38",
+        "position": "3b3f54ee-6c1a-440b-2166146d4cfc",
+        "shadePosition": "dbcba98f-2902-7096-67b7a7ce82ec",
+        "safetyActive": "ebf00c0f-3b33-c66f-967c6c0024c9",
+        "autoAllowed": "42ae9707-f736-e7e3-f70107e8ebb1",
+        "autoActive": "3865910b-5780-0f27-03b1cdf301cf",
+        "locked": "8a4e3178-5fd2-9bc7-2e52d8fee05d",
+        "autoInfoText": "6d97c395-5a85-ec52-959a2660f8a7",
+        "autoState": "25d3cfeb-62d7-72ff-fffe909fcf0a",
+        "deviceState": "934495f6-81f9-31ed-06f929e51cc5",
+        "targetPosition": "96d0c0ca-788e-5325-714a3418d335",
+        "targetPositionLamelle": "a520af8e-6b65-adf4-20f3e2218d1e",
+        "adjustingEndPos": "eef973e2-13a4-33f0-0edfa73fded5"
+      }
+    },
+    "f95706fa-e42e-926f-36af429a9089": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "f95706fa-e42e-926f-36af429a9089",
+      "room": "00f05d36-913b-05b4-b32cc4af134b",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "5c86add6-4008-93d6-faa3598a1e79",
+        "tempActual": "b328dbac-e01d-6880-119e40bbbf1b",
+        "tempTarget": "a90528c0-8c70-3025-f0fe30999095",
+        "comfortTemperature": "fc326927-aae0-500d-015ec69a8b0c",
+        "comfortTemperatureCool": "7fd4856e-c2f8-2ebb-fdb272029386",
+        "comfortTolerance": "7ec63f95-45b3-ab8b-5e00d4eabc99",
+        "absentMinOffset": "af0c1866-bd48-8d1d-c8ee20e87dbf",
+        "absentMaxOffset": "7cfd7e55-15d4-b95a-cf1630fa5006",
+        "frostProtectTemperature": "8694add0-3832-e37c-94368cddebf9",
+        "heatProtectTemperature": "d63c0c40-1e4b-1a02-c7079b5334ca",
+        "shadingCoolTemp": "a60f7362-5415-9bc0-a3793febdad6",
+        "shadingHeatTemp": "471de731-89df-22a2-50ac2491cb7c",
+        "co2": "068e4ba7-2a8a-6694-74b941c91870",
+        "humidityActual": "a7287e00-ea9c-814a-713b570bf8fa",
+        "actualOutdoorTemp": "b1ffcc82-92ee-173a-373f49ea723d",
+        "currentMode": "489f8578-48dd-b521-2204920208b1",
+        "shadingOut": "4d2fea96-ce3c-ab67-210437452a11",
+        "activeMode": "652a1c44-c5ef-934a-42c15641cdff",
+        "comfortTemperatureOffset": "6a87cd4a-b685-68c2-4f88744f08e2",
+        "overrideEntries": "dcaa00b4-d6e1-0ca0-331027203c43",
+        "prepareState": "a23ead6d-7e55-d9ac-f8f555554386",
+        "useOutdoor": "d064d176-8016-8410-3b4056e4bf85",
+        "operatingMode": "d567429f-58dd-1770-653931c265b7",
+        "overrideReason": "8e067f0d-481f-e904-a2fadd9bb08d",
+        "excessEnergyTempOffset": "ce0ab06d-ce39-610a-f2844afa7f9f",
+        "averageOutdoorTemp": "9ff22cb1-2655-0158-6d7214f5a93f",
+        "temperatureBoundaryInfo": "733b870e-28d7-9546-119e28c33552",
+        "capabilities": "982040be-3729-6a41-a48944bb5ba7",
+        "openWindow": "de0920ea-f557-d355-2c218d3e0e29"
+      },
+      "subControls": {
+        "74816ab9-4883-e66e-bc2da08363a8": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "74816ab9-4883-e66e-bc2da08363a8",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "74816ab9-4883-e66e-bc2da08363a8",
+            "mode": "475fe2ff-1dac-774e-03a5e1664616",
+            "modeList": "fbdf200d-0e37-0322-3977fd663a7b",
+            "value": "5b98af01-e714-5d26-8e08a4f7cc01",
+            "needsActivation": "eb9c5260-0066-086d-0a64281d38ac"
+          }
+        }
+      }
+    },
+    "651f6103-6f51-403c-0fde61bf396c": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "651f6103-6f51-403c-0fde61bf396c",
+      "room": "00f05d36-913b-05b4-b32cc4af134b",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "c88ebb42-5c35-2a5d-967134614b94",
+        "active": "fd28f5b1-476d-cdb8-a435da3f2294",
+        "locked": "395d303d-60b9-b542-c8f4677b935e",
+        "events": "ea41bba2-a253-4ab0-8bb9451e2d37",
+        "time": "188006b9-9c2f-b999-e398a7b6b61b",
+        "activeSince": "a6f57914-8c59-47fd-9137e3b7de25",
+        "infoText": "3c0d2e22-057c-2584-93f95c80309b"
+      },
+      "subControls": {
+        "031419dc-4735-3f89-6d66dcd47d33": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "031419dc-4735-3f89-6d66dcd47d33",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "9c4ab774-454d-5589-fc72d08aa62c"
+          }
+        }
+      }
+    },
+    "58aa02cf-6146-2aa7-222891641413": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "58aa02cf-6146-2aa7-222891641413",
+      "room": "865a7ee8-b9d3-f426-62b7e845f6da",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 1,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "4eae613f-a07f-c405-56d057f17e1d",
+        "tempActual": "54777985-6d4b-1d2e-16d2775cd47d",
+        "tempTarget": "2e309be0-45d5-dadb-3707aa5ea2b1",
+        "comfortTemperature": "189b6537-abfc-25f7-b6310b7d3791",
+        "comfortTemperatureCool": "eed8f8e3-9de3-7ea5-10a3d16faabe",
+        "comfortTolerance": "ddd0a7a1-a06c-dda9-19806bf58034",
+        "absentMinOffset": "9e7a3074-ee91-2eaa-ec8643f2a879",
+        "absentMaxOffset": "850a3367-0cfe-f30f-ea2afb25028e",
+        "frostProtectTemperature": "856fe2df-1cd5-b278-ea153b073695",
+        "heatProtectTemperature": "a0567397-8cb1-4da4-d6a015f7a0a3",
+        "shadingCoolTemp": "ce9f024d-b8da-d4bb-9e1da1d92d7a",
+        "shadingHeatTemp": "c8614912-f7f6-df8b-4c53bacfd75e",
+        "co2": "073d3985-a746-0f63-77f8d7fe3f4a",
+        "humidityActual": "c97be7ba-9b77-8190-1fdc1d980a29",
+        "actualOutdoorTemp": "9d76552c-76c7-14e5-e25c3679552b",
+        "currentMode": "aa9ef34b-cabe-3179-79c03e7c1c2f",
+        "shadingOut": "303a91b4-3dd9-d7d1-eca11c02a6fc",
+        "activeMode": "84d336cb-8067-0f8f-016483a1e05c",
+        "comfortTemperatureOffset": "3c1f58ee-bbc5-3209-4255ce2b2e16",
+        "overrideEntries": "e55fa302-ef83-c161-976a969071ce",
+        "prepareState": "5efea333-af7d-b942-8b601c38e75b",
+        "useOutdoor": "d2687165-699a-5ec1-e768e33a38bd",
+        "operatingMode": "e4c752f2-19f0-9b61-3c872e8581b5",
+        "overrideReason": "158d41e7-d26c-8c6c-9a06e98940b7",
+        "excessEnergyTempOffset": "08fa14fc-1c13-592b-6ccce410ee75",
+        "averageOutdoorTemp": "d5156beb-c1e7-51b2-d8d457dfffff",
+        "temperatureBoundaryInfo": "d8ba4c46-d888-4fb7-0bf9236eebeb",
+        "capabilities": "245ba2d7-06c2-c098-ffc8438acb60",
+        "openWindow": "6c7a7274-2183-1160-8a29b10c62cc"
+      },
+      "subControls": {
+        "cbf3a160-87f0-ba0b-394e014d906f": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "cbf3a160-87f0-ba0b-394e014d906f",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "cbf3a160-87f0-ba0b-394e014d906f",
+            "mode": "830042be-ec97-3613-8306d6bc765b",
+            "modeList": "7e902592-5ea5-1b9e-3092ae707bea",
+            "value": "d6d9a6f4-40c4-2502-084f8945a65a",
+            "needsActivation": "1ed08634-4c61-987c-9331b2580ffa"
+          }
+        }
+      }
+    },
+    "9def2c8a-031a-f0cc-fd9f5977d987": {
+      "name": "Pro Switch 2",
+      "type": "Switch",
+      "uuidAction": "9def2c8a-031a-f0cc-fd9f5977d987",
+      "room": "865a7ee8-b9d3-f426-62b7e845f6da",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "type": 71
+      },
+      "states": {
+        "active": "9def2c8a-031a-f0cc-fd9f5977d987"
+      }
+    },
+    "de640cfc-d13e-3655-c70ce7fe4be3": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "de640cfc-d13e-3655-c70ce7fe4be3",
+      "room": "865a7ee8-b9d3-f426-62b7e845f6da",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "725a7a39-05e2-9474-f331879a12cc",
+        "active": "839e4fb8-6a09-f28a-1d989fb533af",
+        "locked": "999931d5-c93c-c2d7-9ce025667cbd",
+        "events": "f5c2587b-d03f-1191-5c5506b99716",
+        "time": "35023021-a933-7205-b21fe98e0e27",
+        "activeSince": "0f7218b8-4605-0c2d-81ee4417c485",
+        "infoText": "2058c69d-502a-c1dd-c38d1e8407ba"
+      },
+      "subControls": {
+        "28fc9c24-d546-9854-82fe17566546": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "28fc9c24-d546-9854-82fe17566546",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "6fde9c8e-451e-2b0c-606d7deb65a1"
+          }
+        }
+      }
+    },
+    "d8953734-bc18-1f2b-57c4081e2110": {
+      "name": "Core Light Controller 2",
+      "type": "LightControllerV2",
+      "uuidAction": "d8953734-bc18-1f2b-57c4081e2110",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 3,
+        "masterValue": "20478f7c-033f-bc2c-ffffd0b61f059ee4/masterValue"
+      },
+      "states": {
+        "jLocked": "d6bc2c7b-bfe4-1977-4a693c8fba0a",
+        "activeMoods": "17deb897-e637-1c0a-718c5b56cf71",
+        "moodList": "00f116e6-4f37-3fc0-a8bcd65b8c5f",
+        "activeMoodsNum": "dded987d-1334-6169-bd912eb9bd7a",
+        "favoriteMoods": "b36cd380-5dbf-a073-b6b3a8eb65c5",
+        "additionalMoods": "417ae7ca-f0f0-a908-244b7819c9f3",
+        "circuitNames": "cd4b52b8-dbb3-6966-03140fe589d3",
+        "daylightConfig": "3b46fd4b-838f-b2f4-33c81ab01af2",
+        "presence": "b1ba51c8-8dd5-60d1-6522eafcb0aa"
+      },
+      "subControls": {
+        "fe39abbb-a63f-1feb-54c92f908e19": {
+          "name": "Edge Switch 3",
+          "type": "Switch",
+          "uuidAction": "fe39abbb-a63f-1feb-54c92f908e19",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "states": {
+            "active": "60c9a43d-2b28-fca2-20402f960b9a"
+          }
+        },
+        "de2d7b41-b7c8-2f99-2673db70709d": {
+          "name": "Mesh Switch 4",
+          "type": "Switch",
+          "uuidAction": "de2d7b41-b7c8-2f99-2673db70709d",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "states": {
+            "active": "11589d21-1501-1526-451a4140162e"
+          }
+        },
+        "99e56867-9b23-b5b0-45575b2213a6": {
+          "name": "Duo Switch 5",
+          "type": "Switch",
+          "uuidAction": "99e56867-9b23-b5b0-45575b2213a6",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "states": {
+            "active": "7f933924-b86d-7a7b-ec6efc846bab"
+          }
+        },
+        "ce0e5494-e8bc-087a-8f5d1a29cb8f": {
+          "name": "Quad Switch 6",
+          "type": "Switch",
+          "uuidAction": "ce0e5494-e8bc-087a-8f5d1a29cb8f",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "states": {
+            "active": "84512502-7e5d-8b25-d70f4b012f9b"
+          }
+        }
+      }
+    },
+    "6e1f3a5c-e1a3-a2d6-8f540d3e9917": {
+      "name": "Mini Blind 7",
+      "type": "Jalousie",
+      "uuidAction": "6e1f3a5c-e1a3-a2d6-8f540d3e9917",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "bfcf2a41-522e-2c1a-e2e2e921e69c",
+        "infoText": "33311e9f-1835-b352-59cc5eeb6f24",
+        "up": "012468f4-2c77-e82c-9c099970e98d",
+        "down": "b70aeb24-7220-a8b4-35933f813ae6",
+        "position": "c1bb250b-964b-1349-3707b4cb2c0d",
+        "shadePosition": "b43821a5-31e8-a175-695d631951e6",
+        "safetyActive": "38aa781f-70e3-de5f-50dce6da93aa",
+        "autoAllowed": "d30950b8-ef4b-27ad-576219838e71",
+        "autoActive": "12a4b5a2-c18c-2a23-17a7788c9f58",
+        "locked": "a7d09a05-171e-51ef-4be1329886e1",
+        "autoInfoText": "5b68ffb0-6519-ce82-391496ce7ed1",
+        "autoState": "9f5d5dba-2944-0624-3fb29d7ba7e4",
+        "deviceState": "d36a1b8a-3ea8-2000-1b86b88ae725",
+        "targetPosition": "4b2f4de6-9c61-d33d-9752e6091fda",
+        "targetPositionLamelle": "e8f4ff7e-92c8-e0e3-ed338c8342fb",
+        "adjustingEndPos": "ebdba342-0cdf-4338-b25f12c2acd9"
+      }
+    },
+    "dd49248a-83cf-1642-fd6f2e942b8d": {
+      "name": "Tree Blind 8",
+      "type": "Jalousie",
+      "uuidAction": "dd49248a-83cf-1642-fd6f2e942b8d",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "accbbe6b-af5e-1a12-0bc92501da1f",
+        "infoText": "f08ad53c-8e2f-3463-ec968c307a2b",
+        "up": "8daa72d4-b176-b5e9-c9912bc668cb",
+        "down": "6b500791-aef4-e543-de6b374845cb",
+        "position": "976858d0-654c-ef1d-3ec646c60e2e",
+        "shadePosition": "93224564-94e5-785f-8b52a5221413",
+        "safetyActive": "8c5d4fba-8d26-8242-ca20c62cecea",
+        "autoAllowed": "8f496d55-f0b9-f39c-f4b151704fa6",
+        "autoActive": "50980673-2896-936c-5699b22574ee",
+        "locked": "316e2d3c-3275-c83c-3f793e5fb6dc",
+        "autoInfoText": "e9417957-992e-6934-3ca25d55809d",
+        "autoState": "db151871-dddb-5843-2c0f06162999",
+        "deviceState": "b9ca3869-28c6-2fb4-8ce55efe9e6a",
+        "targetPosition": "0e873058-2dfd-5998-212601a4f19b",
+        "targetPositionLamelle": "f7a21d1e-7f8e-ae78-e0916d0a0ce4",
+        "adjustingEndPos": "1ef46635-53e9-44d8-ff75bf713e24"
+      }
+    },
+    "665ab2cc-cbbf-120c-7609d921ae4a": {
+      "name": "RGBW Device",
+      "type": "CentralJalousie",
+      "uuidAction": "665ab2cc-cbbf-120c-7609d921ae4a",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controls": [
+          {
+            "id": 0,
+            "uuid": "dd49248a-83cf-1642-fd6f2e942b8d"
+          },
+          {
+            "id": 1,
+            "uuid": "6e1f3a5c-e1a3-a2d6-8f540d3e9917"
+          }
+        ],
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "b4b9dada-eb92-694f-e1ee03521c70",
+        "events": "3fe733c9-7d67-9cb3-19ec5eb1e677"
+      }
+    },
+    "da37adac-da4a-4f18-6abbe0c1713d": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "da37adac-da4a-4f18-6abbe0c1713d",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 37,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "45326c78-6747-807a-e2d4f8f32cb0",
+        "tempActual": "6fca62cc-7b1d-d9fa-716459d3c1f6",
+        "tempTarget": "35a7235a-925e-4bab-ed29e70d5f94",
+        "comfortTemperature": "5de6db30-21c9-e030-34d8fafd68c1",
+        "comfortTemperatureCool": "6be0cbed-4307-c881-15227bbd3806",
+        "comfortTolerance": "fe026e5d-5a74-8bd0-8cd04a4c86b8",
+        "absentMinOffset": "01d5e2a3-0e29-656e-4a92ac2a6178",
+        "absentMaxOffset": "4d41bb4b-cad1-6c97-b1f10584dbb3",
+        "frostProtectTemperature": "c5e0ecbf-6c4c-6093-eb7c4f1dc43a",
+        "heatProtectTemperature": "cbe5527a-7c95-3da3-d90361f81ed3",
+        "shadingCoolTemp": "5e9172bc-e04e-a238-b8f2a4ec6b3f",
+        "shadingHeatTemp": "f3dbf1f5-0ca9-a04b-45ca4eb09e49",
+        "co2": "4a227e06-61f7-d750-2de5cc1dd191",
+        "humidityActual": "1a89cf1f-93b4-7327-b0dad06c58cf",
+        "actualOutdoorTemp": "b593a3f7-3870-08aa-2333198656f0",
+        "currentMode": "006b523d-22d4-4def-776113b20b23",
+        "shadingOut": "492497c9-3914-3916-a3be45406366",
+        "activeMode": "8224526c-4eb4-1d94-327887590bda",
+        "comfortTemperatureOffset": "7666e0ea-880c-d1ee-a10b8109adf2",
+        "overrideEntries": "65e6c829-f0bf-acd2-1b301eaeccd6",
+        "prepareState": "2cdebd3a-9afb-2b8a-4d2136a27c48",
+        "useOutdoor": "ccdf0e97-efa4-41b5-1588d9897c2c",
+        "operatingMode": "64e3330d-f47a-1f75-8f216d2e9ebb",
+        "overrideReason": "0c3a4e19-e2d5-61c3-ec4f63a6ea9f",
+        "excessEnergyTempOffset": "1051d359-e70e-0523-f6df712279f6",
+        "averageOutdoorTemp": "f90a1884-499c-4043-c6499d86425a",
+        "temperatureBoundaryInfo": "d7bef8cc-5783-85ec-ef1249c971e9",
+        "capabilities": "95eb12a2-1850-1e4a-25416d02e1db",
+        "openWindow": "d4d221fc-b205-c5d6-06ce92c3f80c"
+      },
+      "subControls": {
+        "ed332abb-66a4-c3e2-1cd36b7b7fd5": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "ed332abb-66a4-c3e2-1cd36b7b7fd5",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "ed332abb-66a4-c3e2-1cd36b7b7fd5",
+            "mode": "9b4be22d-b6b8-deb8-8ad2342c4370",
+            "modeList": "4be0d0d5-f19d-18f1-7d19a030e022",
+            "value": "28960862-1500-e0cd-ba10390edbab",
+            "needsActivation": "e31f4cf4-094b-cbb9-8e695df74d20"
+          }
+        }
+      }
+    },
+    "7a30f6f1-f8f1-87e3-d51dbe07c314": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "7a30f6f1-f8f1-87e3-d51dbe07c314",
+      "room": "2c5e8de7-a640-0974-4e3bf6ca7177",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "04ffbd44-2999-270a-9b7beae05594",
+        "active": "1f5b0bfc-639a-a265-5b89f36821dd",
+        "locked": "3544d3d9-c41c-7014-c68c0356f3f5",
+        "events": "1df527fd-5c2b-ee04-a2adea8f8f9c",
+        "time": "8458571c-890f-fbcb-a2a58b890351",
+        "activeSince": "732edf90-eb36-f51f-d2e70a0750eb",
+        "infoText": "fa7b895b-6fa9-46c2-010afc0fb8b9"
+      },
+      "subControls": {
+        "aa014050-1b0e-67e4-f2a4956e8a8c": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "aa014050-1b0e-67e4-f2a4956e8a8c",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "7c63d6aa-9f1c-dd28-d2d377068007"
+          }
+        }
+      }
+    },
+    "ebbbe4b6-7ed4-b669-43558ad56687": {
+      "name": "Air Analog Sensor 2",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "ebbbe4b6-7ed4-b669-43558ad56687",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "ebbbe4b6-7ed4-b669-43558ad56687",
+        "error": "a3ac6e39-d1f5-64b8-3e4c2291f58c"
+      }
+    },
+    "6ad37df1-fb84-41c8-0f610c3b3b29": {
+      "name": "Nano Analog Sensor 3",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "6ad37df1-fb84-41c8-0f610c3b3b29",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "6ad37df1-fb84-41c8-0f610c3b3b29",
+        "error": "ab972994-e4b1-7681-89e8bf8f5c31"
+      }
+    },
+    "391afe36-fcdf-3d9d-3681ad8c838c": {
+      "name": "Link Analog Sensor 4",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "391afe36-fcdf-3d9d-3681ad8c838c",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "391afe36-fcdf-3d9d-3681ad8c838c",
+        "error": "db2faf74-8f20-638c-eb232f1a285e"
+      }
+    },
+    "771a504b-fe62-5874-50812db431e1": {
+      "name": "Relay Analog Sensor 5",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "771a504b-fe62-5874-50812db431e1",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "771a504b-fe62-5874-50812db431e1",
+        "error": "72cdd8cd-35c5-5f4c-011d563d58c8"
+      }
+    },
+    "6478b24e-00de-68aa-dd5cb3a1226f": {
+      "name": "Touch Analog Sensor 6",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "6478b24e-00de-68aa-dd5cb3a1226f",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "6478b24e-00de-68aa-dd5cb3a1226f",
+        "error": "ccf12fc4-c464-9ddb-01c387ebad28"
+      }
+    },
+    "6fa9015f-4ecf-9dd0-d499528575e2": {
+      "name": "Smart Analog Sensor 7",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "6fa9015f-4ecf-9dd0-d499528575e2",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "6fa9015f-4ecf-9dd0-d499528575e2",
+        "error": "0dca1ab8-9f0c-15db-4bfbc61a0932"
+      }
+    },
+    "202a0bb3-b56a-5a62-d4ba54b3a0e1": {
+      "name": "Pure Analog Sensor 8",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "202a0bb3-b56a-5a62-d4ba54b3a0e1",
+      "room": "4f827217-3791-c063-bdc326117805",
+      "cat": "31c3b10e-e0a9-8001-c1fe893350c9",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "202a0bb3-b56a-5a62-d4ba54b3a0e1",
+        "error": "82a89b5d-5a78-5900-050299cf7ea8"
+      }
+    },
+    "8ff99356-3823-e73a-4de989225044": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "8ff99356-3823-e73a-4de989225044",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "447400db-e441-7e94-5952a86769dc",
+        "activeMoods": "898b7250-aedc-d85f-7267e30d2179",
+        "moodList": "7cd2f0de-54bd-e940-b2544be8f0ff",
+        "activeMoodsNum": "ed893dfd-58af-b064-dbeb0eabad08",
+        "favoriteMoods": "9a0ef229-ec1a-a014-a4f583fa9bfe",
+        "additionalMoods": "b2ba8682-a0a5-0165-f33cdc52364d",
+        "circuitNames": "b2a2a023-dbf4-1bdb-b911e0e39be4",
+        "daylightConfig": "6bb909ab-6c51-9bd1-64579a30f388",
+        "presence": "ed4fb702-fb89-f9f9-ab48e88f8cf9",
+        "presenceFrom": "e625251b-46d7-a423-0356aeb7d8dd",
+        "presenceTo": "db7ecdf9-9f18-ec2d-6963f59a9084"
+      },
+      "subControls": {}
+    },
+    "36c958ca-343e-1e70-56348b74c165": {
+      "name": "Aqua Device 2",
+      "type": "CentralJalousie",
+      "uuidAction": "36c958ca-343e-1e70-56348b74c165",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 5,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controls": [
+          {
+            "id": 0,
+            "uuid": "c8aed9c0-e7d2-4878-8ca5d8aa0072"
+          },
+          {
+            "id": 1,
+            "uuid": "c53b100c-eb32-e1d4-1f0812bc4d5f"
+          },
+          {
+            "id": 2,
+            "uuid": "371fcc8f-d75a-0e0f-39e3de4f23dd"
+          },
+          {
+            "id": 3,
+            "uuid": "4bb5181f-b6e6-4a60-eaf47952f7aa"
+          },
+          {
+            "id": 4,
+            "uuid": "a3d76e10-f314-9cc5-d168a4fcf2d8"
+          }
+        ],
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "e0944735-214c-0c9a-f7c9640f0700",
+        "events": "9bf89de4-b6ce-de95-18c640293459"
+      }
+    },
+    "ef3e8713-a226-9dc2-1710da5cb05e": {
+      "name": "Modbus Device 3",
+      "type": "CentralJalousie",
+      "uuidAction": "ef3e8713-a226-9dc2-1710da5cb05e",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controls": [
+          {
+            "id": 0,
+            "uuid": "371fcc8f-d75a-0e0f-39e3de4f23dd"
+          },
+          {
+            "id": 1,
+            "uuid": "4bb5181f-b6e6-4a60-eaf47952f7aa"
+          },
+          {
+            "id": 2,
+            "uuid": "a3d76e10-f314-9cc5-d168a4fcf2d8"
+          }
+        ],
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "cb81c2cf-d8dd-9287-6d6d828a2697",
+        "events": "564ad2dc-3a5c-9806-f5478885a22b"
+      }
+    },
+    "4bb5181f-b6e6-4a60-eaf47952f7aa": {
+      "name": "KNX Blind 9",
+      "type": "Jalousie",
+      "uuidAction": "4bb5181f-b6e6-4a60-eaf47952f7aa",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "configState": {
+        "isConfigured": false
+      },
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 1,
+        "type": 502
+      },
+      "states": {
+        "jLocked": "14e82a70-b092-ec66-875bcb55a1bf",
+        "autoActive": "6d9d6ee1-6608-6467-9acd6317d578",
+        "autoAllowed": "9a7aea09-1157-9a1b-5dbca8faede3",
+        "up": "4b1679ca-fc97-01e7-fc89c08e150e",
+        "down": "ad46e52d-4478-bdee-97c5a4c6fe8f",
+        "position": "5334890b-957f-e7c5-d838c4c7bfa0",
+        "shadePosition": "5334890b-957f-e7c5-d838c4c7bfa0",
+        "safetyActive": "312c94a3-6451-aebc-c85055745030",
+        "locked": "0fc664de-c077-b0b8-2952dae9dec6",
+        "infoText": "4b152368-a1dc-e1d3-0b86285a39a8",
+        "targetPosition": "1da1b81d-f044-aeb1-d3407133d7de"
+      }
+    },
+    "371fcc8f-d75a-0e0f-39e3de4f23dd": {
+      "name": "KNX Blind 9",
+      "type": "Jalousie",
+      "uuidAction": "371fcc8f-d75a-0e0f-39e3de4f23dd",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "configState": {
+        "isConfigured": false
+      },
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 1,
+        "type": 502
+      },
+      "states": {
+        "jLocked": "91544d47-bc3b-3b95-50e22da587c5",
+        "autoActive": "d425095f-b212-c293-c41dd38d5bab",
+        "autoAllowed": "5684ad44-56e2-bac6-1ed4fff3843f",
+        "up": "c2fa2e7d-312c-eb21-06a9313d5cfd",
+        "down": "cdfa5f4e-a3a2-e213-0bc529ecfce3",
+        "position": "ab8ea7cb-75fe-da2e-1b113f77ac0c",
+        "shadePosition": "ab8ea7cb-75fe-da2e-1b113f77ac0c",
+        "safetyActive": "8b654116-aaa9-1e4e-b7170b1ecc5e",
+        "locked": "d5aa3740-caf5-caf8-44a2255760ae",
+        "infoText": "0899f428-e602-dabf-c1f754cd5729",
+        "targetPosition": "17fb436e-bf72-20a6-ea3ec7356fc9"
+      }
+    },
+    "a3d76e10-f314-9cc5-d168a4fcf2d8": {
+      "name": "RGBW Blind 10",
+      "type": "Jalousie",
+      "uuidAction": "a3d76e10-f314-9cc5-d168a4fcf2d8",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "configState": {
+        "isConfigured": false
+      },
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 1,
+        "type": 502
+      },
+      "states": {
+        "jLocked": "279964df-2ee4-b2c9-479e631d6ea5",
+        "autoActive": "475c5fa9-7a26-aaf6-e92b0ac6b79c",
+        "autoAllowed": "a48da88d-d3e6-b5bc-828eca626e63",
+        "up": "ab39c2c8-a7b3-6951-24baf6bd6f5f",
+        "down": "110b9c14-ab26-3cef-17bcc8b3fc93",
+        "position": "f6154fc9-c0f8-a695-86679f3ba807",
+        "shadePosition": "f6154fc9-c0f8-a695-86679f3ba807",
+        "safetyActive": "fbf5c3db-4c99-e468-743c8fd7cfc3",
+        "locked": "aa5d027c-821e-3033-83f909baaeae",
+        "infoText": "51ab1c22-b822-69ae-592fe50d726a",
+        "targetPosition": "b7e816ea-67e2-e264-fe83c8aae8a4"
+      }
+    },
+    "c53b100c-eb32-e1d4-1f0812bc4d5f": {
+      "name": "Dali Blind 11",
+      "type": "Jalousie",
+      "uuidAction": "c53b100c-eb32-e1d4-1f0812bc4d5f",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "fb681ff5-4925-3419-3da9ce0edc48",
+        "infoText": "a1c4c290-1ac8-fcd6-05b7fafeaa91",
+        "up": "9a18865b-778a-3217-1a54f2c53592",
+        "down": "58cb4852-d8af-c893-c507263e8026",
+        "position": "73f4987a-7d0a-376b-9b48a0490435",
+        "shadePosition": "417377cf-f150-04e6-f50a31fd5477",
+        "safetyActive": "0015ee71-7913-d307-522e50f35a79",
+        "autoAllowed": "55897764-c265-1480-d49d61871fb9",
+        "autoActive": "0e80bb86-0be4-95e6-93673c7fbc5e",
+        "locked": "906924a5-5a6d-a098-a4779dc1a566",
+        "autoInfoText": "7b8dcf78-d47f-46f8-f5f321daf485",
+        "autoState": "7877697f-1535-4530-de4e9a13e2c8",
+        "deviceState": "fd0553cd-f57b-daf7-f58b3bdb5952",
+        "targetPosition": "88b05a81-07f5-5405-977f581aee6e",
+        "targetPositionLamelle": "a71dbcc8-4d28-1fe0-86a60af671ae",
+        "adjustingEndPos": "64da8b2d-069c-ac6a-2b496fe17f37"
+      }
+    },
+    "c8aed9c0-e7d2-4878-8ca5d8aa0072": {
+      "name": "Pulse Blind 12",
+      "type": "Jalousie",
+      "uuidAction": "c8aed9c0-e7d2-4878-8ca5d8aa0072",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "isAutomatic": true,
+        "animation": 0,
+        "type": 348
+      },
+      "states": {
+        "jLocked": "9f2dac39-3d4e-fca0-fb512aceaa78",
+        "infoText": "749bf20f-f94e-942b-33199db30b78",
+        "up": "f3f0eb7a-2efd-f9d3-e59026bce125",
+        "down": "88dae29d-a3b3-7de8-1e02329cc2d0",
+        "position": "a512803d-0bb1-ec63-b8272be7260f",
+        "shadePosition": "6359539f-1a99-f7e8-ebc1d37ecae4",
+        "safetyActive": "c8a0ad79-35f6-18a5-c0d37809695b",
+        "autoAllowed": "c5d3d740-9c0d-564d-2a4b3dcb16a9",
+        "autoActive": "a7ce0ba1-80cb-81a3-64c2df8bb369",
+        "locked": "2776b9d3-c9fe-f97a-33f786cc75de",
+        "autoInfoText": "4ab151ea-dde3-2571-aa310f05edd8",
+        "autoState": "baabf5fe-e0bc-3c8a-764f1ac37385",
+        "deviceState": "4b55cbc6-168f-bf41-f1f86d2a92e2",
+        "targetPosition": "e6ea0260-9446-1239-adb44c09c4bc",
+        "targetPositionLamelle": "bc9319e9-916a-eac0-c7ff99c7efd7",
+        "adjustingEndPos": "92dbeb04-a46c-74be-e3076f1c0c30"
+      }
+    },
+    "8e4ab3e9-c2e5-8630-492846705786": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "8e4ab3e9-c2e5-8630-492846705786",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 3,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "c3c0259a-6998-c75e-b79e6808d846",
+        "tempActual": "236f49a8-0339-e301-0196fa7a5749",
+        "tempTarget": "8255e134-eb63-6eae-82d35617de55",
+        "comfortTemperature": "a90df10f-59bb-c788-85624fd87ead",
+        "comfortTemperatureCool": "75fe43ac-bc47-5e0d-9a9056f334cc",
+        "comfortTolerance": "40b7e879-1fd4-6d1e-096afee7fbbe",
+        "absentMinOffset": "c514b6c3-5e9e-619e-8e4dca3065fe",
+        "absentMaxOffset": "3bf1e597-c805-9920-5c36d7c0c7f8",
+        "frostProtectTemperature": "80aa4e55-68eb-1a4b-047f3813ea23",
+        "heatProtectTemperature": "b2cc4ada-93ed-cb13-ac1b9ac42590",
+        "shadingCoolTemp": "0fbf47df-7ea3-0929-995e8ce801c1",
+        "shadingHeatTemp": "3e27ea04-58b4-e1ea-87b1c0f0fb0d",
+        "co2": "c144e915-a63b-5fd9-b7f8e356ac6b",
+        "humidityActual": "21f44a51-7eeb-fbce-0b6f272141aa",
+        "actualOutdoorTemp": "096b9546-34fc-7ab0-dfb3fd67d7de",
+        "currentMode": "7b1e6e19-dd9c-3492-e3f6f450d4cc",
+        "shadingOut": "2841b62f-34f0-276c-49a4714eab84",
+        "activeMode": "cb6a7b63-6f3f-d9a7-2f5401aebae3",
+        "comfortTemperatureOffset": "125d5169-07c5-fba8-e2e319f7e03b",
+        "overrideEntries": "962a033a-64cf-fcad-12ad605ef75d",
+        "prepareState": "b5f5fc12-ee30-f249-517cd5757e36",
+        "useOutdoor": "689522aa-ee3d-2556-15e50a6a1096",
+        "operatingMode": "4f6169aa-7ea2-a8eb-58e18e1e72f7",
+        "overrideReason": "56a16c21-76f2-a7b6-62ae6ac5ab90",
+        "excessEnergyTempOffset": "f6e3f2c0-5009-1bc9-701de008e9cd",
+        "averageOutdoorTemp": "9bfdde22-38c2-95f9-57db0849b383",
+        "temperatureBoundaryInfo": "34cc2669-8067-b432-4312a41a0d7b",
+        "capabilities": "8e3ecce2-a40a-748a-ef147280c405",
+        "openWindow": "bd02f2f2-8e1f-17ad-95f907580a76"
+      },
+      "subControls": {
+        "c07bbcd8-4305-092d-77f1459c6fa6": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "c07bbcd8-4305-092d-77f1459c6fa6",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "c07bbcd8-4305-092d-77f1459c6fa6",
+            "mode": "edcdf4bc-b64c-2917-02968ef9d0bb",
+            "modeList": "bb182534-bf70-6fcb-1cf65d370a89",
+            "value": "4e7578d2-179e-4b04-2dcae25c3d75",
+            "needsActivation": "0dd2b674-ee1c-0380-bde249f6f214"
+          }
+        }
+      }
+    },
+    "048a4db5-93e3-4251-fa9b393c2e95": {
+      "name": "Compact Switch 7",
+      "type": "Switch",
+      "uuidAction": "048a4db5-93e3-4251-fa9b393c2e95",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "1a9031c6-d2cd-ffee-12a16d4e2415",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "type": 71
+      },
+      "states": {
+        "active": "048a4db5-93e3-4251-fa9b393c2e95"
+      }
+    },
+    "39805d22-1557-1595-8d0b64c03cb5": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "39805d22-1557-1595-8d0b64c03cb5",
+      "room": "d2a5e1b4-3479-42c2-3888b6a37074",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "7f1674d8-403f-1c2b-a5d3ed1aabf8",
+        "active": "69fc5e84-e585-356b-184eb114639a",
+        "locked": "029cf33c-f106-b1d9-5e7ced1c7dec",
+        "events": "0aa80e32-0766-b905-7fb44b8c870c",
+        "time": "80271dae-95ae-f85f-b7920cfc624e",
+        "activeSince": "26129284-4252-8337-ce72accb805d",
+        "infoText": "b4a73391-4dee-a1e8-5d69467edf29"
+      },
+      "subControls": {
+        "fca31237-360f-8ceb-05d93a093bac": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "fca31237-360f-8ceb-05d93a093bac",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "1e66a6f8-46a7-8e35-2cad8a334163"
+          }
+        }
+      }
+    },
+    "3314e80d-f1e0-4fdf-bb2849234143": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "3314e80d-f1e0-4fdf-bb2849234143",
+      "room": "69cc8b4f-f1b0-0c79-ab7db12b659e",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20
+      },
+      "states": {
+        "jLocked": "9e4f9cbe-68e5-2908-effe4ed5eef2",
+        "activeMoods": "6a3fde5e-8cb4-0e0e-54145431f5f1",
+        "moodList": "18217e05-892b-29a3-eb4c04f26ef7",
+        "activeMoodsNum": "55ac7ee2-3284-76a8-a6ad2a315003",
+        "favoriteMoods": "9fa384d3-8adf-e305-5d7b12af7be8",
+        "additionalMoods": "d0c1c0d5-4b53-4dab-c0b14649eff6",
+        "circuitNames": "aeec6dfd-4a43-b4ff-262d314aa941",
+        "daylightConfig": "6c133094-b115-d812-2ade234b7681",
+        "presence": "fa72ec21-6747-999e-92fa3ac23b5f",
+        "presenceFrom": "8b86cbfe-4b7e-b2ff-c5973335c8d4",
+        "presenceTo": "cfe548e8-891a-0291-c56471af8804"
+      },
+      "subControls": {
+        "52dc0706-821b-4782-9f3f1937e9a4": {
+          "name": "Extension Device 4",
+          "type": "ColorPickerV2",
+          "uuidAction": "52dc0706-821b-4782-9f3f1937e9a4",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "presence": true,
+          "restrictions": 0,
+          "details": {
+            "pickerType": "Rgb"
+          },
+          "states": {
+            "color": "d6cb312e-4bab-f3aa-f2fcbc658e85",
+            "sequence": "fc83ce95-7d35-8859-c6a69ee068bf",
+            "sequenceColorIdx": "402d492a-20eb-eb68-2e793347a7c0"
+          }
+        }
+      }
+    },
+    "0976717e-712a-d9a0-cd0ce9c3b2a2": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "0976717e-712a-d9a0-cd0ce9c3b2a2",
+      "room": "69cc8b4f-f1b0-0c79-ab7db12b659e",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 1,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "a2d6146f-18fd-d083-f58b60af524e",
+        "tempActual": "82d8a422-c9ad-9f2a-75ddb9efbf0e",
+        "tempTarget": "519a7ee9-77df-190c-baa9b9618afd",
+        "comfortTemperature": "7914df3c-48fa-f65c-139ee12b7b17",
+        "comfortTemperatureCool": "6d684817-ba88-5cd7-a235fae10392",
+        "comfortTolerance": "ed00b469-5973-b0b7-2d41a78dd22f",
+        "absentMinOffset": "e0bed30b-330d-6070-5390fc48816c",
+        "absentMaxOffset": "753fb772-3855-2a45-004f978c70d6",
+        "frostProtectTemperature": "1b6c1ff3-7e78-ecc0-fcc2bf7186cc",
+        "heatProtectTemperature": "abd58569-db40-b06f-3497d48db3ad",
+        "shadingCoolTemp": "c6844c9f-f2b6-a5b0-9c03c4505a00",
+        "shadingHeatTemp": "28916493-70dc-e585-2b3ad56fca80",
+        "co2": "714811b7-01a8-7d9d-6c3efbdd4ec6",
+        "humidityActual": "07a27b77-af9f-e1b2-10ae9eacdb11",
+        "actualOutdoorTemp": "e2ee64e5-c4d2-3177-03d06ce9cf44",
+        "currentMode": "7516b2ab-73da-5bb1-9cad4051c545",
+        "shadingOut": "cadd85bf-c5c3-32c1-3f95d47d4447",
+        "activeMode": "ee869a30-ad0a-ea36-8746833977f4",
+        "comfortTemperatureOffset": "3907c93c-441a-b02a-69d1a01ac0b5",
+        "overrideEntries": "faba7b49-800b-d52c-5bb6fb66e623",
+        "prepareState": "855067d0-1d7e-bb30-723cbf16fa8f",
+        "useOutdoor": "6e71cd99-4df7-ce53-9d930398ea89",
+        "operatingMode": "86694212-3e0c-382f-69c313b405a8",
+        "overrideReason": "f636eb42-8da8-4fd8-69f27e6b7f92",
+        "excessEnergyTempOffset": "b4566c0d-52fa-5af9-c6109fadf21e",
+        "averageOutdoorTemp": "0ead2390-3da6-ffb2-9e1a1d25f86c",
+        "temperatureBoundaryInfo": "4f94d9f5-c6bd-60ed-2c53f0ea3f89",
+        "capabilities": "670db781-7a3c-1e48-0277be771769",
+        "openWindow": "51b9d71e-febe-2bd9-dff047eeb23f"
+      },
+      "subControls": {
+        "b3dd0952-9cf8-057e-3904e8fa4197": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "b3dd0952-9cf8-057e-3904e8fa4197",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "b3dd0952-9cf8-057e-3904e8fa4197",
+            "mode": "29f3b247-a64e-b8c3-233b9460921c",
+            "modeList": "a1880594-7047-c7ac-d406cf54c8e9",
+            "value": "12baaaab-e8d7-c481-af90ed80e947",
+            "needsActivation": "8c26c9a4-96ca-beb8-07d52ec06b53"
+          }
+        }
+      }
+    },
+    "dadff40e-2735-7968-8ac3656ca1b3": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "dadff40e-2735-7968-8ac3656ca1b3",
+      "room": "69cc8b4f-f1b0-0c79-ab7db12b659e",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "62ee0070-40ef-2822-e0a1950a5269",
+        "active": "4b2507de-5cbb-6378-be05f02cec1a",
+        "locked": "5aa852f5-d8d4-3215-d12d8ba581be",
+        "events": "591982d2-3719-6d87-b5537fc0c211",
+        "time": "cb226cb7-6ac1-7d9d-dba41200f854",
+        "activeSince": "25b955df-252b-001d-1ff60e6c2cbb",
+        "infoText": "9336f488-6117-206c-656e134d91d2"
+      },
+      "subControls": {
+        "4d0f5010-3d87-617f-b68d64601021": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "4d0f5010-3d87-617f-b68d64601021",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "fa363644-a878-07e2-cfb5f624f2e4"
+          }
+        }
+      }
+    },
+    "5b741646-a188-ea69-41a5ce8cd9f9": {
+      "name": "Dimmer Audio Zone",
+      "type": "AudioZoneV2",
+      "uuidAction": "5b741646-a188-ea69-41a5ce8cd9f9",
+      "room": "987491d4-c104-688a-95cf0a27fc32",
+      "cat": "2c7ed910-e0a7-f572-9b45fc24045c",
+      "defaultRating": 8,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "server": "610dff96-f1a7-c960-da2490685595",
+        "playerid": 2,
+        "clientType": 0,
+        "parameterConnections": 0,
+        "validOutputs": true,
+        "volumeModes": 0,
+        "disableFeature": 0,
+        "speakerConfig": 1,
+        "playerGroup": "6d243ee0-4981-73ea-a05a92508f24"
+      },
+      "states": {
+        "jLocked": "db4c382a-010f-d2a3-aafe39d63e1c",
+        "power": "20281a38-8917-f017-b97d73a6be32",
+        "defaultVolume": "251da36d-0313-26a8-aaeeea99878f",
+        "alarmVolume": "00f9df80-0350-ccc2-46f70a3729a3",
+        "bellVolume": "c27d0298-9965-025c-ed301ad6707e",
+        "buzzerVolume": "5c45f00d-b7be-4267-be64261d52bb",
+        "ttsVolume": "4a6c601f-2b8c-1942-836ec9b4f0e4",
+        "maxVolume": "42e3538e-4f23-48ff-47a041a5da15",
+        "volumeStep": "7ece1b5b-a1bb-0382-a9f93019e218",
+        "isLocked": "23376e67-76bc-a828-202e00d2cc78",
+        "volume": "03bdc91d-5939-9ff9-38c7575a1b64",
+        "bluetooth": "42c06ca7-7a49-cf17-329d3e35db41",
+        "serverState": "d7c95212-e247-2ff1-8f0763d62e7a",
+        "clientState": "11dd7f6a-6dd6-459d-667839184745",
+        "playState": "28ee9a3a-df8c-53b7-afe6b6e88d8c",
+        "presence": "dd115153-308d-5278-d8d908faa3e8",
+        "presenceFrom": "1c26ab6d-55bc-e1bc-22bb7771ed47",
+        "presenceTo": "0bbb4fb3-a42c-2a18-2a7062337aa6"
+      }
+    },
+    "db524ba3-afcb-c8a9-f76d867216b8": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "db524ba3-afcb-c8a9-f76d867216b8",
+      "room": "987491d4-c104-688a-95cf0a27fc32",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "presence": true,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "3e3faab1-5076-b954-1857572e1f53",
+        "activeMoods": "30779e3d-3dca-c7e6-8dd753ae36f9",
+        "moodList": "5bd8d8a6-d3ca-460f-89a1c6a4d948",
+        "activeMoodsNum": "8d68c4d2-e2cb-891b-72759fe48c9c",
+        "favoriteMoods": "ce26c55c-6213-ced9-2cae2803042b",
+        "additionalMoods": "3c5051e5-890a-55e0-7712965f1a19",
+        "circuitNames": "6d35bfc8-0845-fd70-276abeb722b4",
+        "daylightConfig": "bfbdb022-b984-a26d-4297b7e8d60b",
+        "presence": "2495000b-b0c1-d181-9ab2a9def2ec",
+        "presenceFrom": "45db60b1-9c85-f42b-026d3d9d7311",
+        "presenceTo": "b4381978-deb7-28e7-0cab6d380e59"
+      },
+      "subControls": {}
+    },
+    "58db6c86-820d-bb9e-e6d0d96c0a74": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "58db6c86-820d-bb9e-e6d0d96c0a74",
+      "room": "987491d4-c104-688a-95cf0a27fc32",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "a2bb8817-f059-2cf6-94121890e36c",
+        "active": "12f8b582-6517-4b72-c40ba968af0c",
+        "locked": "442fcad2-25e6-1df1-6a6d49d803d5",
+        "events": "8cf4b5ae-93cc-399b-561e778e7fe0",
+        "time": "17ef248d-f038-9d91-ab0d6ab1fbb5",
+        "activeSince": "589b3c58-eb2d-d174-8750b59eb07a",
+        "infoText": "50153bae-181f-5d36-7db6088a6e31"
+      },
+      "subControls": {
+        "8fa79584-bd2d-2494-8217891f1b34": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "8fa79584-bd2d-2494-8217891f1b34",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "0fc305a5-0892-4102-491c69de9d57"
+          }
+        }
+      }
+    },
+    "891df7c9-4748-1f21-6ee0fc454c71": {
+      "name": "Air Light Controller",
+      "type": "LightControllerV2",
+      "uuidAction": "891df7c9-4748-1f21-6ee0fc454c71",
+      "room": "552cab82-c623-7956-5fcef6a33468",
+      "cat": "1bf00d35-c825-9dbf-d0455c0f01ff",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "movementScene": 1
+      },
+      "states": {
+        "jLocked": "7aab8dce-636b-5cb0-d87b7faf2cc7",
+        "activeMoods": "01bd3986-c9ed-a95b-77409bff6643",
+        "moodList": "fa28f3aa-4418-2bd9-bfbd1009cb7a",
+        "activeMoodsNum": "05e807b6-cc41-e10b-5bd8c7ce61f7",
+        "favoriteMoods": "4476f641-b45e-f878-72363a7ccb46",
+        "additionalMoods": "f454d8b6-ddbf-5fea-f2db7a2f9285",
+        "circuitNames": "a96c36aa-2010-0a2c-caa60828ac3d",
+        "daylightConfig": "da7bccff-84c3-cf59-034486b26b99",
+        "presence": "3c5e6039-7d24-47a4-352b3fc22dde"
+      },
+      "subControls": {
+        "f3e9d53d-9a99-2350-b1c5422f773f": {
+          "name": "Flex Device 5",
+          "type": "ColorPickerV2",
+          "uuidAction": "f3e9d53d-9a99-2350-b1c5422f773f",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "pickerType": "Rgb"
+          },
+          "states": {
+            "color": "cec10dd0-46da-a457-841b22c700bc",
+            "sequence": "3d03335e-2ae4-6c8c-e6ab7f3f8a4d",
+            "sequenceColorIdx": "59134693-d3f6-d741-7573821c04e2"
+          }
+        }
+      }
+    },
+    "e9b3aa25-d800-26a2-bb68dde4cf73": {
+      "name": "Relay Room Controller",
+      "type": "IRoomControllerV2",
+      "uuidAction": "e9b3aa25-d800-26a2-bb68dde4cf73",
+      "room": "552cab82-c623-7956-5fcef6a33468",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 2,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controlHistory": true,
+        "hasHistory": 20,
+        "timerModes": [
+          {
+            "name": "Label 71",
+            "description": "Label 72",
+            "id": 1
+          },
+          {
+            "name": "Label 73",
+            "description": "Label 74",
+            "id": 0
+          },
+          {
+            "name": "Label 75",
+            "description": "Label 76",
+            "id": 2
+          }
+        ],
+        "format": "%.1f°",
+        "connectedInputs": 8192,
+        "possibleCapabilities": 1,
+        "singleComfortTemperature": false,
+        "linkedAcControls": []
+      },
+      "states": {
+        "jLocked": "34f2d2eb-7c87-8bbe-91c30d557803",
+        "tempActual": "c0f9fc67-b1ba-b806-5c26aaadc7c2",
+        "tempTarget": "c8f22b6a-b803-13f6-652a82c8ac7b",
+        "comfortTemperature": "7fd06ed7-3cf2-dd19-5e5ab9cb8965",
+        "comfortTemperatureCool": "2aec4394-1c62-ba3d-d125d5d724df",
+        "comfortTolerance": "f59105f0-edef-09be-424a4cae48e5",
+        "absentMinOffset": "cfc73981-1d6b-45b1-e4f93fc9a1d8",
+        "absentMaxOffset": "dba72c9c-ae84-29ed-f84c527a6203",
+        "frostProtectTemperature": "258039fd-d2a0-848e-7f67e7f9d4dc",
+        "heatProtectTemperature": "7dd894cc-d2c8-f310-00bda31309a0",
+        "shadingCoolTemp": "42adcb52-4b6c-043d-8fb7b03f0f37",
+        "shadingHeatTemp": "d34f1cf3-4686-2fbc-75c328088fb1",
+        "co2": "10431984-30f2-486f-73b86a42a3a6",
+        "humidityActual": "8a3ad5db-3101-16ea-79ae492b017e",
+        "actualOutdoorTemp": "7555c094-6224-7489-f989ad48b9ec",
+        "currentMode": "146cca8e-42f6-6606-7ae5c33166ad",
+        "shadingOut": "7b9f2dcd-cf12-c698-6e075d9178d9",
+        "activeMode": "03c97e04-ba08-3713-6c4c4f445a2d",
+        "comfortTemperatureOffset": "402f29d4-f973-b95e-16a2de30cd93",
+        "overrideEntries": "d69f54c7-f0e1-5589-67ed83621b23",
+        "prepareState": "85befec8-e9a7-c3df-91ecd43ac01f",
+        "useOutdoor": "25e5929f-2f4c-180e-7eced6f5cb33",
+        "operatingMode": "91bb7a3e-e70d-cc78-dc2a9829187e",
+        "overrideReason": "3779c19a-275e-15f6-660fdaa54c64",
+        "excessEnergyTempOffset": "b456ff23-beac-3727-e13e32a1eca1",
+        "averageOutdoorTemp": "c77b21e7-6fd8-f09e-efcb88eebbf2",
+        "temperatureBoundaryInfo": "81ec21f7-6922-eb01-a0659db7f742",
+        "capabilities": "2e328a72-f687-1dcd-241c8b2a01df",
+        "openWindow": "1b215a74-a74a-1fc7-a4877432d3dc"
+      },
+      "subControls": {
+        "65efc32e-9823-cbe8-95898495c84a": {
+          "name": "Touch Device",
+          "type": "IRCV2Daytimer",
+          "uuidAction": "65efc32e-9823-cbe8-95898495c84a",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "analog": true,
+            "format": "%.1f°"
+          },
+          "states": {
+            "entriesAndDefaultValue": "65efc32e-9823-cbe8-95898495c84a",
+            "mode": "8c623c1d-6a1c-0e09-4cf838681670",
+            "modeList": "e74c484b-23b8-3055-35a90d41725a",
+            "value": "b6a16253-7621-0140-b7b435d02158",
+            "needsActivation": "6fdd416b-3744-c5ed-fe658d47076f"
+          }
+        }
+      }
+    },
+    "13aa18ad-4592-5a16-091316a754c1": {
+      "name": "Smart Presence Sensor",
+      "type": "PresenceDetector",
+      "uuidAction": "13aa18ad-4592-5a16-091316a754c1",
+      "room": "552cab82-c623-7956-5fcef6a33468",
+      "cat": "727459a5-d982-8959-0ca2d579d63a",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "491c51dc-d938-71aa-57f77918a675",
+        "active": "1c454ae8-4fc9-d7a1-72bd4cfab1c7",
+        "locked": "2e4fb8e9-07ea-2270-aad571ecde40",
+        "events": "6088754a-442f-7e1f-151f7c56873a",
+        "time": "13ef2126-eca7-7983-f88c3d7ab4ba",
+        "activeSince": "de4b9f80-1d61-9265-29b0c2bcc119",
+        "infoText": "c90a716c-9df1-44f0-f69196bb741e"
+      },
+      "subControls": {
+        "059dd3ab-64f0-b8b5-fc1312bb79c1": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "059dd3ab-64f0-b8b5-fc1312bb79c1",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 50
+          },
+          "states": {
+            "entries": "09455bd1-8005-6dd6-7a542073a3c8"
+          }
+        }
+      }
+    },
+    "b1378fdb-fe14-f85a-201183f3bcf2": {
+      "name": "Pro Alarm Panel",
+      "type": "Alarm",
+      "uuidAction": "b1378fdb-fe14-f85a-201183f3bcf2",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "766ca969-fe3c-ad22-826333defdc2",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "alert": true,
+        "presenceConnected": true
+      },
+      "states": {
+        "jLocked": "c0b11490-cc32-3514-c49dbe32db65",
+        "armed": "63ff7364-35ef-d4d1-45530066f260",
+        "nextLevel": "26453661-e3be-1029-edeb240b86f6",
+        "nextLevelDelay": "46d2dc88-37f0-8a85-e796a1756068",
+        "nextLevelDelayTotal": "c1de78c6-2b71-bbb5-6946a354ce41",
+        "level": "3da51b16-62d1-43b8-e70a2433a2fb",
+        "startTime": "2e6fca5f-a880-8eb2-f6fdc2cfccc5",
+        "armedAt": "0c6aec45-3706-fa61-3b659550ca20",
+        "nextLevelAt": "88c594dc-54fa-b815-dc291e420517",
+        "armedDelay": "600c3427-c0ec-5e92-589e812e36cb",
+        "armedDelayTotal": "0e2b3b57-c7d3-8e59-ad21fe0d530f",
+        "sensors": "b1378fdb-fe14-f85a-201183f3bcf2",
+        "disabledMove": "dc7c3980-8a42-46a5-b8cb4666cc0e",
+        "events": "d7827f80-7f76-8326-465c8a6e40bf"
+      },
+      "subControls": {
+        "98c1b0d8-d481-427e-836dab1794ca": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "98c1b0d8-d481-427e-836dab1794ca",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 40
+          },
+          "states": {
+            "entries": "b1378fdb-fe14-f85a-201183f3bcf2"
+          }
+        }
+      }
+    },
+    "f2c770d4-977d-6e24-8ade8ab3e09f": {
+      "name": "Core Smoke Detector",
+      "type": "SmokeAlarm",
+      "uuidAction": "f2c770d4-977d-6e24-8ade8ab3e09f",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "766ca969-fe3c-ad22-826333defdc2",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "hasAcousticAlarm": true,
+        "availableAlarms": 7
+      },
+      "states": {
+        "jLocked": "9b0f15a9-46df-b2e2-0c36f64f6765",
+        "sensors": "f2c770d4-977d-6e24-8ade8ab3e09f",
+        "testAlarm": "212af0d3-38eb-b50f-e1e9fccbaf5d",
+        "acousticAlarm": "ecf92eee-4d32-0fba-93c481efa040",
+        "level": "03456ce8-393a-4512-c6fdfbc0e398",
+        "nextLevel": "c663a0cf-78c1-c0ff-14ef3032c095",
+        "nextLevelDelay": "88014792-5843-6f14-a0a6e1c88c1c",
+        "nextLevelDelayTotal": "c7c9bc10-a4c2-2cff-5abdeb89da1b",
+        "timeServiceMode": "a64c4149-c256-045a-b26f930bb89c",
+        "alarmCause": "7bae22fd-c055-7088-52058f5180b9",
+        "startTime": "133e8ea5-2755-fb5b-9fec2903888d",
+        "areAlarmSignalsOff": "53c411a5-c88e-5a13-af027080d458"
+      },
+      "subControls": {
+        "d6f420ea-a5b5-a6db-86f4d49da92e": {
+          "name": "Pure Device",
+          "type": "Tracker",
+          "uuidAction": "d6f420ea-a5b5-a6db-86f4d49da92e",
+          "defaultRating": 0,
+          "isFavorite": false,
+          "isSecured": false,
+          "restrictions": 0,
+          "details": {
+            "maxEntries": 40
+          },
+          "states": {
+            "entries": "f2c770d4-977d-6e24-8ade8ab3e09f"
+          }
+        }
+      }
+    },
+    "12244d17-2a4d-bf64-23bed3b99ad7": {
+      "name": "Edge Device",
+      "type": "CentralAudioZone",
+      "uuidAction": "12244d17-2a4d-bf64-23bed3b99ad7",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "2c7ed910-e0a7-f572-9b45fc24045c",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "controls": [
+          {
+            "id": 0,
+            "uuid": "5b741646-a188-ea69-41a5ce8cd9f9"
+          }
+        ],
+        "parameterConnections": 0
+      },
+      "states": {
+        "jLocked": "3f77da31-5563-969c-bb1a2c6e0fc6",
+        "events": "ef0e44b6-b5fe-d519-d10c7113d659"
+      }
+    },
+    "9db0c49b-dc5b-024c-64f067ebfec6": {
+      "name": "Category 46",
+      "type": "Switch",
+      "uuidAction": "9db0c49b-dc5b-024c-64f067ebfec6",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "hasControlNotes": true,
+      "defaultIcon": "IconsFilled/shield-frost.svg",
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "6fa76629-5ccf-3878-2e5ad2ab3a26",
+        "active": "c1719dbb-51ba-95f2-67d8a1e5b0f1",
+        "lockedOn": "76aa2a9f-a28e-431a-e58719a40460"
+      }
+    },
+    "db21de31-ee00-665d-26c761269884": {
+      "name": "Category 45",
+      "type": "Switch",
+      "uuidAction": "db21de31-ee00-665d-26c761269884",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "5c8f861c-b5ff-2a3f-19d91d9f7834",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "hasControlNotes": true,
+      "defaultIcon": "IconsFilled/shield-storm.svg",
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "fa009c04-a3f8-63f6-ab02e438b97b",
+        "active": "782bc57f-f4b8-bf98-35911acdc7cb",
+        "lockedOn": "ed6e73c9-e3d6-8f33-6fcd66a3cc6f"
+      }
+    },
+    "e2b04180-fa2e-fac0-a200cae5da64": {
+      "name": "Category 43",
+      "type": "Switch",
+      "uuidAction": "e2b04180-fa2e-fac0-a200cae5da64",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "47a99a6f-137a-853c-3006d1ee04c6",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": "IconsFilled/away-mode.svg",
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "954b1e13-1331-18f3-f82ece437eda",
+        "active": "a59cadda-ce32-f486-3623cb418cb5",
+        "lockedOn": "45f7b229-4d56-0e15-dccbdd092c4c"
+      }
+    },
+    "956c36b6-e018-7c23-12d78bcfd755": {
+      "name": "Mesh Switch 8",
+      "type": "Switch",
+      "uuidAction": "956c36b6-e018-7c23-12d78bcfd755",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "47a99a6f-137a-853c-3006d1ee04c6",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": "IconsFilled/deep-sleep-mode.svg",
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "9a4a95e3-5b3c-a242-b5268dfbd1b1",
+        "active": "09901ac6-6345-d083-a6449ce4433e",
+        "lockedOn": "97f325bd-6ed5-0774-63ea75fb644f"
+      }
+    },
+    "f8bdc49a-d6cc-67a8-a0d150994e7a": {
+      "name": "Duo Device",
+      "type": "PulseAt",
+      "uuidAction": "f8bdc49a-d6cc-67a8-a0d150994e7a",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "47a99a6f-137a-853c-3006d1ee04c6",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "pulseDurationLocked": false
+      },
+      "states": {
+        "jLocked": "70551681-7ccf-8875-7aeebac1eff0",
+        "isActive": "c60cb804-0460-1c72-6ef63519f260",
+        "pulseDuration": "008d2714-ffad-d370-b5aaf645dc1e",
+        "startTime": "67ff0797-894a-6528-b4a894ce8eee",
+        "oneTimePulseDate": "e42455d0-2292-754d-aa6e78102885",
+        "type": "4d06180f-3a23-8207-60d931348d6e"
+      }
+    },
+    "9b0fbcc8-933d-e4d9-4fc03aa873e5": {
+      "name": "Category 41",
+      "type": "Switch",
+      "uuidAction": "9b0fbcc8-933d-e4d9-4fc03aa873e5",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "47a99a6f-137a-853c-3006d1ee04c6",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "5519e28f-6b2c-4bda-36e20d72c69c",
+        "active": "9f46a55d-2eac-86c8-75cbf0457d86",
+        "lockedOn": "9662c50c-b556-db26-cbd72b2a8372"
+      }
+    },
+    "2c81b791-8b77-56a7-259ee17c147e": {
+      "name": "Quad Switch 9",
+      "type": "Switch",
+      "uuidAction": "2c81b791-8b77-56a7-259ee17c147e",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "47a99a6f-137a-853c-3006d1ee04c6",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": "IconsFilled/night-mode.svg",
+      "restrictions": 0,
+      "details": {
+        "jLockable": true
+      },
+      "states": {
+        "jLocked": "e6b9d2a3-2e4e-7088-0b85bf4da5ba",
+        "active": "7b4d3bd9-ca64-11e6-a6461b40cc68",
+        "lockedOn": "a412a6b1-931f-4130-59942852e114"
+      }
+    },
+    "d82d62d6-b47a-7c94-ae28da010b2c": {
+      "name": "Mini Analog Sensor 9",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "d82d62d6-b47a-7c94-ae28da010b2c",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "0984b11e-26bf-b51e-2f375cbeeea0",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.1fW"
+      },
+      "states": {
+        "value": "d82d62d6-b47a-7c94-ae28da010b2c",
+        "error": "a25fe969-fe90-16a8-9e954b6ef357"
+      }
+    },
+    "b191d28c-2600-2d0c-96053d4a4947": {
+      "name": "Tree Device",
+      "type": "EFM",
+      "uuidAction": "b191d28c-2600-2d0c-96053d4a4947",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "0984b11e-26bf-b51e-2f375cbeeea0",
+      "defaultRating": 0,
+      "isFavorite": true,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "actualFormat": "%.3fkW",
+        "totalFormat": "%.1fkWh",
+        "storageFormat": "%.0f%%",
+        "nodes": [
+          {
+            "uuid": "bc15afd0-b2a9-251f-74940ab8d19a",
+            "nodeType": "Grid",
+            "title": "Label 122",
+            "icon": "",
+            "actualEfmState": "4b38d1e6-f711-91f2-b8aecb10b708",
+            "ctrlUuid": "aff66c40-5f84-852d-88cdd840a2ac"
+          }
+        ]
+      },
+      "states": {
+        "jLocked": "93fb655d-53d1-b110-91e315ebdb12",
+        "Ppwr": "6c65caa2-2c53-6cda-dff4eec8c1be",
+        "Gpwr": "f7ed3114-0d6b-9c3c-f1429a68ec34",
+        "Spwr": "7ce9a70f-075c-d404-4405aba9f376",
+        "Pre": "93f15942-1ad0-4bde-e6ce5fe00edd",
+        "Pri": "490f2f88-3277-c1af-ba96a063301c",
+        "CO2": "cd53a362-02d0-a177-d2fa388353e3",
+        "selfConsumption": "0638be0e-e981-ce13-4f2203f61a4d",
+        "actual0": "4b38d1e6-f711-91f2-b8aecb10b708"
+      },
+      "statisticV2": {
+        "groups": [
+          {
+            "id": "3",
+            "mode": 10,
+            "dataPoints": []
+          },
+          {
+            "id": "1",
+            "mode": 11,
+            "accumulated": true,
+            "dataPoints": [
+              {
+                "title": "Label 123",
+                "format": "%.1fkWh",
+                "output": "totalSelfConsumption"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "mode": 11,
+            "accumulated": true,
+            "dataPoints": [
+              {
+                "title": "Label 124",
+                "format": "%.2f€",
+                "output": "OYt"
+              }
+            ]
+          }
+        ]
+      },
+      "subControls": {}
+    },
+    "aff66c40-5f84-852d-88cdd840a2ac": {
+      "name": "Label 122",
+      "type": "Meter",
+      "uuidAction": "aff66c40-5f84-852d-88cdd840a2ac",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "0984b11e-26bf-b51e-2f375cbeeea0",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "type": "unidirectional",
+        "displayType": 0,
+        "actualFormat": "%.3fkW",
+        "totalFormat": "%.1fkWh",
+        "powerName": "Leistung"
+      },
+      "states": {
+        "jLocked": "929d264c-b223-c19e-a22b21779f1e",
+        "actual": "749a28b5-0386-3326-7b831f5d9844",
+        "total": "f637a106-a771-a070-dacb2e63be1a",
+        "totalDay": "dcd9c95e-d4d3-157a-56465c548068",
+        "totalWeek": "cac26d0e-4403-12e3-eef2014681e0",
+        "totalMonth": "5e479257-7bfe-0e91-2bc21e0837e0",
+        "totalYear": "dd49ab36-10cb-405f-c4633f18814b"
+      },
+      "statisticV2": {
+        "groups": [
+          {
+            "id": "1",
+            "mode": 10,
+            "dataPoints": [
+              {
+                "title": "Label 125",
+                "format": "%.3fkW",
+                "output": "actual"
+              }
+            ]
+          },
+          {
+            "id": "2",
+            "mode": 11,
+            "accumulated": true,
+            "dataPoints": [
+              {
+                "title": "Label 123",
+                "format": "%.1fkWh",
+                "output": "total"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "42b86b58-013a-cbb9-6647d891c488": {
+      "name": "Air Device",
+      "type": "WindowMonitor",
+      "uuidAction": "42b86b58-013a-cbb9-6647d891c488",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "a6ee0745-ed9e-5959-edf183698bad",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "windows": [
+          {
+            "name": "Label 127",
+            "installPlace": "Label 128",
+            "uuid": "0dc9b3ef-7b33-273f-ca1f4984ebc5",
+            "room": "2c5e8de7-a640-0974-4e3bf6ca7177"
+          }
+        ]
+      },
+      "states": {
+        "numOpen": "5bc87db7-3b49-6201-621940f8cc66",
+        "numClosed": "f242231a-8cc8-2166-1d79814e001b",
+        "numTilted": "1a53f258-71d0-3098-6c23eec2c385",
+        "numOffline": "c7149e0f-f00a-c751-83791a8b5f0b",
+        "numLocked": "d4bc0050-6fb8-7ae7-e1a60dad7c27",
+        "numUnlocked": "6fd95c8a-612a-3caf-89616e6c34ff",
+        "windowStates": "825164dd-3547-c9e1-551843b866e5"
+      }
+    },
+    "005b0b13-88d2-a188-e33fc9330608": {
+      "name": "Nano Analog Sensor 10",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "005b0b13-88d2-a188-e33fc9330608",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "hasControlNotes": true,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f"
+      },
+      "states": {
+        "value": "005b0b13-88d2-a188-e33fc9330608"
+      }
+    },
+    "a93fbb93-1b69-85b1-957db932a7f5": {
+      "name": "Link Analog Sensor 11",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "a93fbb93-1b69-85b1-957db932a7f5",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "hasControlNotes": true,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f"
+      },
+      "states": {
+        "value": "a93fbb93-1b69-85b1-957db932a7f5",
+        "error": "50b49848-bc08-b473-f541f351ac5c"
+      }
+    },
+    "759bbe06-7f9b-ca7c-202f6f1101d4": {
+      "name": "Relay Analog Sensor 12",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "759bbe06-7f9b-ca7c-202f6f1101d4",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f"
+      },
+      "states": {
+        "value": "759bbe06-7f9b-ca7c-202f6f1101d4",
+        "error": "4346fb3c-38a0-892e-0224d878fe6c"
+      }
+    },
+    "bb388283-3a71-ab59-3df1d67fd32f": {
+      "name": "Touch Analog Sensor 13",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "bb388283-3a71-ab59-3df1d67fd32f",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "bb388283-3a71-ab59-3df1d67fd32f",
+        "error": "e5c70ead-7bc9-8cda-90cdb2e0e0a6"
+      }
+    },
+    "c7cc1b57-e455-f92e-3eba6e84dfa2": {
+      "name": "Smart Analog Sensor 14",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "c7cc1b57-e455-f92e-3eba6e84dfa2",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "c7cc1b57-e455-f92e-3eba6e84dfa2",
+        "error": "57bc573a-8c8b-9370-4dfc5a7c1a02"
+      }
+    },
+    "01e7a451-2175-691c-c26d618b21af": {
+      "name": "Pure Analog Sensor 15",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "01e7a451-2175-691c-c26d618b21af",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "01e7a451-2175-691c-c26d618b21af",
+        "error": "f3053d6f-0bab-0315-b45519092898"
+      }
+    },
+    "99c7615c-818e-ce79-f7dc150ca604": {
+      "name": "Aqua Analog Sensor 16",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "99c7615c-818e-ce79-f7dc150ca604",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "99c7615c-818e-ce79-f7dc150ca604",
+        "error": "e5b19ea3-ad0f-8cb6-e4d189ebccce"
+      }
+    },
+    "93d0a588-e9e0-9313-774e691e5211": {
+      "name": "Modbus Analog Sensor 17",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "93d0a588-e9e0-9313-774e691e5211",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "93d0a588-e9e0-9313-774e691e5211",
+        "error": "eb755418-25d1-49f7-15d13a460bb1"
+      }
+    },
+    "e17bf91f-c04a-d4fd-8922669163a9": {
+      "name": "KNX Analog Sensor 18",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "e17bf91f-c04a-d4fd-8922669163a9",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "55579292-68f8-0409-cb8f88a54e41",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "e17bf91f-c04a-d4fd-8922669163a9",
+        "error": "03070f2d-035c-ee25-a6f6938d5178"
+      }
+    },
+    "5970bb8b-bbdf-e36b-a9b64af45c85": {
+      "name": "RGBW Analog Sensor 19",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "5970bb8b-bbdf-e36b-a9b64af45c85",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "5970bb8b-bbdf-e36b-a9b64af45c85"
+      }
+    },
+    "5dea7bfa-ec8f-970b-ce4cae391be5": {
+      "name": "Dali Analog Sensor 20",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "5dea7bfa-ec8f-970b-ce4cae391be5",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "5dea7bfa-ec8f-970b-ce4cae391be5"
+      }
+    },
+    "63800cdb-d62e-a1e2-7a35d85cfa61": {
+      "name": "Pulse Device",
+      "type": "SystemScheme",
+      "uuidAction": "63800cdb-d62e-a1e2-7a35d85cfa61",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "imagePath": "20507bff-003a-9f1f-ffffd0b61f059ee4.png",
+        "imageVersion": 542145697,
+        "mainControl": "005b0b13-88d2-a188-e33fc9330608",
+        "schemeSize": {
+          "width": 2652,
+          "height": 942
+        },
+        "controlReferences": [
+          {
+            "uuidAction": "99179968-6fb0-7520-78a95be5ecdd",
+            "pos": {
+              "x": 128,
+              "y": 408
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "202a0bb3-b56a-5a62-d4ba54b3a0e1",
+            "pos": {
+              "x": 128,
+              "y": 448
+            },
+            "text": "Label 141",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "771a504b-fe62-5874-50812db431e1",
+            "pos": {
+              "x": 1344,
+              "y": 472
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "01e7a451-2175-691c-c26d618b21af",
+            "pos": {
+              "x": 1024,
+              "y": 376
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "bb388283-3a71-ab59-3df1d67fd32f",
+            "pos": {
+              "x": 968,
+              "y": 216
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "6ad37df1-fb84-41c8-0f610c3b3b29",
+            "pos": {
+              "x": 1768,
+              "y": 512
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "c7cc1b57-e455-f92e-3eba6e84dfa2",
+            "pos": {
+              "x": 968,
+              "y": 272
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "391afe36-fcdf-3d9d-3681ad8c838c",
+            "pos": {
+              "x": 1768,
+              "y": 480
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "a93fbb93-1b69-85b1-957db932a7f5",
+            "pos": {
+              "x": 696,
+              "y": 304
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "759bbe06-7f9b-ca7c-202f6f1101d4",
+            "pos": {
+              "x": 696,
+              "y": 272
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "6478b24e-00de-68aa-dd5cb3a1226f",
+            "pos": {
+              "x": 1320,
+              "y": 768
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "6fa9015f-4ecf-9dd0-d499528575e2",
+            "pos": {
+              "x": 1320,
+              "y": 800
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "ebbbe4b6-7ed4-b669-43558ad56687",
+            "pos": {
+              "x": 336,
+              "y": 408
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "005b0b13-88d2-a188-e33fc9330608",
+            "pos": {
+              "x": 696,
+              "y": 136
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "e5f24a85-7c2d-6d4b-90cecef90913",
+            "pos": {
+              "x": 1344,
+              "y": 408
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "93d0a588-e9e0-9313-774e691e5211",
+            "pos": {
+              "x": 1768,
+              "y": 408
+            },
+            "text": "",
+            "size": {
+              "width": 160,
+              "height": 28
+            },
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "5684e585-43a5-2abc-596d4bf71d57",
+            "pos": {
+              "x": 2368,
+              "y": 136
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "e17bf91f-c04a-d4fd-8922669163a9",
+            "pos": {
+              "x": 1344,
+              "y": 440
+            },
+            "text": "",
+            "actionsVisible": true
+          },
+          {
+            "uuidAction": "99c7615c-818e-ce79-f7dc150ca604",
+            "pos": {
+              "x": 336,
+              "y": 448
+            },
+            "text": "Label 142",
+            "actionsVisible": true
+          }
+        ],
+        "extraObjects": []
+      }
+    },
+    "31a14966-5cd2-a109-fc7d13b7abf7": {
+      "name": "Compact Device",
+      "type": "ClimateControllerUS",
+      "uuidAction": "31a14966-5cd2-a109-fc7d13b7abf7",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 1,
+      "isFavorite": false,
+      "isSecured": false,
+      "restrictions": 0,
+      "details": {
+        "jLockable": true,
+        "type": 0,
+        "ctype": 487,
+        "capabilities": 49,
+        "connectedInputs": 10,
+        "connectedParameters": 0,
+        "connectedOutputs": 1
+      },
+      "states": {
+        "jLocked": "551b3fee-f4a0-2070-f31619e5a867",
+        "mode": "34902201-7f11-7845-484625b7f11f",
+        "controls": "c0d023b4-2be5-c511-8b1f762c6aeb",
+        "currentStatus": "7081a0e0-1515-8897-5cf76c88db1f",
+        "serviceMode": "defdab21-11c2-fe13-64f7602af2c0",
+        "fanTimerUntil": "fb4e93c5-a773-cbdc-ba859d13174c",
+        "modeTimerUntil": "c8a594fc-958d-d0a2-620ad6af7dfe",
+        "emergencyTimerUntil": "84f52d21-fc42-0a3a-f5218a50a1ec",
+        "demandCool": "79d28c0b-2070-4dfb-8d83db5ada77",
+        "demandHeat": "268bb0ad-6b61-7ef5-283e6b067f5b",
+        "stage": "ca5eaa5c-af93-8de2-9e4f5939912f",
+        "minimumTempCooling": "6c4be670-79bb-9a48-b7e10d280425",
+        "maximumTempHeating": "d33e8efa-58c6-e777-3494bdda2537",
+        "actualOutdoorTemp": "141810c6-a612-afbc-2bdb0273ccc0",
+        "fan": "526021fa-ae74-3e75-2138786576db",
+        "emergencyOverride": "52509ca5-ada3-4aaf-cb1032613a9e",
+        "humidity": "bdbbe013-c900-81cd-d97c873381fc",
+        "threshold": "30ca6c0a-b9ac-dce5-c934bc79a7b1",
+        "excessEnergy": "bc34e16f-54c0-e954-f3f977d7e53b",
+        "outdoorTempInfo": "3d475cb6-7d40-dbfa-1efcf83de05a",
+        "nextMaintenance": "4d378c98-73a2-2773-32c9324a15c0",
+        "outdoorTempMode": "fcbe01b0-3f58-cebf-393405b6fc19"
+      }
+    },
+    "5684e585-43a5-2abc-596d4bf71d57": {
+      "name": "Extension Analog Sensor 21",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "5684e585-43a5-2abc-596d4bf71d57",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "5684e585-43a5-2abc-596d4bf71d57",
+        "error": "bd6bff1b-5ceb-1128-f57db67263f7"
+      }
+    },
+    "cf25a591-dd05-fb5d-373a538f9b9e": {
+      "name": "Dimmer Device",
+      "type": "TextState",
+      "uuidAction": "cf25a591-dd05-fb5d-373a538f9b9e",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "states": {
+        "textAndIcon": "cf25a591-dd05-fb5d-373a538f9b9e",
+        "iconAndColor": "c98e4a6e-38d5-4bc5-5e399f165c0b"
+      }
+    },
+    "c0f96a93-79db-233d-4d180a746da6": {
+      "name": "Flex Device 2",
+      "type": "TextState",
+      "uuidAction": "c0f96a93-79db-233d-4d180a746da6",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "states": {
+        "textAndIcon": "c0f96a93-79db-233d-4d180a746da6",
+        "iconAndColor": "32ec490f-49ac-e8d7-05cca2876062"
+      }
+    },
+    "8129d67d-a515-acb5-d837e744bf84": {
+      "name": "Pro Device 3",
+      "type": "TextState",
+      "uuidAction": "8129d67d-a515-acb5-d837e744bf84",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "states": {
+        "textAndIcon": "8129d67d-a515-acb5-d837e744bf84",
+        "iconAndColor": "30a07c74-13bb-b3be-cd60859c19e0"
+      }
+    },
+    "657f3a99-3eaa-c86a-459155cf0529": {
+      "name": "Core Analog Sensor 22",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "657f3a99-3eaa-c86a-459155cf0529",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.3f"
+      },
+      "states": {
+        "value": "657f3a99-3eaa-c86a-459155cf0529"
+      }
+    },
+    "52cf590b-3944-4d7f-556c4b397cec": {
+      "name": "Edge Slider",
+      "type": "Slider",
+      "uuidAction": "52cf590b-3944-4d7f-556c4b397cec",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "c39bbb5b-6807-a301-d0a5c949ee8e",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 0,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C",
+        "min": 30.0,
+        "max": 55.0,
+        "step": 0.5
+      },
+      "states": {
+        "value": "52cf590b-3944-4d7f-556c4b397cec",
+        "error": "f79872a2-5afc-fb9f-cfb97172e8c2"
+      }
+    },
+    "99179968-6fb0-7520-78a95be5ecdd": {
+      "name": "Mesh Analog Sensor 23",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "99179968-6fb0-7520-78a95be5ecdd",
+      "room": "a2dc8779-b27f-cdea-4620a461cfd3",
+      "cat": "31c3b10e-e0a9-8001-c1fe893350c9",
+      "defaultRating": 0,
+      "isFavorite": false,
+      "isSecured": false,
+      "defaultIcon": null,
+      "restrictions": 17,
+      "details": {
+        "jLockable": false,
+        "format": "%.1f°C"
+      },
+      "states": {
+        "value": "99179968-6fb0-7520-78a95be5ecdd",
+        "error": "2841b052-4226-affc-22bcaad4a29e"
+      }
+    }
+  },
+  "weatherServer": {
+    "states": {
+      "actual": "1f32b00e-00a9-5784-ffffd0b61f059ee4",
+      "forecast": "1f32b00e-00a9-5783-ffffd7afb0043391"
+    },
+    "format": {
+      "relativeHumidity": "%.0f%%",
+      "temperature": "%.1f°",
+      "windSpeed": "%.0fkm/h",
+      "precipitation": "%.1fmm",
+      "barometricPressure": "%.0fhPa"
+    },
+    "weatherTypeTexts": {
+      "1": "wolkenlos",
+      "2": "heiter",
+      "3": "wolkig",
+      "4": "stark bewölkt",
+      "5": "bedeckt",
+      "6": "Nebel",
+      "7": "Hochnebel",
+      "8": "nicht verwendet",
+      "9": "nicht verwendet",
+      "10": "leichter Regen",
+      "11": "Regen",
+      "12": "starker Regen",
+      "13": "Nieseln",
+      "14": "leichter gefrierender Regen",
+      "15": "starker gefrierender Regen",
+      "16": "leichter Regenschauer",
+      "17": "kräftiger Regenschauer",
+      "18": "Gewitter",
+      "19": "kräftiges Gewitter",
+      "20": "leichter Schneefall",
+      "21": "Schneefall",
+      "22": "starker Schneefall",
+      "23": "leichter Schneeschauer",
+      "24": "starker Schneeschauer",
+      "25": "leichter Schneeregen",
+      "26": "Schneeregen",
+      "27": "starker Schneeregen",
+      "28": "leichter Schneeregenschauer",
+      "29": "kräftiger Schneeregenschauer"
+    },
+    "weatherFieldTypes": {
+      "1": {
+        "id": 1,
+        "name": "Temperatur",
+        "analog": true,
+        "unit": "°C",
+        "format": "%.1f"
+      },
+      "2": {
+        "id": 2,
+        "name": "Taupunkt",
+        "analog": true,
+        "unit": "°C",
+        "format": "%.1f"
+      },
+      "3": {
+        "id": 3,
+        "name": "Relative Luftfeuchte",
+        "analog": true,
+        "format": "%.0f%%"
+      },
+      "4": {
+        "id": 4,
+        "name": "Windgeschwindigkeit",
+        "analog": true,
+        "unit": "km/h",
+        "format": "%.0f"
+      },
+      "5": {
+        "id": 5,
+        "name": "Windrichtung",
+        "analog": true
+      },
+      "6": {
+        "id": 6,
+        "name": "Böen",
+        "analog": true
+      },
+      "7": {
+        "id": 7,
+        "name": "Absolute Bestrahlungsstärke",
+        "analog": true
+      },
+      "8": {
+        "id": 8,
+        "name": "Relative Bestrahlungsstärke",
+        "analog": true
+      },
+      "9": {
+        "id": 9,
+        "name": "Niederschlag",
+        "analog": true,
+        "unit": "mm",
+        "format": "%.1f"
+      },
+      "10": {
+        "id": 10,
+        "name": "Wettertyp",
+        "analog": true
+      },
+      "11": {
+        "id": 11,
+        "name": "Luftdruck",
+        "analog": true,
+        "unit": "hPa",
+        "format": "%.0f"
+      },
+      "26": {
+        "id": 26,
+        "name": "Gefühlte Temperatur",
+        "analog": true,
+        "unit": "°C",
+        "format": "%.1f"
+      },
+      "27": {
+        "id": 27,
+        "name": "Solare Bestrahlungsstärke",
+        "analog": true
+      },
+      "28": {
+        "id": 28,
+        "name": "Niederschlagswahrscheinlichkeit",
+        "analog": true
+      },
+      "29": {
+        "id": 29,
+        "name": "Schneeanteil",
+        "analog": true
+      },
+      "30": {
+        "id": 30,
+        "name": "CAPE",
+        "analog": true
+      },
+      "31": {
+        "id": 31,
+        "name": "Niedrige Bewölkung",
+        "analog": true
+      },
+      "32": {
+        "id": 32,
+        "name": "Mittlere Bewölkung",
+        "analog": true
+      },
+      "33": {
+        "id": 33,
+        "name": "Hohe Bewölkung",
+        "analog": true
+      },
+      "34": {
+        "id": 34,
+        "name": "Sonnenschein",
+        "analog": false
+      },
+      "35": {
+        "id": 35,
+        "name": "Feinstaubbelastung",
+        "analog": true
+      },
+      "36": {
+        "id": 36,
+        "name": "Gefahrenwarnung",
+        "analog": false
+      }
+    }
+  },
+  "times": {
+    "266": {
+      "id": 266,
+      "name": "Tage seit 2009",
+      "analog": true
+    },
+    "267": {
+      "id": 267,
+      "name": "Jahr",
+      "analog": true
+    },
+    "268": {
+      "id": 268,
+      "name": "Monat",
+      "analog": true
+    },
+    "269": {
+      "id": 269,
+      "name": "Tag",
+      "analog": true
+    },
+    "270": {
+      "id": 270,
+      "name": "Wochentag",
+      "analog": true
+    },
+    "271": {
+      "id": 271,
+      "name": "Aktive Betriebszeit",
+      "analog": true
+    },
+    "272": {
+      "id": 272,
+      "name": "Minuten seit Mitternacht",
+      "analog": true
+    },
+    "273": {
+      "id": 273,
+      "name": "Stunde",
+      "analog": true
+    },
+    "274": {
+      "id": 274,
+      "name": "Minuten",
+      "analog": true
+    },
+    "275": {
+      "id": 275,
+      "name": "Sekunden",
+      "analog": true
+    },
+    "276": {
+      "id": 276,
+      "name": "Sekunden seit Boot",
+      "analog": true
+    },
+    "277": {
+      "id": 277,
+      "name": "Zeit des Sonnenaufgangs",
+      "analog": true
+    },
+    "278": {
+      "id": 278,
+      "name": "Zeit des Sonnenuntergangs",
+      "analog": true
+    },
+    "281": {
+      "id": 281,
+      "name": "Tageslicht",
+      "analog": false
+    },
+    "282": {
+      "id": 282,
+      "name": "Tageslicht 30Min",
+      "analog": false
+    },
+    "283": {
+      "id": 283,
+      "name": "Zeit der Morgendämmerung",
+      "analog": true
+    },
+    "284": {
+      "id": 284,
+      "name": "Zeit der Abenddämmerung",
+      "analog": true
+    },
+    "285": {
+      "id": 285,
+      "name": "Sonne Höhe",
+      "analog": true
+    },
+    "286": {
+      "id": 286,
+      "name": "Sonne Richtung",
+      "analog": true
+    },
+    "287": {
+      "id": 287,
+      "name": "Startimpuls",
+      "analog": false
+    },
+    "288": {
+      "id": 288,
+      "name": "Jahresimpuls",
+      "analog": false
+    },
+    "289": {
+      "id": 289,
+      "name": "Monatsimpuls",
+      "analog": false
+    },
+    "290": {
+      "id": 290,
+      "name": "Tagesimpuls",
+      "analog": false
+    },
+    "291": {
+      "id": 291,
+      "name": "Stundenimpuls",
+      "analog": false
+    },
+    "292": {
+      "id": 292,
+      "name": "Minutenimpuls",
+      "analog": false
+    },
+    "293": {
+      "id": 293,
+      "name": "Sekundenimpuls",
+      "analog": false
+    },
+    "294": {
+      "id": 294,
+      "name": "Impuls Sonnenaufgang",
+      "analog": false
+    },
+    "295": {
+      "id": 295,
+      "name": "Impuls Sonnenuntergang",
+      "analog": false
+    },
+    "298": {
+      "id": 298,
+      "name": "Impuls Morgendämmerung",
+      "analog": false
+    },
+    "299": {
+      "id": 299,
+      "name": "Impuls Abenddämmerung",
+      "analog": false
+    },
+    "233": {
+      "id": 233,
+      "name": "Unix Timestamp",
+      "analog": true
+    },
+    "238": {
+      "id": 238,
+      "name": "Nacht",
+      "analog": false
+    },
+    "261": {
+      "id": 261,
+      "name": "Woche",
+      "analog": true
+    }
+  },
+  "caller": {
+    "14f4ee56-cf11-6bea-891abf44aa0d": {
+      "id": "14f4ee56-cf11-6bea-891abf44aa0d",
+      "name": "Feuerwehr",
+      "phoneNumber": "01792100931"
+    },
+    "4cfeba1b-0473-3b71-382b37ceb082": {
+      "id": "4cfeba1b-0473-3b71-382b37ceb082",
+      "name": "Polizei",
+      "phoneNumber": "01792100931"
+    },
+    "4b7632ec-6001-46ea-468822003430": {
+      "id": "4b7632ec-6001-46ea-468822003430",
+      "name": "Rettungsdienst",
+      "phoneNumber": ""
+    },
+    "cea7a490-e58d-4d35-c7d75c6af606": {
+      "id": "cea7a490-e58d-4d35-c7d75c6af606",
+      "name": "Notfall-Kontakt 1",
+      "phoneNumber": "01792100931"
+    }
+  },
+  "mailer": {
+    "1f32b00e-0099-560c-ffffd0b61f059ee4": {
+      "id": "1f32b00e-0099-560c-ffffd0b61f059ee4",
+      "name": "Loxone Cloud Mailer",
+      "eMailAddress": "stephan.diederich+loxone@gmail.com"
+    }
+  },
+  "mediaServer": {
+    "1f33cb24-03c3-abef-ffffd0b61f059ee4": {
+      "name": "Mini Server",
+      "type": 2,
+      "subType": 1,
+      "host": "MSE951:7091",
+      "mac": "504F94D10E1F",
+      "uuidAction": "1f33cb24-03c3-abef-ffffd0b61f059ee4",
+      "useTriggerCard": true,
+      "internal": true,
+      "states": {
+        "audioEvents": "1f33cb24-03c3-abe8-ffff58c74b7832f4",
+        "apiVersion": "1f33cb24-03c3-abe9-ffff58c74b7832f4",
+        "serverState": "1f33cb24-03c3-abea-ffff58c74b7832f4",
+        "grouping": "1f33cb24-03c3-abeb-ffff58c74b7832f4",
+        "connState": "1f33cb24-03c3-abec-ffff58c74b7832f4",
+        "certificateValid": "1f33cb24-03c3-abed-ffff58c74b7832f4",
+        "host": "1f33cb24-03c3-abee-ffff58c74b7832f4"
+      }
+    }
+  },
+  "autopilot": {
+    "972f0cc2-7986-22a8-cd650b0ea5db": {
+      "name": "Automatik-Regeln",
+      "uuidAction": "972f0cc2-7986-22a8-cd650b0ea5db",
+      "states": {
+        "changed": "0f04aa18-3f0d-0ba9-45786cd32533",
+        "history": "d7f3f337-9441-2a53-e5f5e0957d72"
+      }
+    }
+  },
+  "messageCenter": {
+    "2bb3cd72-cec2-6f7a-2f40f15139b6": {
+      "name": "Systemstatus",
+      "uuidAction": "2bb3cd72-cec2-6f7a-2f40f15139b6",
+      "states": {
+        "changed": "0d5ed66d-222c-7a95-8afd681855de"
+      }
+    }
+  },
+  "softwareVersion": "16.1.11.6"
+}

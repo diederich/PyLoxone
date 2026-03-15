@@ -1,4 +1,4 @@
-"""Fixtures for Loxone integration tests."""
+"""Fixtures for Loxone HA unit tests (mocked environment)."""
 
 import json
 from pathlib import Path
@@ -6,6 +6,12 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+
+
+@pytest.fixture(autouse=True)
+def auto_enable_custom_integrations(enable_custom_integrations):
+    """Enable custom integrations in all HA unit tests."""
+    yield
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 

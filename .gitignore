@@ -50,3 +50,6 @@ tmp*
 
 # Local deploy config (machine-specific)
 .deploy.env
+
+# E2E test snapshots (machine-specific, not committed)
+tests_e2e_miniserver/snapshots/

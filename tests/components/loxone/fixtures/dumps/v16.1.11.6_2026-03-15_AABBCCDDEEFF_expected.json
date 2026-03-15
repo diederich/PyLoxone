@@ -1,0 +1,25 @@
+{
+  "total_controls": 102,
+  "by_platform": {
+    "alarm_control_panel": 1,
+    "binary_sensor": 15,
+    "climate": 13,
+    "cover": 16,
+    "light": 10,
+    "media_player": 1,
+    "number": 1,
+    "sensor": 24,
+    "switch": 8
+  },
+  "unhandled_types": [
+    "CentralAudioZone",
+    "CentralJalousie",
+    "ClimateControllerUS",
+    "EFM",
+    "PulseAt",
+    "SystemScheme",
+    "TextState",
+    "WindowMonitor"
+  ],
+  "unhandled_count": 13
+}

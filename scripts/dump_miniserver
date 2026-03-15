@@ -1,0 +1,451 @@
+#!/usr/bin/env python3
+"""Fetch LoxAPP3.json from a Loxone Miniserver and save it as a test fixture.
+
+Saves to tests/components/loxone/fixtures/dumps/ with naming convention:
+  v<version>_<date>_<serial>.json
+
+The dump is anonymized by default (names, UUIDs, locations replaced with
+fun fantasy-themed placeholders).  Pass --raw to skip anonymization.
+
+Also auto-generates a companion _expected.json with entity counts per platform.
+Review the expected file before committing.
+
+Configuration via environment variables (or .env in repo root):
+  LOXONE_HOST      (required)
+  LOXONE_PORT      (default: 8080)
+  LOXONE_USERNAME  (required)
+  LOXONE_PASSWORD  (required)
+"""
+
+import hashlib
+import json
+import os
+import re
+import sys
+from collections import Counter
+from datetime import date
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+DUMP_DIR = REPO_ROOT / "tests" / "components" / "loxone" / "fixtures" / "dumps"
+
+sys.path.insert(0, str(REPO_ROOT / "tests" / "components" / "loxone"))
+from known_types import KNOWN_CONTROL_TYPES, KNOWN_SUBCONTROL_TYPES
+
+# ---------------------------------------------------------------------------
+# Anonymization — Loxone Campus themed
+# ---------------------------------------------------------------------------
+
+# Named after the real Loxone Campus seminar rooms in Kollerschlag
+ROOM_NAMES = [
+    "Tokyo", "London", "Madrid", "Philadelphia", "Shanghai",
+    "Milan", "Marrakech", "Oslo", "Vancouver", "Auditorium",
+    "Seminar Suite", "Break Area", "Experience Zone", "Restaurant",
+    "Rooftop Terrace", "Lobby", "Wellness", "Fitness Studio",
+    "Park Pavilion", "Innovation Lab", "Showroom", "Reception",
+    "Board Room", "Founders' Office",
+]
+
+CAT_NAMES = [
+    "Smart Lighting", "Auto Shading", "Climate Control", "Security & Access",
+    "Multiroom Audio", "Energy Management", "Intercom & Entry",
+    "Building Monitoring", "Automation Logic", "Comfort & Wellness",
+    "Presence Simulation", "Storm Protection", "Alarm Systems",
+    "Pool & Garden", "Scheduling", "Visualisation",
+]
+
+CONTROL_ADJECTIVES = [
+    "Tree", "Air", "Nano", "Link", "Relay",
+    "Touch", "Smart", "Pure", "Aqua", "Modbus",
+    "KNX", "RGBW", "Dali", "Pulse", "Compact",
+    "Extension", "Dimmer", "Flex", "Pro", "Core",
+    "Edge", "Mesh", "Duo", "Quad", "Mini",
+]
+
+CONTROL_NOUNS = {
+    "Switch": "Switch", "TimedSwitch": "Timer Switch",
+    "Pushbutton": "Push Button",
+    "Jalousie": "Blind", "Gate": "Gate", "Window": "Window Contact",
+    "Dimmer": "Dimmer", "EIBDimmer": "KNX Dimmer",
+    "LightControllerV2": "Light Controller",
+    "InfoOnlyAnalog": "Analog Sensor", "InfoOnlyDigital": "Digital Sensor",
+    "PresenceDetector": "Presence Sensor", "SmokeAlarm": "Smoke Detector",
+    "IRoomControllerV2": "Room Controller", "IRoomController": "Room Controller",
+    "AcControl": "AC Unit", "Ventilation": "Ventilation Module",
+    "Alarm": "Alarm Panel", "AudioZoneV2": "Audio Zone",
+    "Slider": "Slider", "Meter": "Energy Meter",
+    "TextInput": "Text Input", "Intercom": "Intercom Unit",
+}
+DEFAULT_NOUN = "Device"
+
+# Keys whose string values are user-chosen names/text that should be replaced
+_NAME_KEYS = {"name", "description", "installPlace", "title", "text"}
+
+
+class Anonymizer:
+    """Replaces identifying info with Loxone Campus themed placeholders.
+
+    Guarantees:
+    - Same original UUID  -> same anonymized UUID everywhere
+    - Same original name  -> same anonymized name everywhere
+    - All UUIDs replaced, even deep inside details/subControls/nodes
+    """
+
+    def __init__(self):
+        self._uuid_map: dict[str, str] = {}
+        self._name_map: dict[str, str] = {}
+        self._name_counters: dict[str, int] = {}
+        self._adj_idx = 0
+
+    # -- UUID handling (deterministic, consistent) -------------------------
+
+    def _anon_uuid(self, original: str) -> str:
+        if not original:
+            return original
+        if original not in self._uuid_map:
+            h = hashlib.md5(original.encode()).hexdigest()
+            self._uuid_map[original] = (
+                f"{h[:8]}-{h[8:12]}-{h[12:16]}-{h[16:28]}"
+            )
+        return self._uuid_map[original]
+
+    @staticmethod
+    def _looks_like_uuid(s: str) -> bool:
+        return bool(re.match(
+            r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-"
+            r"[0-9a-fA-F]{4,}[0-9a-fA-F]*$",
+            s,
+        ))
+
+    # -- Name handling (consistent: same input -> same output) -------------
+
+    def _next_adj(self) -> str:
+        adj = CONTROL_ADJECTIVES[self._adj_idx % len(CONTROL_ADJECTIVES)]
+        self._adj_idx += 1
+        return adj
+
+    def _anon_control_name(self, original: str, control_type: str) -> str:
+        if original in self._name_map:
+            return self._name_map[original]
+        noun = CONTROL_NOUNS.get(control_type, DEFAULT_NOUN)
+        adj = self._next_adj()
+        count = self._name_counters.get(control_type, 0) + 1
+        self._name_counters[control_type] = count
+        result = f"{adj} {noun}" if count == 1 else f"{adj} {noun} {count}"
+        self._name_map[original] = result
+        return result
+
+    def _anon_label(self, original: str) -> str:
+        """Replace a free-text label consistently."""
+        if not original or not original.strip():
+            return original
+        if original in self._name_map:
+            return self._name_map[original]
+        idx = len(self._name_map) + 1
+        result = f"Label {idx}"
+        self._name_map[original] = result
+        return result
+
+    # -- Deep walk: replaces UUIDs everywhere in the tree ------------------
+
+    def _deep_walk(self, obj, *, replace_keys: bool = True):
+        """Recursively walk any JSON value, replacing UUIDs everywhere."""
+        if isinstance(obj, dict):
+            new = {}
+            for k, v in obj.items():
+                new_k = self._anon_uuid(k) if replace_keys and self._looks_like_uuid(k) else k
+                new[new_k] = self._deep_walk(v, replace_keys=replace_keys)
+            return new
+        if isinstance(obj, list):
+            return [self._deep_walk(item, replace_keys=replace_keys) for item in obj]
+        if isinstance(obj, str) and self._looks_like_uuid(obj):
+            return self._anon_uuid(obj)
+        return obj
+
+    # -- Top-level orchestration -------------------------------------------
+
+    def anonymize(self, structure: dict) -> dict:
+        out = json.loads(json.dumps(structure))
+
+        self._anon_ms_info(out.get("msInfo", {}))
+
+        out["rooms"] = self._anon_named_dict(
+            out.get("rooms", {}), ROOM_NAMES, "Room"
+        )
+        out["cats"] = self._anon_named_dict(
+            out.get("cats", {}), CAT_NAMES, "Category"
+        )
+        out["controls"] = self._anon_controls(out.get("controls", {}))
+
+        for section in ("globalStates", "autopilot", "messageCenter",
+                        "times", "caller", "operatingModes"):
+            if section in out:
+                out[section] = self._deep_walk(out[section])
+
+        return out
+
+    def _anon_ms_info(self, ms: dict):
+        ms["serialNr"] = "AABBCCDDEEFF"
+        ms["msName"] = "Loxone Campus"
+        ms["projectName"] = "Kollerschlag"
+        ms["location"] = "Kollerschlag"
+        ms["hostname"] = "CAMPUS"
+        if "localUrl" in ms:
+            ms["localUrl"] = "campus.local"
+        if "remoteUrl" in ms:
+            ms["remoteUrl"] = "dns.loxonecloud.com/AABBCCDDEEFF"
+        if "latitude" in ms:
+            ms["latitude"] = 48.6082
+        if "longitude" in ms:
+            ms["longitude"] = 13.8384
+        if "currentUser" in ms:
+            user = ms["currentUser"]
+            user["name"] = "thomas.moser"
+            if "uuid" in user:
+                user["uuid"] = self._anon_uuid(user["uuid"])
+        if "deviceMonitor" in ms:
+            ms["deviceMonitor"] = self._anon_uuid(ms["deviceMonitor"])
+
+    def _anon_named_dict(
+        self, d: dict, name_pool: list[str], fallback_prefix: str,
+    ) -> dict:
+        new_d = {}
+        for idx, (old_key, val) in enumerate(d.items()):
+            new_key = self._anon_uuid(old_key)
+            val = dict(val)
+            new_name = name_pool[idx] if idx < len(name_pool) else f"{fallback_prefix} {idx + 1}"
+            old_name = val.get("name", "")
+            if old_name:
+                self._name_map[old_name] = new_name
+            val["name"] = new_name
+            if "uuid" in val:
+                val["uuid"] = new_key
+            new_d[new_key] = val
+        return new_d
+
+    def _anon_controls(self, controls: dict) -> dict:
+        new_controls = {}
+        for old_key, ctrl in controls.items():
+            new_key = self._anon_uuid(old_key)
+            ctrl = json.loads(json.dumps(ctrl))
+            ctype = ctrl.get("type", "")
+
+            ctrl["name"] = self._anon_control_name(ctrl.get("name", ""), ctype)
+
+            if "uuidAction" in ctrl:
+                ctrl["uuidAction"] = self._anon_uuid(ctrl["uuidAction"])
+            if "room" in ctrl and isinstance(ctrl["room"], str):
+                ctrl["room"] = self._anon_uuid(ctrl["room"])
+            if "cat" in ctrl and isinstance(ctrl["cat"], str):
+                ctrl["cat"] = self._anon_uuid(ctrl["cat"])
+
+            if "states" in ctrl:
+                ctrl["states"] = self._deep_walk(ctrl["states"], replace_keys=False)
+            if "subControls" in ctrl:
+                ctrl["subControls"] = self._anon_subcontrols(ctrl["subControls"])
+            if "details" in ctrl and isinstance(ctrl["details"], dict):
+                ctrl["details"] = self._anon_details(ctrl["details"])
+            if "statisticV2" in ctrl:
+                ctrl["statisticV2"] = self._anon_details(ctrl["statisticV2"])
+
+            new_controls[new_key] = ctrl
+        return new_controls
+
+    def _anon_subcontrols(self, subs: dict) -> dict:
+        new_subs = {}
+        for old_key, sub in subs.items():
+            new_key = self._anon_uuid(old_key)
+            sub = json.loads(json.dumps(sub))
+            stype = sub.get("type", "")
+
+            sub["name"] = self._anon_control_name(sub.get("name", ""), stype)
+
+            if "uuidAction" in sub:
+                sub["uuidAction"] = self._anon_uuid(sub["uuidAction"])
+
+            if "states" in sub:
+                sub["states"] = self._deep_walk(sub["states"], replace_keys=False)
+            if "details" in sub and isinstance(sub["details"], dict):
+                sub["details"] = self._anon_details(sub["details"])
+
+            new_subs[new_key] = sub
+        return new_subs
+
+    def _anon_details(self, details) -> dict | list:
+        """Walk a details/statisticV2 dict, replacing UUIDs and text labels."""
+        if isinstance(details, list):
+            return [self._anon_details(item) for item in details]
+        if not isinstance(details, dict):
+            return details
+
+        out = {}
+        for key, val in details.items():
+            if key in _NAME_KEYS and isinstance(val, str) and val.strip():
+                out[key] = self._anon_label(val)
+            elif isinstance(val, str) and self._looks_like_uuid(val):
+                out[key] = self._anon_uuid(val)
+            elif isinstance(val, dict):
+                out[key] = self._anon_details(val)
+            elif isinstance(val, list):
+                out[key] = [self._anon_details(item) if isinstance(item, dict)
+                            else (self._anon_uuid(item) if isinstance(item, str) and self._looks_like_uuid(item) else item)
+                            for item in val]
+            else:
+                out[key] = val
+        return out
+
+
+# ---------------------------------------------------------------------------
+# Config & fetch
+# ---------------------------------------------------------------------------
+
+def load_config() -> dict:
+    """Load Miniserver credentials from env vars, falling back to .env."""
+    env_file = REPO_ROOT / ".env"
+    if env_file.exists():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                key, _, value = line.partition("=")
+                os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
+    host = os.environ.get("LOXONE_HOST")
+    username = os.environ.get("LOXONE_USERNAME")
+    password = os.environ.get("LOXONE_PASSWORD")
+    port = int(os.environ.get("LOXONE_PORT", "8080"))
+
+    missing = []
+    if not host:
+        missing.append("LOXONE_HOST")
+    if not username:
+        missing.append("LOXONE_USERNAME")
+    if not password:
+        missing.append("LOXONE_PASSWORD")
+
+    if missing:
+        print(f"Error: missing env vars: {', '.join(missing)}", file=sys.stderr)
+        print("Set them in your shell or in .env at the repo root.", file=sys.stderr)
+        sys.exit(1)
+
+    return {"host": host, "port": port, "username": username, "password": password}
+
+
+def _make_request(config: dict, path: str) -> bytes:
+    """Make an authenticated HTTP request to the Miniserver."""
+    import base64
+    import ssl
+    import urllib.request
+
+    scheme = "https" if config["port"] == 443 else "http"
+    url = f"{scheme}://{config['host']}:{config['port']}{path}"
+
+    credentials = base64.b64encode(
+        f"{config['username']}:{config['password']}".encode()
+    ).decode()
+
+    req = urllib.request.Request(url, headers={"Authorization": f"Basic {credentials}"})
+
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+
+    with urllib.request.urlopen(req, context=ctx, timeout=30) as resp:
+        return resp.read()
+
+
+def fetch_api_info(config: dict) -> dict:
+    """Fetch version and serial from /jdev/cfg/apiKey."""
+    data = _make_request(config, "/jdev/cfg/apiKey")
+    text = json.loads(data).get("LL", {}).get("value", "{}")
+    return json.loads(text.replace("'", '"'))
+
+
+def fetch_structure(config: dict) -> dict:
+    """Fetch LoxAPP3.json via HTTP Basic Auth."""
+    data = _make_request(config, "/data/LoxAPP3.json")
+    return json.loads(data)
+
+
+def compute_expectations(structure: dict) -> dict:
+    """Compute entity counts per platform from a structure file."""
+    controls = structure.get("controls", {})
+    type_counter: Counter = Counter()
+    for control in controls.values():
+        type_counter[control.get("type", "UNKNOWN")] += 1
+
+    by_platform: Counter = Counter()
+    unhandled_types: list[str] = []
+    unhandled_count = 0
+
+    for ctype, count in sorted(type_counter.items()):
+        platform = KNOWN_CONTROL_TYPES.get(ctype)
+        if platform:
+            by_platform[platform] += count
+        else:
+            unhandled_types.append(ctype)
+            unhandled_count += count
+
+    return {
+        "total_controls": len(controls),
+        "by_platform": dict(sorted(by_platform.items())),
+        "unhandled_types": sorted(unhandled_types),
+        "unhandled_count": unhandled_count,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Main
+# ---------------------------------------------------------------------------
+
+def main():
+    raw_mode = "--raw" in sys.argv
+
+    config = load_config()
+    print(f"Connecting to {config['host']}:{config['port']} ...")
+
+    api_info = fetch_api_info(config)
+    structure = fetch_structure(config)
+
+    ms_info = structure.get("msInfo", {})
+    serial = api_info.get("snr", ms_info.get("serialNr", "UNKNOWN"))
+    sw_version = api_info.get("version", "unknown")
+    today = date.today().isoformat()
+
+    if raw_mode:
+        save_structure = structure
+        save_serial = serial
+        print("(raw mode — no anonymization)")
+    else:
+        anon = Anonymizer()
+        save_structure = anon.anonymize(structure)
+        save_serial = "AABBCCDDEEFF"
+        print("(anonymized — pass --raw to skip)")
+
+    version_slug = f"v{sw_version}"
+    filename = f"{version_slug}_{today}_{save_serial}"
+
+    DUMP_DIR.mkdir(parents=True, exist_ok=True)
+
+    dump_path = DUMP_DIR / f"{filename}.json"
+    expected_path = DUMP_DIR / f"{filename}_expected.json"
+
+    save_structure["softwareVersion"] = sw_version
+
+    dump_path.write_text(json.dumps(save_structure, indent=2, ensure_ascii=False) + "\n")
+    print(f"Saved structure dump: {dump_path.relative_to(REPO_ROOT)}")
+
+    expectations = compute_expectations(save_structure)
+    expected_path.write_text(json.dumps(expectations, indent=2) + "\n")
+    print(f"Saved expectations:   {expected_path.relative_to(REPO_ROOT)}")
+
+    controls = structure.get("controls", {})
+    print(f"\nMiniserver: {ms_info.get('msName', '?')} (serial {serial})")
+    print(f"Software:   {sw_version}")
+    print(f"Controls:   {len(controls)} total")
+    print(f"Handled:    {len(controls) - expectations['unhandled_count']}")
+    print(f"Unhandled:  {expectations['unhandled_count']} ({', '.join(expectations['unhandled_types']) or 'none'})")
+    print(f"\nReview the _expected.json before committing.")
+
+
+if __name__ == "__main__":
+    main()
