@@ -80,6 +80,8 @@ class LoxoneClientConnection(ClientConnection):
         header_data = await self.recv()
         await asyncio.sleep(0)
         if len(header_data) != 8:
+            if self._last_header is None:
+                raise LoxoneException("Received payload before any header")
             message = parse_message(header_data, self._last_header.message_type)
             return message
 

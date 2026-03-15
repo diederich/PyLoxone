@@ -9,20 +9,6 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-003: `websocket_protocol.py` — `_last_header` can be `None`
-
-**File:** `pyloxone_api/websocket_protocol.py:83`
-**Impact:** `AttributeError` crash on malformed/reordered messages
-
-```python
-# Current:
-message = parse_message(header_data, self._last_header.message_type)
-
-# Fix — add guard:
-if self._last_header is None:
-    raise LoxoneException("Received payload before any header")
-```
-
 ### BUG-004: `system_health.py` — Accessing non-existent attributes
 
 **File:** `system_health.py`
@@ -102,6 +88,7 @@ The root cause is twofold:
 ### Completed
 
 - ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
+- ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅
 
 ---
