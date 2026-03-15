@@ -23,6 +23,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
@@ -36,7 +37,7 @@ from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_COMMAND, ATTR_DEVICE,
                     DEFAULT_PORT, DOMAIN, DOMAIN_DEVICES, ERROR_VALUE, EVENT,
                     LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
 from .coordinator import LoxoneCoordinator
-from .helpers import get_miniserver_type
+from .helpers import device_registry as helpers_device_registry, get_miniserver_type
 from .miniserver import MiniServer, get_miniserver_from_hass
 from .pyloxone_api.connection import LoxoneConnection
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
@@ -118,10 +119,13 @@ async def async_unload_entry(hass, config_entry):
         except Exception as e:
             raise e
 
+    helpers_device_registry.clear()
+
     # Services deregistrieren beim Entladen
     hass.services.async_remove(DOMAIN, "event_websocket_command")
     hass.services.async_remove(DOMAIN, "event_secured_websocket_command")
     hass.services.async_remove(DOMAIN, "sync_areas")
+    hass.services.async_remove(DOMAIN, "sync_device_names")
     hass.services.async_remove(DOMAIN, "quick_shade")
     hass.services.async_remove(DOMAIN, "enable_sun_automation")
     hass.services.async_remove(DOMAIN, "disable_sun_automation")
@@ -395,6 +399,30 @@ async def async_setup_entry(hass, config_entry):
     async def handle_sync_areas_with_loxone(call):
         await sync_areas_with_loxone(call.data)
 
+    async def handle_sync_device_names(call):
+        """Sync HA device names from the current Loxone structure file."""
+        miniserver = get_miniserver_from_hass(hass)
+        structure = miniserver.lox_config.json
+        controls = structure.get("controls", {})
+
+        uuid_to_name = {
+            ctrl["uuidAction"]: ctrl["name"]
+            for ctrl in controls.values()
+            if "uuidAction" in ctrl and "name" in ctrl
+        }
+
+        dr_registry = dr.async_get(hass)
+        updated = 0
+        for device in dr_registry.devices.values():
+            for domain, uuid in device.identifiers:
+                if domain != DOMAIN:
+                    continue
+                lox_name = uuid_to_name.get(uuid)
+                if lox_name and device.name != lox_name:
+                    dr_registry.async_update_device(device.id, name=lox_name)
+                    updated += 1
+        _LOGGER.info("sync_device_names: updated %d device(s)", updated)
+
     async def handle_reload(call):
         """Handle the service call to reload the integration."""
         _LOGGER.info("Reloading Loxone integration via service call")
@@ -606,6 +634,7 @@ async def async_setup_entry(hass, config_entry):
         DOMAIN, "event_secured_websocket_command", handle_secured_websocket_command
     )
     hass.services.async_register(DOMAIN, "sync_areas", handle_sync_areas_with_loxone)
+    hass.services.async_register(DOMAIN, "sync_device_names", handle_sync_device_names)
     hass.services.async_register(DOMAIN, "reload", handle_reload)
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_event)

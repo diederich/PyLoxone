@@ -379,15 +379,16 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 ### Current State
 
-Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13). **88 tests, all passing.**
+Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
 
-| File                  | Tests | What's covered                                                                                                                                                      |
-| --------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test_helpers.py`     | 34    | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup — all parametrized with edge cases                               |
-| `test_config_flow.py` | 6     | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
-| `test_switch.py`      | 10    | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
-| `test_cover.py`       | 20    | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
-| `test_init.py`        | 2     | Setup and unload with mocked `LoxoneConnection`                                                                                                                     |
+| File                  | What's covered                                                                                                                                                      |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_helpers.py`     | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
+| `test_config_flow.py` | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
+| `test_switch.py`      | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
+| `test_cover.py`       | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
+| `test_climate.py`     | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
+| `test_init.py`        | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
 
 Infrastructure:
 

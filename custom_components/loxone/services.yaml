@@ -58,6 +58,12 @@ event_secured_websocket_command:
       selector:
         text:
 
+sync_device_names:
+  name: Sync device names
+  description: >-
+    Updates HA device names to match the current Loxone structure file.
+    Reload the integration first if you've renamed devices in Loxone Config.
+
 sync_areas:
   name: Sync areas
   description:
