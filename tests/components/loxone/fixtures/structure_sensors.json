@@ -1,0 +1,69 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Living Room", "uuid": "room-1" }
+  },
+  "cats": {
+    "cat-1": { "name": "Climate", "uuid": "cat-1" }
+  },
+  "controls": {
+    "sen10000-0000-0000-0000000000000000": {
+      "name": "Room Temperature",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "sen10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {
+        "format": "%.1f °C"
+      },
+      "states": {}
+    },
+    "sen20000-0000-0000-0000000000000000": {
+      "name": "Wind Speed",
+      "type": "InfoOnlyAnalog",
+      "uuidAction": "sen20000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {
+        "format": "%.1f km/h"
+      },
+      "states": {}
+    },
+    "txt10000-0000-0000-0000000000000000": {
+      "name": "Status Display",
+      "type": "TextInput",
+      "uuidAction": "txt10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "states": {
+        "text": "txt10000-0000-0000-0000000000000001"
+      }
+    },
+    "mtr10000-0000-0000-0000000000000000": {
+      "name": "Energy Meter",
+      "type": "Meter",
+      "uuidAction": "mtr10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": {
+        "type": "energy",
+        "actualFormat": "%.1f W",
+        "totalFormat": "%.1f kWh"
+      },
+      "states": {
+        "actual": "mtr10000-0000-0000-0000000000000010",
+        "total": "mtr10000-0000-0000-0000000000000011",
+        "totalNeg": "mtr10000-0000-0000-0000000000000012"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

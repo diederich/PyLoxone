@@ -98,6 +98,7 @@ Docstring says `username password host port` but code reads `sys.argv[1]` as hos
 ### Completed
 
 - ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅
+- ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅
 
 ---
 
@@ -381,21 +382,25 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
 
-| File                  | What's covered                                                                                                                                                      |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test_helpers.py`     | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
-| `test_config_flow.py` | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
-| `test_switch.py`      | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
-| `test_cover.py`       | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
-| `test_climate.py`     | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
-| `test_init.py`        | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
+| File (tests)                      | Count | What's covered                                                                                                                                                      |
+| --------------------------------- | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_helpers.py`                 |    54 | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
+| `test_config_flow.py`             |     6 | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
+| `test_switch.py`                  |    10 | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
+| `test_cover.py`                   |    20 | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
+| `test_climate.py`                 |     8 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
+| `test_init.py`                    |     6 | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
+| `test_sensor.py`                  |    14 | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
+| `test_binary_sensor.py`           |     9 | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; documents `_state_uuid` if/if/elif bug (digital→uuidAction, smoke→uuidAction)   |
+| `test_alarm_control_panel.py`     |    12 | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
+| **Total**                         | **139** |                                                                                                                                                                   |
 
 Infrastructure:
 
 | File                        | Purpose                                                                                                                                                          |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `conftest.py` (component)   | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures; `structure_fixture_name` override                                                    |
-| `fixtures/structure_*.json` | `structure_minimal.json` (no controls), `structure_switches.json` (Switch + TimedSwitch), `structure_covers.json` (Jalousie/Gate/Window with various animations) |
+| `fixtures/structure_*.json` | `structure_minimal.json` (no controls), `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json` |
 | `conftest.py` (root)        | `auto_enable_custom_integrations`                                                                                                                                |
 | `pyproject.toml`            | pytest config (`asyncio_mode = auto`)                                                                                                                            |
 | `requirements_test.txt`     | Test dependencies                                                                                                                                                |

@@ -1,0 +1,52 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Hallway", "uuid": "room-1" }
+  },
+  "cats": {},
+  "controls": {
+    "dig10000-0000-0000-0000000000000000": {
+      "name": "Door Contact",
+      "type": "InfoOnlyDigital",
+      "uuidAction": "dig10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": { "format": "" },
+      "states": {
+        "active": "dig10000-0000-0000-0000000000000001"
+      }
+    },
+    "pres1000-0000-0000-0000000000000000": {
+      "name": "Hallway Motion",
+      "type": "PresenceDetector",
+      "uuidAction": "pres1000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": { "format": "" },
+      "states": {
+        "active": "pres1000-0000-0000-0000000000000001"
+      }
+    },
+    "smok1000-0000-0000-0000000000000000": {
+      "name": "Kitchen Smoke",
+      "type": "SmokeAlarm",
+      "uuidAction": "smok1000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "details": { "format": "" },
+      "states": {
+        "areAlarmSignalsOff": "smok1000-0000-0000-0000000000000001",
+        "active": "smok1000-0000-0000-0000000000000002"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

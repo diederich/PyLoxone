@@ -1,0 +1,35 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0
+  },
+  "rooms": {
+    "room-1": { "name": "Security", "uuid": "room-1" }
+  },
+  "cats": {},
+  "controls": {
+    "alm10000-0000-0000-0000000000000000": {
+      "name": "House Alarm",
+      "type": "Alarm",
+      "uuidAction": "alm10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "isSecured": false,
+      "states": {
+        "armed": "alm10000-0000-0000-0000000000000001",
+        "disabledMove": "alm10000-0000-0000-0000000000000002",
+        "armedDelay": "alm10000-0000-0000-0000000000000003",
+        "armedDelayTotal": "alm10000-0000-0000-0000000000000004",
+        "level": "alm10000-0000-0000-0000000000000005",
+        "armedAt": "alm10000-0000-0000-0000000000000006",
+        "nextLevelAt": "alm10000-0000-0000-0000000000000007"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}
