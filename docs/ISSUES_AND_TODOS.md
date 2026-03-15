@@ -99,6 +99,13 @@ The dispatcher signal `"binairy_sensors"` (typo) doesn't match the signal used i
 
 Docstring says `username password host port` but code reads `sys.argv[1]` as host.
 
+### BUG-011: `async_unload_entry` removes services never registered in `async_setup_entry`
+
+**File:** `__init__.py`
+**Impact:** Unloading the integration raises `ServiceNotFound` when no cover entities with shade/sun-automation controls exist
+
+`async_unload_entry` (lines 125-127) calls `async_remove` for `quick_shade`, `enable_sun_automation`, and `disable_sun_automation`, but `async_setup_entry` never registers them — they are only registered by entity platforms when matching controls exist. If no such controls are loaded, unload crashes.
+
 ---
 
 ## High-Priority Improvements
@@ -135,13 +142,6 @@ async_dispatcher_connect(hass, f"loxone_event_{self.uuidAction}", self._handle_u
 `config_flow.py` only validates schema (Latin-1 characters, port format). It does not test connectivity. Users can save invalid credentials and only discover errors in logs.
 
 **Add:** A test connection step using `LoxoneAsyncHttpClient.get()` against the Miniserver API.
-
-### IMP-004: Fix `iot_class` in manifest
-
-**File:** `manifest.json`
-**Impact:** HA UI shows integration as polling-based
-
-Change `"iot_class": "local_polling"` to `"iot_class": "local_push"` — the integration uses WebSocket push, not polling.
 
 ### IMP-005: Consolidate exception hierarchy
 
@@ -227,6 +227,10 @@ async def async_added_to_hass(self):
 **Complexity:** O(changed_uuids) per message instead of O(entities).
 
 **Migration:** Mechanical — change `message_callback`, change base class subscription, update each platform's `event_handler(self, e)` → `_handle_update(self, value)` to receive the value directly instead of a dict.
+
+### Completed
+
+- ~~IMP-004: Fix `iot_class` in manifest~~ ✅ (`8e5fd22`)
 
 ---
 
@@ -346,6 +350,17 @@ HA domains are always lowercase identifiers — they're not meant for display. T
 
 **Note:** The `button.py` entity creates `DeviceInfo` directly (without `get_or_create_device`) and does NOT prefix with `DOMAIN` — it uses just `self.name`. This inconsistency means buttons display differently from all other entities.
 
+### MED-012: Services registered per config entry, not globally
+
+**File:** `__init__.py` (line ~601)
+**Impact:** HA "Repairs" flags automations using `loxone.event_websocket_command` as "unknown action"
+
+All Loxone services (`event_websocket_command`, `event_secured_websocket_command`, `sync_areas`, `reload`, etc.) are registered inside `async_setup_entry`. If the config entry fails to load (e.g., Miniserver temporarily unreachable), no services are registered for that boot cycle. HA's automation validator then flags any automation using those services as having an "unknown action," even though the commands work once the integration recovers.
+
+**Workaround:** Dismiss the repair in Settings → System → Repairs. It will not reappear unless the integration fails to load again.
+
+**Fix:** Move service registration to `async_setup` so services exist regardless of config entry state. The handlers would need to look up the coordinator lazily (via `hass.data[DOMAIN]`) rather than capturing it at registration time, since the coordinator isn't available yet in `async_setup`.
+
 ---
 
 ## Low-Priority / Cosmetic
@@ -369,14 +384,25 @@ HA domains are always lowercase identifiers — they're not meant for display. T
 
 ### Current State
 
-The project has essentially **no meaningful tests**:
+Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
+
+| File | Status |
+|------|--------|
+| `tests/components/loxone/test_init.py` | Setup and unload tests with mocked `LoxoneConnection` (2 tests, passing) |
+| `tests/components/loxone/conftest.py` | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures |
+| `tests/components/loxone/fixtures/structure_minimal.json` | Minimal LoxAPP3.json structure (no controls) |
+| `tests/conftest.py` | Root conftest enabling custom integrations |
+| `pyproject.toml` | pytest config (`asyncio_mode = auto`) |
+| `requirements_test.txt` | Test dependencies |
+
+Legacy test files (still present in `pyloxone_api/tests/`):
 
 | File | Status |
 |------|--------|
 | `test_run_alone.py` | Loads `.env` via `python-dotenv` (not in requirements), test body is `pass` |
 | `test_discover.py` | Requires a live Miniserver on the network, uses `pytest-asyncio` (not in requirements) |
 
-No `conftest.py`, no pytest configuration (`pytest.ini` / `pyproject.toml`), no mocking, no CI test jobs. The `@pytest.mark.online` marker in `test_discover.py` is never registered.
+The `@pytest.mark.online` marker in `test_discover.py` is never registered. No CI test jobs yet.
 
 ### How HA Integrations Do Testing
 
@@ -786,7 +812,6 @@ Tasks that can be done in under 30 minutes each:
 |---|------|--------|
 | 1 | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py | Fixes AC temperature control |
 | 2 | Add `Platform.TEXT` to `LOXONE_PLATFORMS` | Enables text platform |
-| 3 | Change `iot_class` to `local_push` in manifest.json | Correct HA classification |
 | 4 | Remove `print()` from coordinator.py | Clean up debug output |
 | 5 | Fix `_LOGGER.error` format strings in colorpickers.py | Correct logging |
 | 6 | Fix `masterColor` filter from `> 1` to `> -1` | Correct light discovery |
@@ -797,3 +822,10 @@ Tasks that can be done in under 30 minutes each:
 | 11 | Remove unused imports (`cast`, `ToggleEntity`) | Code hygiene |
 | 12 | Remove dead files (`helper.py`, `api.py`) | Reduce confusion |
 | 13 | Fix device name prefix: `DOMAIN` → `"Loxone"` (or just use `device_name`) in `helpers.py:18` | Correct capitalization in HA UI |
+| 14 | Add missing `name`/`description` to all services in `services.yaml` | Proper service metadata for HA action validation |
+
+### Completed Quick Wins
+
+| # | Task | Commit |
+|---|------|--------|
+| 3 | Change `iot_class` to `local_push` in manifest.json | `8e5fd22` |
