@@ -95,6 +95,26 @@ Docstring says `username password host port` but code reads `sys.argv[1]` as hos
 
 `async_unload_entry` (lines 125-127) calls `async_remove` for `quick_shade`, `enable_sun_automation`, and `disable_sun_automation`, but `async_setup_entry` never registers them — they are only registered by entity platforms when matching controls exist. If no such controls are loaded, unload crashes.
 
+### BUG-013: Ventilation sub-entities collide on unique_id with the fan entity
+
+**File:** `fan.py` (lines 68-136)
+**Impact:** When a Ventilation control has sub-entities (presence, humidity, air quality, temperature), all of them get their `uuidAction` overwritten to the parent fan's UUID via `parent_id`. Since `LoxoneEntity.unique_id` returns `self.uuidAction`, every sub-entity shares the same unique_id as the main fan entity. HA's entity registry rejects duplicates, so the **main fan entity is silently dropped** — only the sub-entities survive.
+
+The root cause is twofold:
+1. `LoxoneDigitalSensor.__init__` and `LoxoneSensor.__init__` both do `if self._parent_id: self.uuidAction = self._parent_id`, overwriting the originally distinct UUID
+2. All entities (fan + sub-entities) are added through the fan platform's `async_add_entities` in a single list, so they share the same unique_id namespace
+
+**Fix:** Sub-entities should use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`) or keep their original `uuidAction` as the unique_id and store `parent_id` separately for device grouping only.
+
+### BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags
+
+**File:** `fan.py` (line 178)
+**Impact:** `fan.turn_on` and `fan.turn_off` services raise `ServiceNotSupported` in HA 2024+
+
+`supported_features` returns `FanEntityFeature.PRESET_MODE | FanEntityFeature.SET_SPEED` but the entity defines `async_turn_on` and `async_turn_off` methods. Since HA 2024.8, `TURN_ON` and `TURN_OFF` must be declared in `supported_features` for those services to work.
+
+**Fix:** Add `FanEntityFeature.TURN_ON | FanEntityFeature.TURN_OFF` to the return value.
+
 ### Completed
 
 - ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅
@@ -382,25 +402,28 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
 
-| File (tests)                      | Count | What's covered                                                                                                                                                      |
-| --------------------------------- | ----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test_helpers.py`                 |    54 | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
-| `test_config_flow.py`             |     6 | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
-| `test_switch.py`                  |    10 | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
-| `test_cover.py`                   |    20 | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
-| `test_climate.py`                 |     8 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
-| `test_init.py`                    |     6 | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
-| `test_sensor.py`                  |    14 | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
-| `test_binary_sensor.py`           |     9 | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; documents `_state_uuid` if/if/elif bug (digital→uuidAction, smoke→uuidAction)   |
-| `test_alarm_control_panel.py`     |    12 | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
-| **Total**                         | **139** |                                                                                                                                                                   |
+| File (tests)                      | What's covered                                                                                                                                                      |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `test_helpers.py`                 | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
+| `test_config_flow.py`             | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
+| `test_switch.py`                  | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
+| `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
+| `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool)                                               |
+| `test_init.py`                    | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
+| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
+| `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
+| `test_alarm_control_panel.py`     | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
+| `test_fan.py`                     | Ventilation entity creation, supported features, preset modes, speed/mode events, set_percentage command                                                             |
+| `test_number.py`                  | Slider entity creation, min/max/step properties, event state updates, set_native_value command                                                                       |
+| `test_button.py`                  | Pushbutton entity creation, extra attributes, press sends pulse, event updates state, ignores unrelated events                                                       |
+| `test_media_player.py`            | AudioZoneV2 entity creation, device class, supported features, playState events (playing/paused/idle), play/pause/next/prev/volume commands                          |
 
 Infrastructure:
 
 | File                        | Purpose                                                                                                                                                          |
 | --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `conftest.py` (component)   | `mock_config_entry`, `mock_loxone_connection`, `init_integration` fixtures; `structure_fixture_name` override                                                    |
-| `fixtures/structure_*.json` | `structure_minimal.json` (no controls), `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json` |
+| `fixtures/structure_*.json` | `structure_minimal.json`, `structure_switches.json`, `structure_covers.json`, `structure_climate.json`, `structure_sensors.json`, `structure_binary_sensors.json`, `structure_alarm.json`, `structure_fan.json`, `structure_numbers.json`, `structure_buttons.json`, `structure_media_player.json` |
 | `conftest.py` (root)        | `auto_enable_custom_integrations`                                                                                                                                |
 | `pyproject.toml`            | pytest config (`asyncio_mode = auto`)                                                                                                                            |
 | `requirements_test.txt`     | Test dependencies                                                                                                                                                |
