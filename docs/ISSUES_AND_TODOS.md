@@ -16,13 +16,6 @@ These will cause crashes or incorrect behavior for users.
 
 Both `async_forward_entry_setups(LOXONE_PLATFORMS)` and `async_load_platform()` are called for the same platforms. Remove the `async_load_platform()` calls.
 
-### BUG-007: Cover dispatcher passes wrong callback
-
-**File:** `cover.py`
-**Impact:** Runtime-discovered covers may cause errors
-
-`async_dispatcher_connect` receives `async_add_entities` instead of `async_add_covers` (or the callback is invoked with wrong arguments).
-
 ### BUG-008: Color picker `eval()` on external data
 
 **Files:** `lights/colorpickers.py`, `lights/lightcontroller.py`, `climate.py`
@@ -74,9 +67,10 @@ The root cause is twofold:
 ### Completed
 
 - ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
-- ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅
-- ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅
-- ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅
+- ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅ (`4f97ae6`)
+- ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅ (`82c4de4`)
+- ~~BUG-007: Cover dispatcher `async_add_covers` defined but unused — `async_add_entities` passed directly (dead code, not a real bug)~~ ✅ (reclassified — no code change needed)
+- ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
 
 ---
 
@@ -357,7 +351,7 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 | LOW-002 | Typo `reponse` in `read_user_salt_response`                  | pyloxone_api/loxone_token.py:31                  |
 | LOW-003 | Typo `shade_postion_as_text`                                 | cover.py                                         |
 | LOW-004 | Typo `subcontol`                                             | switch.py                                        |
-| LOW-005 | Typo `"binairy_sensors"`                                     | binary_sensor.py                                 |
+| ~~LOW-005~~ | ~~Typo `"binairy_sensors"`~~                             | ~~binary_sensor.py~~ ✅                          |
 | LOW-006 | Duplicate `key="power"` in `SENSOR_TYPES`                    | sensor.py                                        |
 | LOW-007 | `ToggleEntity` imported but unused                           | lights/switch.py                                 |
 | LOW-008 | `cast` imported but unused                                   | config_flow.py                                   |
