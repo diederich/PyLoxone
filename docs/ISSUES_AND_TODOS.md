@@ -16,13 +16,6 @@ These will cause crashes or incorrect behavior for users.
 
 Both `async_forward_entry_setups(LOXONE_PLATFORMS)` and `async_load_platform()` are called for the same platforms. Remove the `async_load_platform()` calls.
 
-### BUG-009: `RGBColorPicker` — `None` attribute access
-
-**File:** `lights/colorpickers.py:177-204`
-**Impact:** `TypeError` crash when brightness or HS color hasn't been set yet
-
-`self._attr_brightness` and `self._attr_hs_color` can be `None` when used in command construction.
-
 ### BUG-010: `__main__.py` argument order mismatch
 
 **File:** `pyloxone_api/__main__.py`
@@ -63,7 +56,8 @@ The root cause is twofold:
 - ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅ (`4f97ae6`)
 - ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅ (`82c4de4`)
 - ~~BUG-007: Cover dispatcher `async_add_covers` defined but unused — `async_add_entities` passed directly (dead code, not a real bug)~~ ✅ (reclassified — no code change needed)
-- ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅
+- ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅ (`529ba8b`)
+- ~~BUG-009: `RGBColorPicker` `None` attribute access — brightness/hs_color default to safe values~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
 
 ---
