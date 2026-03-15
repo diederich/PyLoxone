@@ -27,7 +27,7 @@ from .helpers import (add_room_and_cat_to_value_values, get_all,
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
-NEW_SENSOR = "binairy_sensors"
+NEW_SENSOR = "sensors"
 DEFAULT_NAME = "Loxone Binary Sensor"
 
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(

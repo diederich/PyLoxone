@@ -9,26 +9,12 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-004: `system_health.py` — Accessing non-existent attributes
-
-**File:** `system_health.py`
-**Impact:** System health panel crashes with `AttributeError`
-
-Uses `v.serial`, `v.project_name`, `v.local_url`, `v.software_version` on the coordinator. These attributes don't exist on `LoxoneCoordinator` — they're on `v.miniserver`.
-
 ### BUG-005: Duplicate platform loading
 
 **File:** `__init__.py`
 **Impact:** Entities may be created twice
 
 Both `async_forward_entry_setups(LOXONE_PLATFORMS)` and `async_load_platform()` are called for the same platforms. Remove the `async_load_platform()` calls.
-
-### BUG-006: Binary sensor dispatcher signal mismatch
-
-**File:** `binary_sensor.py`
-**Impact:** New binary sensors discovered at runtime are never added
-
-The dispatcher signal `"binairy_sensors"` (typo) doesn't match the signal used in `__init__.py`. New binary sensors will silently fail to register.
 
 ### BUG-007: Cover dispatcher passes wrong callback
 
@@ -89,6 +75,7 @@ The root cause is twofold:
 
 - ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
 - ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅
+- ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅
 
 ---
@@ -226,6 +213,12 @@ async def async_added_to_hass(self):
 **File:** `const.py`, `text.py`
 
 `Platform.TEXT` is missing from `LOXONE_PLATFORMS`. The `text.py` platform file exists but is never loaded. `LoxoneTextSensor` in `sensor.py` already handles TextInput, so this is dead code with a working alternative. Decide whether to wire up `text.py` (and remove the sensor overlap) or delete it.
+
+### MED-001a: `system_health.py` — Dead code with broken attributes
+
+**File:** `system_health.py`
+
+Not wired up: `manifest.json` doesn't declare `"system_health"` as a dependency, so HA never loads this module. If it were loaded, it would crash — references `v.serial`, `v.project_name`, `v.local_url`, `v.software_version` on the coordinator, but those live on `v.miniserver`. The `for k, v in … return` pattern also silently ignores multi-entry configs. Either wire it up properly or delete it.
 
 ### MED-001: `masterColor` filter typo
 
