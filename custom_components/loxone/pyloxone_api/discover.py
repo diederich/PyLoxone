@@ -36,6 +36,8 @@ async def discover(timeout: int = 5) -> tuple[str, int, str] | None:
         socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP
     ) as read_sock:
         read_sock.setblocking(False)
+        read_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        read_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
         read_sock.bind(("0.0.0.0", 7071))
         with socket.socket(
             socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP

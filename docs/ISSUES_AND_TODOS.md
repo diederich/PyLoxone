@@ -9,13 +9,6 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-005: Duplicate platform loading
-
-**File:** `__init__.py`
-**Impact:** Entities may be created twice
-
-Both `async_forward_entry_setups(LOXONE_PLATFORMS)` and `async_load_platform()` are called for the same platforms. Remove the `async_load_platform()` calls.
-
 ### BUG-010: `__main__.py` argument order mismatch
 
 **File:** `pyloxone_api/__main__.py`
@@ -56,6 +49,7 @@ The root cause is twofold:
 - ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅ (`4f97ae6`)
 - ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅ (`82c4de4`)
 - ~~BUG-007: Cover dispatcher `async_add_covers` defined but unused — `async_add_entities` passed directly (dead code, not a real bug)~~ ✅ (reclassified — no code change needed)
+- ~~BUG-005: Dead `async_load_platform` loop and `async_setup_platform` stubs — narrowed to sensor/binary_sensor only (YAML escape hatch), removed 11 no-op stubs~~ ✅
 - ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅ (`529ba8b`)
 - ~~BUG-009: `RGBColorPicker` `None` attribute access — brightness/hs_color default to safe values~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
@@ -329,6 +323,15 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 **Fix:** Move service registration to `async_setup` so services exist regardless of config entry state. The handlers would need to look up the coordinator lazily (via `hass.data[DOMAIN]`) rather than capturing it at registration time, since the coordinator isn't available yet in `async_setup`.
 
+### MED-013: `send_websocket_command` has no connection state check
+
+**File:** `pyloxone_api/connection.py` (`send_websocket_command`, line ~1099)
+**Impact:** Commands queue silently during disconnects; may flood Miniserver on reconnect
+
+`send_websocket_command` validates the UUID parameter but does not check whether the WebSocket is connected before calling `_message_queue.put_nowait()`. During a disconnect, commands accumulate in the queue. When `_send_text_command` processes them, it logs a warning and attempts `self.connection.send()` anyway, which raises on a closed connection. The exception is caught, but the stale command is lost.
+
+**Fix:** Check `is_connected` before enqueueing. Either raise immediately (caller can decide what to do) or log and discard. For the expose feature specifically, this matters because rapid state changes during a disconnect shouldn't flood the queue — only the latest value matters.
+
 ---
 
 ## Low-Priority / Cosmetic
@@ -389,17 +392,13 @@ Additional test tracks:
 | `known_types.py`                        | Shared mapping of Loxone control/subcontrol types to HA platforms, used by both dump tests and e2e tests.                                       |
 | `fixtures/dumps/*.json`                 | Real `LoxAPP3.json` snapshots captured with `scripts/dump_miniserver`. Each has a companion `_expected.json` with entity counts.                |
 | `tests_e2e_miniserver/test_miniserver.py` | E2E tests against a real Miniserver (no HA needed): connection, structure, WebSocket, command round-trip, snapshot.                            |
+| `tests_e2e_miniserver/test_discover.py` | UDP broadcast discovery test (requires live Miniserver on LAN). Moved from legacy `pyloxone_api/tests/`.                                        |
 | `tests_e2e_miniserver/conftest.py`      | Session-scoped fixtures for live Miniserver connection (credentials from env vars or `.env`).                                                    |
 | `scripts/dump_miniserver`               | Script to fetch `LoxAPP3.json` from a real Miniserver and save it as a dump fixture with auto-generated expectations.                           |
 
-Legacy test files (still present in `pyloxone_api/tests/`):
+~~Legacy test files (were in `pyloxone_api/tests/`):~~ Cleaned up — `test_run_alone.py` (dead stub) deleted; `test_discover.py` moved to `tests_e2e_miniserver/`. The `pyloxone_api/tests/` directory has been removed. ✅
 
-| File                | Status                                                                                 |
-| ------------------- | -------------------------------------------------------------------------------------- |
-| `test_run_alone.py` | Loads `.env` via `python-dotenv` (not in requirements), test body is `pass`            |
-| `test_discover.py`  | Requires a live Miniserver on the network, uses `pytest-asyncio` (not in requirements) |
-
-The `@pytest.mark.online` marker in `test_discover.py` is never registered. No CI test jobs yet.
+No CI test jobs yet.
 
 ### How HA Integrations Do Testing
 
@@ -452,15 +451,16 @@ tests/
 
 **For `pyloxone_api` (pure Python, no HA dependency):**
 
+Future unit tests for the API layer would live in `tests/pyloxone_api/` (outside `custom_components/`). The legacy `custom_components/loxone/pyloxone_api/tests/` directory has been removed. Potential test files:
+
 ```
-custom_components/loxone/pyloxone_api/tests/
+tests/pyloxone_api/
 ├── __init__.py
 ├── conftest.py              # Shared fixtures for API tests
 ├── test_message.py          # Message parsing (all types)
 ├── test_token.py            # Token expiry, salt
 ├── test_http_client.py      # HTTP error mapping, auth
 ├── test_connection.py       # Key exchange, auth flow (mocked WS)
-├── test_discover.py         # UDP discovery (mocked socket)
 └── fixtures/                # Binary WS messages, HTTP responses
 ```
 
@@ -624,7 +624,7 @@ freezegun
 
 ```ini
 [pytest]
-testpaths = tests custom_components/loxone/pyloxone_api/tests
+testpaths = tests
 asyncio_mode = auto
 markers =
     online: marks tests that require network access (deselect with '-m "not online"')
@@ -797,6 +797,25 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 ### ARCH-006: Add config entry migration tests
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
+
+### ARCH-008: Expose HA entity states to Loxone Virtual Inputs
+
+**Inspiration:** KNX integration's `expose` feature
+
+Add a KNX-style "expose" capability that automatically pushes HA entity state changes to Loxone Virtual Inputs (VIs). This eliminates boilerplate automations for the common use case of making non-Loxone sensor data available to Loxone programs (e.g., EP One presence → VI_Presence_Kitchen).
+
+**Design:**
+- Configuration stored in `config_entry.options["expose"]` — list of `{entity_id, uuid/vi_name, type}` bindings
+- Type conversion: binary→0/1, numeric→float, text→string; skip `unavailable`/`unknown`
+- `vi_name` resolved to UUID from the structure file at startup (Slider and TextInput controls are discoverable; digital VIs require UUID)
+- State pushed on every `state_changed` event and on integration (re)load (covers reconnect)
+- New `loxone.expose` / `loxone.unexpose` services for dynamic binding
+
+**Implementation:** New `expose.py` module (~150-200 lines), wired into `async_setup_entry`/`async_unload_entry`. Prerequisite: fix BUG-005 (duplicate platform loading) and BUG-011 (service removal crash) to keep `__init__.py` clean.
+
+**Precedent:** The KNX core integration (silver quality) has had `expose` since early days. It's the accepted HA pattern for integrations that interface with writable building automation buses.
+
+**Limitation:** VIs cannot be created via the Loxone API — they must be pre-configured in Loxone Config. The integration can only validate that configured VIs exist in the structure file and warn on mismatches.
 
 ### ARCH-007: Multi-Miniserver support
 
