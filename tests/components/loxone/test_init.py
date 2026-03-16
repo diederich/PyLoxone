@@ -34,18 +34,7 @@ async def test_unload_entry(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
 ) -> None:
-    """Test that the integration unloads successfully.
-
-    BUG: async_unload_entry removes services quick_shade,
-    enable_sun_automation, and disable_sun_automation that are never
-    registered in async_setup_entry (they come from entity platforms
-    only when matching controls exist). We register them as no-ops here
-    so the unload path can be validated without changing production code.
-    """
-    # Register the phantom services so async_remove doesn't raise
-    for svc in ("quick_shade", "enable_sun_automation", "disable_sun_automation"):
-        hass.services.async_register(DOMAIN, svc, lambda _: None)
-
+    """Test that the integration unloads successfully."""
     entry = init_integration
     assert entry.state is ConfigEntryState.LOADED
 
@@ -63,9 +52,6 @@ async def test_unload_clears_helpers_device_registry(
     """Unloading should clear the helpers device_registry cache."""
     get_or_create_device("test-uuid", "Test", "Switch", "Room")
     assert len(helpers_device_registry) > 0
-
-    for svc in ("quick_shade", "enable_sun_automation", "disable_sun_automation"):
-        hass.services.async_register(DOMAIN, svc, lambda _: None)
 
     await hass.config_entries.async_unload(init_integration.entry_id)
     await hass.async_block_till_done()

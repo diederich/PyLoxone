@@ -16,12 +16,9 @@ These will cause crashes or incorrect behavior for users.
 
 Docstring says `username password host port` but code reads `sys.argv[1]` as host.
 
-### BUG-011: `async_unload_entry` removes services never registered in `async_setup_entry`
+### ~~BUG-011: `async_unload_entry` removes services never registered in `async_setup_entry`~~
 
-**File:** `__init__.py`
-**Impact:** Unloading the integration raises `ServiceNotFound` when no cover entities with shade/sun-automation controls exist
-
-`async_unload_entry` (lines 125-127) calls `async_remove` for `quick_shade`, `enable_sun_automation`, and `disable_sun_automation`, but `async_setup_entry` never registers them — they are only registered by entity platforms when matching controls exist. If no such controls are loaded, unload crashes.
+**Status:** Fixed (see Completed section below)
 
 ### BUG-013: Ventilation sub-entities collide on unique_id with the fan entity
 
@@ -53,6 +50,7 @@ The root cause is twofold:
 - ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅ (`529ba8b`)
 - ~~BUG-009: `RGBColorPicker` `None` attribute access — brightness/hs_color default to safe values~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
+- ~~BUG-011: `async_unload_entry` removes services `quick_shade`, `enable_sun_automation`, `disable_sun_automation` never registered in `async_setup_entry` — crashes unload when no cover entities exist~~ ✅
 
 ---
 

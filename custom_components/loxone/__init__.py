@@ -126,9 +126,6 @@ async def async_unload_entry(hass, config_entry):
     hass.services.async_remove(DOMAIN, "event_secured_websocket_command")
     hass.services.async_remove(DOMAIN, "sync_areas")
     hass.services.async_remove(DOMAIN, "sync_device_names")
-    hass.services.async_remove(DOMAIN, "quick_shade")
-    hass.services.async_remove(DOMAIN, "enable_sun_automation")
-    hass.services.async_remove(DOMAIN, "disable_sun_automation")
     hass.services.async_remove(DOMAIN, "reload")
 
     # Unload
