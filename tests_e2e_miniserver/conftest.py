@@ -6,8 +6,9 @@ needed.  Run them from the repo root:
     pytest tests_e2e_miniserver/ -s -v
 
 The HA test plugins (pytest-homeassistant-custom-component, pytest-socket) are
-installed in the venv but unwanted here.  This conftest neutralises their
-socket-blocking and cleanup checks so the tests work without special CLI flags.
+installed in the venv but unwanted here.  This conftest marks all e2e tests
+with ``enable_socket`` and overrides cleanup checks so the tests work without
+special CLI flags.
 
 All fixtures are session-scoped — the connection is established once and
 reused across all tests in a single run.
@@ -23,6 +24,7 @@ import os
 import sys
 from pathlib import Path
 from collections.abc import Generator
+from typing import List
 
 import pytest
 
@@ -46,23 +48,10 @@ def _load_env():
 _load_env()
 
 
-# ---------------------------------------------------------------------------
-# Neutralise pytest-socket: make disable_socket / socket_allow_hosts no-ops
-# so the HA plugin's pytest_runtest_setup hook can't block real connections.
-# ---------------------------------------------------------------------------
-
-try:
-    import pytest_socket
-    from pytest_socket import _true_socket, _true_connect
-    import socket
-
-    socket.socket = _true_socket
-    socket.socket.connect = _true_connect
-
-    pytest_socket.disable_socket = lambda *a, **kw: None
-    pytest_socket.socket_allow_hosts = lambda *a, **kw: None
-except ImportError:
-    pass
+def pytest_collection_modifyitems(items: List[pytest.Item]) -> None:
+    """Mark all e2e tests with enable_socket so pytest-socket allows real sockets."""
+    for item in items:
+        item.add_marker(pytest.mark.enable_socket)
 
 
 @pytest.fixture(autouse=True)

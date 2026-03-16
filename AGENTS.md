@@ -12,6 +12,13 @@ This project maintains living documentation in `docs/`. Always read the relevant
 | [LIGHTS_SUBSYSTEM.md](docs/LIGHTS_SUBSYSTEM.md) | Light entity hierarchy, color pickers, mood handling            |
 | [ISSUES_AND_TODOS.md](docs/ISSUES_AND_TODOS.md) | Known bugs, improvements, quick wins, testing strategy          |
 
+## Loxone API Reference
+
+- [API overview](https://www.loxone.com/enen/kb/api/) — links to the WebSocket protocol PDF, structure file spec, user management docs
+- [Web Services](https://www.loxone.com/enen/kb/web-services/) — HTTP command reference for controlling VIs, querying status, system commands
+- [Communicating with the Miniserver (PDF)](https://www.loxone.com/wp-content/uploads/datasheets/CommunicatingWithMiniserver.pdf) — WebSocket protocol details (encryption, binary message parsing, token auth)
+- [Structure File (PDF)](https://www.loxone.com/wp-content/uploads/datasheets/StructureFile.pdf) — LoxAPP3.json format spec
+
 ## Deployment
 
 Home Assistant runs on a remote machine. After making code changes, **ask the user if they'd like to deploy and test** before moving on to the next task.

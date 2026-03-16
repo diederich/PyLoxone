@@ -10,7 +10,7 @@
 The largest file in the integration layer. Handles:
 
 - Config entry setup/unload/migration
-- Service registration (7 services)
+- Service registration (8 services)
 - Event bus routing (WS → HA, HA → WS)
 - Base entity class (`LoxoneEntity`)
 - Legacy discovery and group creation
@@ -28,12 +28,13 @@ async_setup_entry(hass, config_entry)
     ├── Store coordinator in hass.data[DOMAIN][entry_id]
     │
     ├── async_forward_entry_setups(LOXONE_PLATFORMS)    ← loads platforms
-    ├── async_load_platform() for each platform again   ← DUPLICATE loading
+    ├── async_load_platform() for sensor + binary_sensor ← YAML custom entity escape hatch
     │
     ├── Register services:
     │     event_websocket_command
     │     event_secured_websocket_command
     │     sync_areas
+    │     sync_device_names
     │     reload
     │
     ├── Register event listeners:
@@ -50,6 +51,7 @@ async_setup_entry(hass, config_entry)
 | `event_websocket_command`       | Domain   | Send WS command by UUID or entity ID |
 | `event_secured_websocket_command`| Domain  | Secured WS command with PIN code     |
 | `sync_areas`                    | Domain   | Sync HA areas from Loxone rooms      |
+| `sync_device_names`             | Domain   | Sync HA device names from structure  |
 | `reload`                        | Domain   | Reload integration                   |
 | `enable_sun_automation`         | Entity   | Enable jalousie sun automation       |
 | `disable_sun_automation`        | Entity   | Disable jalousie sun automation      |

@@ -263,6 +263,7 @@ LoxoneException (base)
 | **Medium** | Duplicate exception handling for `ConnectionError`/`TimeoutError` in `open()` | `connection.py:596-623` |
 | **Low** | `LoxoneToken.seconds_to_expire()` raises `ValueError` when `valid_until == 0` | `loxone_token.py` |
 | **Low** | Typo `reponse` in `read_user_salt_response` | `loxone_token.py:31` |
+| **Medium** | `send_websocket_command` doesn't check `is_connected` before enqueueing — commands pile up during disconnects | `connection.py:~1099` |
 
 ### Dead Code
 

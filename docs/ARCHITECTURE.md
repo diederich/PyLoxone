@@ -11,7 +11,7 @@
 | License          | Apache 2.0                                    |
 | HA minimum       | 2025.2.4                                      |
 | Installation     | HACS or manual copy of `custom_components/`   |
-| IoT class        | `local_polling` (should be `local_push`)      |
+| IoT class        | `local_push`                                  |
 | Runtime deps     | `websockets>=14`, `pycryptodome`, `httpx`     |
 
 ## High-Level Architecture
@@ -253,4 +253,4 @@ The integration uses HA's config flow (no YAML entity config). Key options:
 - **Linting** — Ruff (Python 3.13, line length 120)
 - **Dev environment** — VS Code devcontainer with Home Assistant core
 - **CI** — GitHub Actions: hassfest validation, HACS validation
-- **Tests** — Minimal (`pyloxone_api/tests/`); no integration-level tests
+- **Tests** — `pytest-homeassistant-custom-component` harness in `tests/components/loxone/` with fixtures per platform; legacy minimal tests in `pyloxone_api/tests/`
