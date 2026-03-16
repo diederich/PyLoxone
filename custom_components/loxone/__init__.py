@@ -285,17 +285,18 @@ async def async_setup_entry(hass, config_entry):
 
     hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = coordinator
 
-    setup_tasks = []
     await hass.config_entries.async_forward_entry_setups(config_entry, LOXONE_PLATFORMS)
-    for platform in LOXONE_PLATFORMS:
-        setup_tasks.append(
-            hass.async_create_task(
-                async_load_platform(hass, platform, DOMAIN, {}, config_entry)
-            )
-        )
 
-    if setup_tasks:
-        await asyncio.wait(setup_tasks)
+    # YAML-based custom sensors/binary_sensors (documented "Advanced usage" escape hatch)
+    yaml_platforms = [Platform.SENSOR, Platform.BINARY_SENSOR]
+    yaml_tasks = [
+        hass.async_create_task(
+            async_load_platform(hass, platform, DOMAIN, {}, config_entry)
+        )
+        for platform in yaml_platforms
+    ]
+    if yaml_tasks:
+        await asyncio.wait(yaml_tasks)
 
     async def _reload_after_delay(delay: float = 1.0) -> None:
         await coordinator.api.close()

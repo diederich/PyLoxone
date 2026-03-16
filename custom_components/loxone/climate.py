@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
 from voluptuous import All, Optional, Range
 
 from . import LoxoneEntity
@@ -52,22 +52,6 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
         Optional(CONF_HVAC_AUTO_MODE, default=0): All(int, Range(min=0, max=2)),
     }
 )
-
-
-# noinspection PyUnusedLocal
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    # value_template = config.get(CONF_VALUE_TEMPLATE)
-    # auto_mode = 0 if config.get(CONF_HVAC_AUTO_MODE) is None else config.get(CONF_HVAC_AUTO_MODE)
-    #
-    # if value_template is not None:
-    #     value_template.hass = hass
-    # config = hass.data[DOMAIN]
-    return True
 
 
 async def async_setup_entry(

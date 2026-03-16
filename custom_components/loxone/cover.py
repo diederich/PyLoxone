@@ -18,7 +18,6 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import LoxoneEntity
 from .const import (SENDDOMAIN, SERVICE_DISABLE_SUN_AUTOMATION,
@@ -31,16 +30,6 @@ from .miniserver import get_miniserver_from_hass
 _LOGGER = logging.getLogger(__name__)
 
 NEW_COVERS = "covers"
-
-
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Set up the Loxone covers."""
-    return True
 
 
 async def async_setup_entry(

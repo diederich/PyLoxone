@@ -9,7 +9,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+
 from voluptuous import Any, Optional
 
 from . import LoxoneEntity
@@ -31,18 +31,6 @@ VENTELATION_INT_TO_STR = {2: "Low", 3: "Medium", 4: "High", 5: "Auto", 6: "Away"
 STR_TO_VENTILATION_PROFILE_SETTABLE = {
     value: key for (key, value) in VENTELATION_INT_TO_STR.items()
 }
-
-
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_devices: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """
-    For now, we do nothing. Function is only to get rid of the error message of missing async_setup_platform
-    """
-    pass
 
 
 async def async_setup_entry(

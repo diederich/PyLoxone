@@ -4,7 +4,6 @@ from enum import StrEnum
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from .helpers import add_room_and_cat_to_value_values, get_all
 from .lights.colorpickers import LumiTech, RGBColorPicker, TunableWhiteLight
@@ -36,16 +35,6 @@ class ColorPickerTypes(StrEnum):
 class DimmerTypes(StrEnum):
     DIMMER = "Dimmer"
     EIBDIMMER = "EIBDimmer"
-
-
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Set up Loxone Light Controller."""
-    return True
 
 
 async def async_setup_entry(

@@ -11,7 +11,6 @@ from homeassistant.components.media_player import (MediaPlayerDeviceClass,
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import LoxoneEntity
 from .const import DEFAULT_AUDIO_ZONE_V2_PLAY_STATE, SENDDOMAIN
@@ -35,16 +34,6 @@ SUPPORT_LOXONE_AUDIO_ZONE = (
     | MediaPlayerEntityFeature.VOLUME_SET
     | MediaPlayerEntityFeature.VOLUME_STEP
 )
-
-
-async def async_setup_platform(
-    hass: HomeAssistant,
-    config: ConfigType,
-    async_add_entities: AddEntitiesCallback,
-    discovery_info: DiscoveryInfoType | None = None,
-) -> None:
-    """Set up Loxone Audio zones."""
-    return True
 
 
 async def async_setup_entry(

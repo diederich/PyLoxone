@@ -1,9 +1,10 @@
 """Tests for Loxone integration setup, unload, and services."""
 
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from homeassistant.config_entries import ConfigEntryState
+from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -70,6 +71,29 @@ async def test_unload_clears_helpers_device_registry(
     await hass.async_block_till_done()
 
     assert len(helpers_device_registry) == 0
+
+
+async def test_async_load_platform_only_for_yaml_platforms(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection: MagicMock,
+) -> None:
+    """async_load_platform should only be called for sensor and binary_sensor.
+
+    These two platforms support YAML-based custom entities (the "Advanced usage"
+    escape hatch documented in README.md). All other platforms use only
+    async_forward_entry_setups via async_setup_entry.
+    """
+    with patch(
+        "custom_components.loxone.async_load_platform",
+        wraps=None,
+    ) as mock_load:
+        mock_config_entry.add_to_hass(hass)
+        await hass.config_entries.async_setup(mock_config_entry.entry_id)
+        await hass.async_block_till_done()
+
+    called_platforms = {call.args[1] for call in mock_load.call_args_list}
+    assert called_platforms == {Platform.SENSOR, Platform.BINARY_SENSOR}
 
 
 # -- sync_device_names service ------------------------------------------------
