@@ -24,6 +24,11 @@ VALID_USER_INPUT = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Config flow (initial setup)
+# ---------------------------------------------------------------------------
+
+
 async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
     """Complete user flow should create a config entry."""
     result = await hass.config_entries.flow.async_init(
@@ -64,7 +69,7 @@ async def test_user_flow_rejects_non_latin1_username(hass: HomeAssistant) -> Non
     )
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
-        user_input={**VALID_USER_INPUT, "username": "user\u4e16"},  # CJK character
+        user_input={**VALID_USER_INPUT, "username": "user\u4e16"},
     )
     assert result["type"] is FlowResultType.FORM
     assert result["errors"]["base"] == "Username contains characters that are not latin-1 compatible"
@@ -92,21 +97,46 @@ async def test_user_flow_accepts_latin1_special_chars(hass: HomeAssistant) -> No
         result["flow_id"],
         user_input={
             **VALID_USER_INPUT,
-            "username": "b\u00fcro",     # büro
-            "password": "p\u00e4ssw\u00f6rd",  # pässwörd
+            "username": "b\u00fcro",
+            "password": "p\u00e4ssw\u00f6rd",
         },
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
 
 
-async def test_options_flow(
+# ---------------------------------------------------------------------------
+# Options flow — menu and settings
+# ---------------------------------------------------------------------------
+
+
+async def test_options_flow_shows_menu(
     hass: HomeAssistant,
     init_integration: MockConfigEntry,
 ) -> None:
-    """Options flow should allow changing settings on an existing entry."""
+    """Options flow init should present a menu."""
     entry = init_integration
     result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+    assert "settings" in result["menu_options"]
+    assert "bridge_menu" in result["menu_options"]
+
+
+async def test_options_flow_settings(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Settings path should allow changing connection options."""
+    entry = init_integration
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    assert result["type"] is FlowResultType.MENU
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "settings"},
+    )
     assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "settings"
 
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
@@ -119,3 +149,231 @@ async def test_options_flow(
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["host"] == "10.0.0.50"
     assert entry.options["port"] == 9999
+
+
+# ---------------------------------------------------------------------------
+# Options flow — device bridges UI
+# ---------------------------------------------------------------------------
+
+
+async def test_bridge_menu_shows_no_bridges(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Bridge menu with no bridges should show add and done (no remove)."""
+    entry = init_integration
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "bridge_menu"
+    assert "bridge_add" in result["menu_options"]
+    assert "bridge_done" in result["menu_options"]
+    assert "bridge_remove" not in result["menu_options"]
+
+
+async def test_bridge_add(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """Adding a bridge via the UI should persist it."""
+    entry = init_integration
+
+    mock_loxone_connection.structure_file = {
+        "rooms": {"r1": {"name": "Living Room"}},
+        "controls": {
+            "lc-uuid": {
+                "name": "Main Light Controller",
+                "type": "LightControllerV2",
+                "uuidAction": "lc-uuid",
+                "room": "r1",
+                "subControls": {
+                    "sc-dimmer": {
+                        "name": "Spot Dimmer",
+                        "type": "Dimmer",
+                        "uuidAction": "dim-action-uuid",
+                        "states": {"position": "pos-uuid", "min": "min-uuid", "max": "max-uuid"},
+                    },
+                },
+            },
+        },
+    }
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_add"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "bridge_add"
+
+    hass.states.async_set("light.hue_spot", "on", {"brightness": 200})
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            "entity_id": "light.hue_spot",
+            "loxone_control": "dim-action-uuid",
+            "cooldown": 2.0,
+        },
+    )
+    assert result["type"] is FlowResultType.MENU
+    assert result["step_id"] == "bridge_menu"
+    assert "bridge_remove" in result["menu_options"]
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_done"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+    bridge_list = entry.options.get("bridges", [])
+    assert len(bridge_list) == 1
+    assert bridge_list[0]["entity_id"] == "light.hue_spot"
+    assert bridge_list[0]["loxone_uuid"] == "dim-action-uuid"
+    assert bridge_list[0]["loxone_type"] == "Dimmer"
+    assert bridge_list[0]["cooldown"] == 2.0
+    assert bridge_list[0]["loxone_states"]["position"] == "pos-uuid"
+
+
+async def test_bridge_add_top_level_switch(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """Adding a bridge to a top-level Switch control."""
+    entry = init_integration
+
+    mock_loxone_connection.structure_file = {
+        "rooms": {"r1": {"name": "Kitchen"}},
+        "controls": {
+            "sw-uuid": {
+                "name": "VI_Presence",
+                "type": "Switch",
+                "uuidAction": "sw-uuid",
+                "room": "r1",
+                "states": {"active": "act-uuid"},
+            },
+        },
+    }
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_add"},
+    )
+
+    hass.states.async_set("binary_sensor.presence", "on")
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={
+            "entity_id": "binary_sensor.presence",
+            "loxone_control": "sw-uuid",
+            "cooldown": 1.0,
+        },
+    )
+    assert result["type"] is FlowResultType.MENU
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_done"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+
+    bridge_list = entry.options.get("bridges", [])
+    assert len(bridge_list) == 1
+    assert bridge_list[0]["loxone_type"] == "Switch"
+
+
+async def test_bridge_remove(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """Removing a bridge via the UI should update options."""
+    mock_config_entry.add_to_hass(hass)
+    hass.config_entries.async_update_entry(
+        mock_config_entry,
+        options={
+            **mock_config_entry.options,
+            "bridges": [
+                {
+                    "entity_id": "light.hue",
+                    "loxone_uuid": "dim-uuid",
+                    "loxone_type": "Dimmer",
+                    "loxone_states": {"position": "pos-uuid"},
+                    "loxone_name": "Test Dimmer",
+                    "cooldown": 1.0,
+                },
+            ],
+        },
+    )
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    result = await hass.config_entries.options.async_init(
+        mock_config_entry.entry_id
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    assert result["type"] is FlowResultType.MENU
+    assert "bridge_remove" in result["menu_options"]
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_remove"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "bridge_remove"
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"bridge": "0"},
+    )
+    assert result["type"] is FlowResultType.MENU
+    assert "bridge_remove" not in result["menu_options"]
+
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_done"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert len(mock_config_entry.options.get("bridges", [])) == 0
+
+
+async def test_bridge_done_preserves_settings(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Bridge done should preserve existing connection settings."""
+    entry = init_integration
+    original_host = entry.options["host"]
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_done"},
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    assert entry.options["host"] == original_host

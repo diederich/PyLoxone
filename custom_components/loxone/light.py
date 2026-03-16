@@ -51,6 +51,10 @@ async def async_setup_entry(
     entities = []
     dimmers_without_light_controller = get_all(loxconfig, ["Dimmer", "EIBDimmer"])
 
+    bridged_uuids = {
+        b["loxone_uuid"] for b in config_entry.options.get("bridges", [])
+    }
+
     switches = []
     dimmers = []
     color_pickers = []
@@ -73,7 +77,12 @@ async def async_setup_entry(
                 ):
                     continue
                 sub_control = light_controller["subControls"][sub_control_uuid]
-                # Update for all entities
+                if sub_control.get("uuidAction") in bridged_uuids:
+                    _LOGGER.debug(
+                        "Skipping sub-control %s — used by a device bridge",
+                        sub_control.get("name", sub_control_uuid),
+                    )
+                    continue
                 sub_control = add_room_and_cat_to_value_values(loxconfig, sub_control)
                 sub_control.update(
                     {
@@ -100,6 +109,8 @@ async def async_setup_entry(
         entities.append(new_switch)
 
     for dimmer in dimmers + dimmers_without_light_controller:
+        if dimmer.get("uuidAction") in bridged_uuids:
+            continue
         if "async_add_devices" not in dimmer:
             dimmer = add_room_and_cat_to_value_values(loxconfig, dimmer)
             dimmer.update(

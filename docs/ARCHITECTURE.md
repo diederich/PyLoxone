@@ -105,6 +105,8 @@ PyLoxone/
 │       ├── scene.py                 # LightControllerV2 moods as scenes
 │       ├── text.py                  # TextInput (never loaded — see issues)
 │       ├── light.py                 # Light platform entry point
+│       ├── bridge.py               # Device-level bridge (HA entity <-> Loxone control)
+│       ├── bridge_mappers.py       # Type-specific bridge mappers
 │       │
 │       ├── lights/                  # Light entity implementations
 │       │   ├── colorpickers.py
@@ -123,8 +125,7 @@ PyLoxone/
 │           ├── exceptions.py        # Exception hierarchy
 │           ├── helper.py            # HMAC utilities (unused)
 │           ├── const.py             # API-level constants
-│           ├── __main__.py          # Standalone CLI entry point
-│           └── tests/               # Minimal tests
+│           └── __main__.py          # Standalone CLI entry point
 │
 ├── .github/workflows/              # CI: hassfest, HACS validation, stale
 ├── config/configuration.yaml       # Dev HA config
@@ -253,4 +254,4 @@ The integration uses HA's config flow (no YAML entity config). Key options:
 - **Linting** — Ruff (Python 3.13, line length 120)
 - **Dev environment** — VS Code devcontainer with Home Assistant core
 - **CI** — GitHub Actions: hassfest validation, HACS validation
-- **Tests** — `pytest-homeassistant-custom-component` harness in `tests/components/loxone/` with fixtures per platform; legacy minimal tests in `pyloxone_api/tests/`
+- **Tests** — `pytest-homeassistant-custom-component` harness in `tests/components/loxone/` with fixtures per platform

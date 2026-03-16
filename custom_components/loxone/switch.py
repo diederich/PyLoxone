@@ -32,7 +32,13 @@ async def async_setup_entry(
     loxconfig = miniserver.lox_config.json
     entities = []
 
+    bridged_uuids = {
+        b["loxone_uuid"] for b in config_entry.options.get("bridges", [])
+    }
+
     for switch_entity in get_all(loxconfig, ["Switch", "TimedSwitch", "Intercom"]):
+        if switch_entity.get("uuidAction") in bridged_uuids:
+            continue
 
         switch_entity = add_room_and_cat_to_value_values(loxconfig, switch_entity)
 

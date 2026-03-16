@@ -22,17 +22,51 @@
   "options": {
     "step": {
       "init": {
+        "title": "PyLoxone Options",
+        "menu_options": {
+          "settings": "Connection Settings",
+          "bridge_menu": "Device Bridges"
+        }
+      },
+      "settings": {
+        "title": "Connection Settings",
+        "description": "Edit Miniserver connection and integration options.",
         "data": {
           "username": "User",
           "port": "Port",
-          "host": "Miniserver Ip",
+          "host": "Miniserver IP",
           "password": "Password",
           "generate_scenes": "Generate scenes",
-          "generate_lightcontroller_subcontrols": "Generate subcontrols for lightcontrollerV2",
+          "generate_lightcontroller_subcontrols": "Generate subcontrols for LightcontrollerV2",
           "generate_scenes_delay": "Delay for the scene generation if enabled"
+        }
+      },
+      "bridge_menu": {
+        "title": "Device Bridges",
+        "description": "Active bridges:\n{bridges}",
+        "menu_options": {
+          "bridge_add": "Add bridge",
+          "bridge_remove": "Remove bridge",
+          "bridge_done": "Done"
+        }
+      },
+      "bridge_add": {
+        "title": "Add Device Bridge",
+        "description": "Bridge an HA entity to a Loxone control. The integration auto-detects the mapping type.\n\nFor lights, add an RGB/Dimmer/Switch circuit to a Lighting Controller in Loxone Config first.",
+        "data": {
+          "entity_id": "HA Entity",
+          "loxone_control": "Loxone Control",
+          "cooldown": "Cooldown"
         },
-        "description": "PyLoxone edit settings:",
-        "title": "PyLoxone settings"
+        "data_description": {
+          "loxone_control": "Pick a Loxone control or light circuit. Only controls with \"Use in Visualization\" enabled appear. Reload the integration to refresh the list."
+        }
+      },
+      "bridge_remove": {
+        "title": "Remove Device Bridge",
+        "data": {
+          "bridge": "Bridge to remove"
+        }
       }
     }
   },

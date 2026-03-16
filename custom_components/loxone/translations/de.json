@@ -22,17 +22,51 @@
   "options": {
     "step": {
       "init": {
+        "title": "PyLoxone Optionen",
+        "menu_options": {
+          "settings": "Verbindungseinstellungen",
+          "bridge_menu": "Gerätebrücken"
+        }
+      },
+      "settings": {
+        "title": "Verbindungseinstellungen",
+        "description": "Miniserver-Verbindung und Integrationsoptionen bearbeiten.",
         "data": {
           "username": "Benutzer",
           "port": "Port",
-          "host": "Miniserver Ip",
+          "host": "Miniserver IP",
           "password": "Password",
-          "generate_scenes": "Scenen generieren",
+          "generate_scenes": "Szenen generieren",
           "generate_lightcontroller_subcontrols": "Subcontrols für LightcontrollerV2 erzeugen",
-          "generate_scenes_delay": "Verzögerung beim erstellen der Scenen (wenn aktiviert)"
+          "generate_scenes_delay": "Verzögerung beim Erstellen der Szenen (wenn aktiviert)"
+        }
+      },
+      "bridge_menu": {
+        "title": "Gerätebrücken",
+        "description": "Aktive Brücken:\n{bridges}",
+        "menu_options": {
+          "bridge_add": "Brücke hinzufügen",
+          "bridge_remove": "Brücke entfernen",
+          "bridge_done": "Fertig"
+        }
+      },
+      "bridge_add": {
+        "title": "Gerätebrücke hinzufügen",
+        "description": "Eine HA-Entität mit einem Loxone-Control verbinden. Die Integration erkennt den Mapping-Typ automatisch.\n\nFür Lichter zunächst einen RGB/Dimmer/Switch-Lichtkreis im Lichtsteuerung in Loxone Config anlegen.",
+        "data": {
+          "entity_id": "HA-Entität",
+          "loxone_control": "Loxone-Control",
+          "cooldown": "Abklingzeit"
         },
-        "description": "PyLoxone Einstellungen editieren:",
-        "title": "PyLoxone Einstellungen"
+        "data_description": {
+          "loxone_control": "Loxone-Control oder Lichtkreis wählen. Nur Controls mit \"In Visualisierung verwenden\" erscheinen. Integration neu laden um die Liste zu aktualisieren."
+        }
+      },
+      "bridge_remove": {
+        "title": "Gerätebrücke entfernen",
+        "data": {
+          "bridge": "Zu entfernende Brücke"
+        }
       }
     }
   },

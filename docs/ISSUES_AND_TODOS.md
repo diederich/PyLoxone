@@ -796,24 +796,19 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
 
-### ARCH-008: Expose HA entity states to Loxone Virtual Inputs
+### ~~ARCH-008: Sync HA entities with Loxone controls~~ ✅ (implemented)
 
-**Inspiration:** KNX integration's `expose` feature
+Implemented as `sync.py` with `loxone.sync` / `loxone.unsync` services and options flow UI. Features:
+- Bidirectional data model: `vi_name`/`vi_uuid` (expose, HA → Loxone) and `vo_name`/`vo_uuid` (subscribe, Loxone → HA) — set either or both per binding
+- Name-based resolution (`vi_name` + optional `room`) or direct UUID
+- Type conversion: binary→0/1, analog→float, text→string; skips `unavailable`/`unknown`
+- Echo/loop protection: skip_unchanged, analog epsilon (0.01), trailing-edge cooldown (default 1s)
+- Bindings persisted in `config_entry.options["sync"]`
+- Options flow UI: menu-based (Settings / Sync Bindings), separate Loxone Input and Output dropdowns, Add / Remove / Done steps
+- Update listener re-initializes sync bindings when options change via UI
 
-Add a KNX-style "expose" capability that automatically pushes HA entity state changes to Loxone Virtual Inputs (VIs). This eliminates boilerplate automations for the common use case of making non-Loxone sensor data available to Loxone programs (e.g., EP One presence → VI_Presence_Kitchen).
-
-**Design:**
-- Configuration stored in `config_entry.options["expose"]` — list of `{entity_id, uuid/vi_name, type}` bindings
-- Type conversion: binary→0/1, numeric→float, text→string; skip `unavailable`/`unknown`
-- `vi_name` resolved to UUID from the structure file at startup (Slider and TextInput controls are discoverable; digital VIs require UUID)
-- State pushed on every `state_changed` event and on integration (re)load (covers reconnect)
-- New `loxone.expose` / `loxone.unexpose` services for dynamic binding
-
-**Implementation:** New `expose.py` module (~150-200 lines), wired into `async_setup_entry`/`async_unload_entry`. Prerequisite: fix BUG-005 (duplicate platform loading) and BUG-011 (service removal crash) to keep `__init__.py` clean.
-
-**Precedent:** The KNX core integration (silver quality) has had `expose` since early days. It's the accepted HA pattern for integrations that interface with writable building automation buses.
-
-**Limitation:** VIs cannot be created via the Loxone API — they must be pre-configured in Loxone Config. The integration can only validate that configured VIs exist in the structure file and warn on mismatches.
+**Remaining work:**
+- Value scaling (e.g., HA brightness 0-255 → Loxone 0-100)
 
 ### ARCH-007: Multi-Miniserver support
 

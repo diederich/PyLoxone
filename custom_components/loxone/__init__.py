@@ -28,6 +28,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.entity import Entity
+
+from .bridge import BridgeRuntime
 from homeassistant.setup import async_setup_component
 
 from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_COMMAND, ATTR_DEVICE,
@@ -121,7 +123,10 @@ async def async_unload_entry(hass, config_entry):
 
     helpers_device_registry.clear()
 
-    # Services deregistrieren beim Entladen
+    # Tear down device bridges before removing services
+    if hasattr(coordinator, "bridge_runtime") and coordinator.bridge_runtime:
+        await coordinator.bridge_runtime.async_teardown()
+
     hass.services.async_remove(DOMAIN, "event_websocket_command")
     hass.services.async_remove(DOMAIN, "event_secured_websocket_command")
     hass.services.async_remove(DOMAIN, "sync_areas")
@@ -634,6 +639,21 @@ async def async_setup_entry(hass, config_entry):
     hass.services.async_register(DOMAIN, "sync_areas", handle_sync_areas_with_loxone)
     hass.services.async_register(DOMAIN, "sync_device_names", handle_sync_device_names)
     hass.services.async_register(DOMAIN, "reload", handle_reload)
+
+    # -- Device Bridges (HA entity <-> Loxone control) ------------------------
+
+    bridge_runtime = BridgeRuntime(hass, coordinator, config_entry)
+    await bridge_runtime.async_setup()
+    coordinator.bridge_runtime = bridge_runtime
+
+    async def _async_options_updated(hass_ref, entry):
+        coord = hass_ref.data.get(DOMAIN, {}).get(entry.entry_id)
+        if coord and hasattr(coord, "bridge_runtime") and coord.bridge_runtime:
+            await coord.bridge_runtime.async_options_updated()
+
+    config_entry.async_on_unload(
+        config_entry.add_update_listener(_async_options_updated)
+    )
 
     hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, stop_event)
     hass.bus.async_listen_once(EVENT_COMPONENT_LOADED, loxone_discovered)
