@@ -242,17 +242,9 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 Lamella positioning uses a random value, making behavior non-deterministic.
 
-### MED-009: Logger format errors in colorpickers
+### ~~MED-009: Logger format errors in colorpickers~~
 
-**File:** `lights/colorpickers.py:103,243`
-
-```python
-# Current:
-_LOGGER.error("Not handled command ->", _color)
-
-# Fix:
-_LOGGER.error("Not handled command -> %s", _color)
-```
+~~**File:** `lights/colorpickers.py:103,243`~~ — Fixed both occurrences to use `%s` formatting ✅
 
 ### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
 
@@ -809,7 +801,7 @@ Tasks that can be done in under 30 minutes each:
 | 1   | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py                 | Fixes AC temperature control                     |
 | 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
 | ~~4~~   | ~~Remove `print()` from coordinator.py~~                                                     | ~~Clean up debug output~~ ✅                     |
-| 5   | Fix `_LOGGER.error` format strings in colorpickers.py                                        | Correct logging                                  |
+| ~~5~~   | ~~Fix `_LOGGER.error` format strings in colorpickers.py~~                                    | ~~Correct logging~~ ✅                           |
 | ~~6~~   | ~~Fix `masterColor` filter from `> 1` to `> -1`~~                                            | ~~Correct light discovery~~ ✅                   |
 | 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
 | ~~8~~   | ~~Remove `sys.exit(-1)` from LoxoneEntity~~                                                  | ~~Prevent HA process kill~~ ✅                   |

@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 4) — Fix logger format strings in colorpickers
+
+### Changes
+
+- **MED-009 / Quick Win #5:** Two `_LOGGER.error("Not handled command ->", _color)` calls passed `_color` as a positional arg instead of using `%s` formatting — the value was silently dropped. Fixed both occurrences.
+
+---
+
 ## 2026-03-29 (fix 3) — Fix masterColor filter in light subcontrol discovery
 
 ### Changes
