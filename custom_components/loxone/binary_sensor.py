@@ -22,8 +22,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 
 from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -130,15 +129,6 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
 
         if self._parent_id:
             self.uuidAction = self._parent_id
-
-        if self._from_loxone_config:
-            self._attr_device_info = get_or_create_device(
-                self.unique_id, self.name, self.type, self.room
-            )
-        else:
-            self._attr_device_info = get_or_create_device(
-                self.unique_id, self.name, self.type, ""
-            )
 
         if self._from_loxone_config:
             self._attr_extra_state_attributes.update(

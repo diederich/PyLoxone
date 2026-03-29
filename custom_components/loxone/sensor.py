@@ -32,8 +32,7 @@ from homeassistant.util import dt as dt_util
 
 from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN, THROTTLE_KEEP_ALIVE_TIME
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 NEW_SENSOR = "sensors"
@@ -382,14 +381,7 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
             if precision:
                 self._attr_suggested_display_precision = precision
 
-        _uuid = self.unique_id
-        if self._parent_id:
-            _uuid = self._parent_id
-
         self.type = "Sensor analog"
-        self._attr_device_info = get_or_create_device(
-            _uuid, self.name, self.type, self.room
-        )
 
     def _parse_digits_after_decimal(self, format_string):
         """Parse digits after the decimal point from the format string."""

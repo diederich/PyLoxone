@@ -8,12 +8,11 @@ from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
                                  CONF_USERNAME)
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers.device_registry import format_mac
 
-# from .api import LoxApp, LoxWs
 from .helpers import get_miniserver_type
 
 _LOGGER = logging.getLogger(__name__)
-CONNECTION_NETWORK_MAC = "mac"
 DOMAIN = "loxone"
 NEW_GROUP = "groups"
 NEW_LIGHT = "lights"
@@ -98,20 +97,15 @@ class MiniServer:
 
     async def async_update_device_registry(self) -> None:
         device_registry = dr.async_get(self.hass)
-        # Host device
-        # device_registry.async_get_or_create(
-        #     config_entry_id=self.config_entry.entry_id,
-        #     connections={
-        #         (CONNECTION_NETWORK_MAC, self.config_entry.options[CONF_HOST])
-        #     },
-        # )
+        connections: set[tuple[str, str]] = set()
+        if self.serial:
+            mac = format_mac(self.serial)
+            if mac:
+                connections.add((dr.CONNECTION_NETWORK_MAC, mac))
 
-        # Miniserver service
         device_registry.async_get_or_create(
             config_entry_id=self.config_entry.entry_id,
-            connections={
-                (CONNECTION_NETWORK_MAC, self.config_entry.options[CONF_HOST])
-            },
+            connections=connections,
             name=self.name,
             model=get_miniserver_type(self.miniserver_type),
             identifiers={(DOMAIN, self.serial)},

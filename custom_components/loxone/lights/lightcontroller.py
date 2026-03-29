@@ -6,11 +6,10 @@ from homeassistant.components.light import (ATTR_BRIGHTNESS, ATTR_EFFECT,
                                             ColorMode, LightEntity,
                                             LightEntityFeature)
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.helpers.entity import DeviceInfo
 
 from .. import LoxoneEntity
-from ..const import DOMAIN, SENDDOMAIN, STATE_OFF
-from ..helpers import get_or_create_device, hass_to_lox, lox2hass_mapped, lox_to_hass
+from ..const import SENDDOMAIN, STATE_OFF
+from ..helpers import hass_to_lox, lox2hass_mapped, lox_to_hass
 
 
 class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
@@ -59,9 +58,6 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
             self._attr_supported_color_modes = {ColorMode.BRIGHTNESS}
 
         self.type = "LightControllerV2"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def device_class(self):

@@ -569,7 +569,7 @@ class TestBridgeRuntime:
 
 
 # ---------------------------------------------------------------------------
-# Entity suppression
+# Bridged entity disabling
 # ---------------------------------------------------------------------------
 
 
@@ -578,18 +578,21 @@ def structure_fixture_name() -> str:
     return "structure_lights.json"
 
 
-async def test_entity_suppression_skips_bridged_subcontrol(
+async def test_bridged_entity_is_disabled_not_removed(
     hass: HomeAssistant,
     mock_loxone_connection: MagicMock,
 ) -> None:
-    """Sub-controls used by a bridge should not create HA entities."""
+    """Bridged sub-controls should be created but disabled by integration."""
+    from homeassistant.helpers import entity_registry as er
     from custom_components.loxone.const import (
+        CONF_CREATE_AREAS,
         CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
         CONF_SCENE_GEN,
         CONF_SCENE_GEN_DELAY,
     )
     from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 
+    bridged_uuid = "lc01sp00-0000-0000-0000000000000000"
     opts = {
         CONF_HOST: "192.168.1.100",
         CONF_PORT: 8080,
@@ -598,10 +601,11 @@ async def test_entity_suppression_skips_bridged_subcontrol(
         CONF_SCENE_GEN: True,
         CONF_SCENE_GEN_DELAY: 3,
         CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: True,
+        CONF_CREATE_AREAS: True,
         "bridges": [
             {
                 "entity_id": "light.external_light",
-                "loxone_uuid": "lc01sp00-0000-0000-0000000000000000",
+                "loxone_uuid": bridged_uuid,
                 "loxone_type": "ColorPickerV2",
                 "loxone_states": {"color": "lc01sp00-0000-0000-0000000000000001"},
             },
@@ -618,8 +622,16 @@ async def test_entity_suppression_skips_bridged_subcontrol(
     await hass.config_entries.async_setup(entry.entry_id)
     await hass.async_block_till_done()
 
-    suppressed_uuids = [
-        s.attributes.get("uuid") for s in hass.states.async_all()
-        if s.entity_id.startswith("light.")
-    ]
-    assert "lc01sp00-0000-0000-0000000000000000" not in suppressed_uuids
+    registry = er.async_get(hass)
+    ent_entry = None
+    for ent in registry.entities.values():
+        if ent.platform == DOMAIN and ent.unique_id == bridged_uuid:
+            ent_entry = ent
+            break
+
+    assert ent_entry is not None, (
+        "Bridged entity should still exist in the entity registry"
+    )
+    assert ent_entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION, (
+        "Bridged entity should be disabled by integration"
+    )

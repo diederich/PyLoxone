@@ -5,13 +5,17 @@ For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
+import asyncio
+import logging
 from typing import Any, Mapping
 
+import aiohttp
 import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry, OptionsFlow
 from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
                                  CONF_USERNAME)
 from homeassistant.core import callback
+from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.schema_config_entry_flow import (
     SchemaCommonFlowHandler, SchemaConfigFlowHandler, SchemaFlowError,
     SchemaFlowFormStep)
@@ -31,15 +35,19 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import (CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, CONF_SCENE_GEN,
-                    CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE, DEFAULT_IP,
-                    DEFAULT_PORT, DOMAIN)
+from .const import (CONF_CREATE_AREAS, CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
+                    CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE,
+                    DEFAULT_IP, DEFAULT_PORT, DOMAIN)
+
+_LOGGER = logging.getLogger(__name__)
+
+_TEST_ENDPOINT = "/jdev/cfg/apiKey"
 
 
 async def validate_loxone_setup(
     handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
 ) -> dict[str, Any]:
-    """Validate Loxone setup."""
+    """Validate Loxone setup: schema checks + live connection test."""
     try:
         if CONF_USERNAME in user_input:
             user_input[CONF_USERNAME].encode("latin-1")
@@ -60,6 +68,36 @@ async def validate_loxone_setup(
         user_input[CONF_PORT] = int(user_input[CONF_PORT])
     if CONF_SCENE_GEN_DELAY in user_input:
         user_input[CONF_SCENE_GEN_DELAY] = int(user_input[CONF_SCENE_GEN_DELAY])
+
+    # Live connection test against the Miniserver
+    hass = handler.parent_handler.hass
+    host = user_input.get(CONF_HOST, "")
+    port = user_input.get(CONF_PORT, DEFAULT_PORT)
+    username = user_input.get(CONF_USERNAME, "")
+    password = user_input.get(CONF_PASSWORD, "")
+
+    session = async_get_clientsession(hass)
+    url = f"http://{host}:{port}{_TEST_ENDPOINT}"
+
+    try:
+        async with asyncio.timeout(10):
+            resp = await session.get(
+                url,
+                auth=aiohttp.BasicAuth(username, password),
+            )
+            if resp.status == 401:
+                raise SchemaFlowError("invalid_auth")
+            if resp.status not in (200, 301, 302):
+                _LOGGER.warning("Miniserver returned HTTP %s for %s", resp.status, url)
+                raise SchemaFlowError("cannot_connect")
+    except SchemaFlowError:
+        raise
+    except (asyncio.TimeoutError, TimeoutError):
+        raise SchemaFlowError("cannot_connect")
+    except aiohttp.ClientError:
+        raise SchemaFlowError("cannot_connect")
+    except OSError:
+        raise SchemaFlowError("cannot_connect")
 
     return user_input
 
@@ -85,6 +123,7 @@ DATA_SCHEMA_SETUP = vol.Schema(
         vol.Required(
             CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, default=False
         ): BooleanSelector(),
+        vol.Required(CONF_CREATE_AREAS, default=True): BooleanSelector(),
     }
 )
 
@@ -107,6 +146,7 @@ SETTINGS_SCHEMA = vol.Schema(
             NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)
         ),
         vol.Required(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN): BooleanSelector(),
+        vol.Required(CONF_CREATE_AREAS): BooleanSelector(),
     }
 )
 

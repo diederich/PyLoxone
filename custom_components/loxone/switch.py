@@ -15,8 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -32,14 +31,7 @@ async def async_setup_entry(
     loxconfig = miniserver.lox_config.json
     entities = []
 
-    bridged_uuids = {
-        b["loxone_uuid"] for b in config_entry.options.get("bridges", [])
-    }
-
     for switch_entity in get_all(loxconfig, ["Switch", "TimedSwitch", "Intercom"]):
-        if switch_entity.get("uuidAction") in bridged_uuids:
-            continue
-
         switch_entity = add_room_and_cat_to_value_values(loxconfig, switch_entity)
 
         if switch_entity["type"] in ["Switch"]:
@@ -93,9 +85,6 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
             self._deactivation_delay_total = ""
 
         self.type = "TimeSwitch"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def should_poll(self):
@@ -182,9 +171,6 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
         self._assumed = False
 
         self.type = "Switch"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def should_poll(self):
@@ -247,9 +233,6 @@ class LoxoneIntercomSubControl(LoxoneSwitch):
         LoxoneSwitch.__init__(self, **kwargs)
 
         self.type = "IntercomSubControl"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     def turn_on(self, **kwargs):
         """Turn the switch on."""

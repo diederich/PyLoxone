@@ -4,6 +4,75 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-30 — MED-012: Register services in async_setup
+
+### Decisions
+
+- Moved all domain-level services (`event_websocket_command`, `event_secured_websocket_command`, `sync_areas`, `sync_device_names`, `reload`) from `async_setup_entry` to `async_setup` so they exist regardless of whether the config entry has loaded.
+- Service handlers now look up the coordinator lazily via `_get_coordinator(hass)` instead of closing over it at registration time. If no coordinator is available (Miniserver not connected), they raise `HomeAssistantError` with a clear message.
+- Extracted `sync_areas_with_loxone` and `sync_device_names_from_structure` from nested closures to module-level functions (`_async_sync_areas`, `_async_sync_device_names`) since they only need `hass`.
+- Removed service teardown from `async_unload_entry` — services now outlive individual config entries.
+
+### Changes
+
+- **`__init__.py`:** Added `_get_coordinator()`, `_async_sync_areas()`, `_async_sync_device_names()`, `_async_register_services()` as module-level functions. `async_setup` now calls `_async_register_services()` and initializes `hass.data[DOMAIN]`. Removed handler definitions and `hass.services.async_register` calls from `async_setup_entry`. Removed `hass.services.async_remove` calls from `async_unload_entry`.
+- **`test_init.py`:** Added `test_services_registered_before_entry_setup`, `test_services_survive_entry_unload`, and `test_websocket_command_raises_when_no_coordinator`.
+- **`ISSUES_AND_TODOS.md`:** Removed MED-012.
+
+---
+
+## 2026-03-29 — Sync Engine: auto-sync, config flow area option, connection validation
+
+### Decisions
+
+- Auto-sync (`sync_device_names` + `sync_areas`) runs automatically at the end of `async_setup_entry` so fresh installs get a fully organized device tree without manual service calls.
+- Area creation (`create_areas`) is only honoured on the very first setup. A new config flow checkbox "Create HA areas from Loxone rooms" (default: true) controls this. After the first sync, an `initial_sync_done` flag is persisted in `config_entry.data`; subsequent restarts always use `create_areas=False` to avoid re-creating areas the user intentionally deleted.
+- Connection validation added to config flow: a live HTTP test against `/jdev/cfg/apiKey` catches bad credentials or unreachable Miniservers before the entry is saved.
+- Created `docs/SYNC_ENGINE.md` as the single source of truth for sync lifecycle documentation.
+
+### Changes
+
+- **`const.py`:** Added `CONF_CREATE_AREAS = "create_areas_on_setup"`.
+- **`config_flow.py`:** Added `CONF_CREATE_AREAS` checkbox to `DATA_SCHEMA_SETUP` and `SETTINGS_SCHEMA`. Added live connection test in `validate_loxone_setup` using `aiohttp.BasicAuth` against the Miniserver.
+- **`__init__.py`:** Auto-sync block at end of `async_setup_entry` checks `initial_sync_done` flag — first run uses user's `create_areas` preference, restarts use `False`. Persists `initial_sync_done` in entry data after first sync.
+- **`translations/en.json`, `translations/de.json`:** Added labels for `create_areas_on_setup` and error messages (`cannot_connect`, `invalid_auth`, `unknown`).
+- **`docs/SYNC_ENGINE.md`:** New doc covering sync lifecycle, auto-sync behavior, and first-run vs restart semantics.
+- **`docs/ARCHITECTURE.md`, `docs/HA_INTEGRATION.md`, `AGENTS.md`:** Updated doc tables to include SYNC_ENGINE.md.
+- **`docs/ISSUES_AND_TODOS.md`:** Removed IMP-003.
+- **`tests/components/loxone/test_init.py`:** Added tests for auto-sync first-run area creation, `initial_sync_done` flag, opt-out behavior, and no-recreate-on-restart.
+- **`tests/components/loxone/test_config_flow.py`:** Added tests for connection validation (invalid credentials, unreachable host, timeout). Updated `VALID_USER_INPUT` with new field.
+- **`tests/components/loxone/conftest.py`:** Added `CONF_CREATE_AREAS` to `MOCK_OPTIONS`.
+
+### Investigations
+
+- HA's `suggested_area` in `DeviceInfo` auto-creates areas during platform setup, independent of our `sync_areas`. Tests for opt-out behavior must account for this by mocking `_async_sync_areas` and asserting call args rather than checking area registry state.
+
+---
+
+## 2026-03-29 — ARCH-005 / MED-011: Migrate to proper DeviceInfo
+
+### Decisions
+
+- Used `device_info` property on `LoxoneEntity` instead of per-entity `_attr_device_info` assignment, following modern HA pattern.
+- `get_miniserver_from_hass(self.hass).serial` provides the `via_device` reference — no extra plumbing needed since `self.hass` is set before HA reads `device_info`.
+- `_attr_device_info` override still honored (checked first in the property) for special cases like `LoxoneMeterSensor`.
+- Light subcontrols override `device_info` to group under their parent `LightControllerV2` UUID.
+- `device_info` kwarg key is skipped in `LoxoneEntity.__init__`'s generic setattr loop (it collides with the new property).
+
+### Changes
+
+- **`__init__.py`:** Added `device_info` property to `LoxoneEntity` returning `DeviceInfo` with `via_device` pointing to the Miniserver. Removed `helpers_device_registry` import and `.clear()` call from `async_unload_entry`. Added `DeviceInfo` import. Added `_SKIP_KWARGS` set.
+- **`helpers.py`:** Removed `device_registry` dict, `get_or_create_device` function, and `DOMAIN` import.
+- **14 platform files:** Removed all `get_or_create_device` imports and `_attr_device_info` assignments from `alarm_control_panel.py`, `binary_sensor.py`, `climate.py`, `cover.py`, `fan.py`, `media_player.py`, `number.py`, `sensor.py`, `switch.py`, `text.py`.
+- **`button.py`:** Removed redundant custom `device_info` property (now inherited from base). Removed unused `DeviceInfo` import.
+- **`lights/`:** Removed `get_or_create_device` from `lightcontroller.py`, `dimmer.py`, `switch.py`, `colorpickers.py`. Added `device_info` property overrides in subcontrol classes to group under parent light controller UUID.
+- **`coordinator.py`:** Added `await self.miniserver.async_update_device_registry()` after `MiniServer` construction — this method existed but was never called, so the Miniserver device was never registered in HA.
+- **`miniserver.py`:** Fixed `CONNECTION_NETWORK_MAC` to use `format_mac(self.serial)` instead of the IP address. Loxone serials are MAC addresses, so this lets HA auto-merge the Miniserver device with devices from other integrations (e.g. UniFi) that share the same MAC. Removed dead `CONNECTION_NETWORK_MAC` constant and commented-out code.
+- **Tests:** Removed `TestGetOrCreateDevice` from `test_helpers.py`. Removed `test_unload_clears_helpers_device_registry` from `test_init.py`. Fixed `test_auto_sync_assigns_devices_to_areas_on_setup` to skip the Miniserver device (it has no room). Removed stale imports.
+- **Docs:** Removed ARCH-005 and MED-011 from `ISSUES_AND_TODOS.md`.
+
+---
+
 ## 2026-03-29 (fix 8) — Replace random tilt jitter with deterministic cycle
 
 ### Changes

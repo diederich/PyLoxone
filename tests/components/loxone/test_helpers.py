@@ -7,11 +7,9 @@ import pytest
 
 from custom_components.loxone.helpers import (
     add_room_and_cat_to_value_values,
-    device_registry,
     get_all,
     get_cat_name_from_cat_uuid,
     get_miniserver_type,
-    get_or_create_device,
     get_room_name_from_room_uuid,
     hass_to_lox,
     lox2hass_mapped,
@@ -243,42 +241,3 @@ class TestAddRoomAndCat:
         result = add_room_and_cat_to_value_values(config, sensor)
         assert result["room"] == ""
         assert result["cat"] == ""
-
-
-# -- get_or_create_device ----------------------------------------------------
-
-class TestGetOrCreateDevice:
-    @pytest.fixture(autouse=True)
-    def _clean_registry(self):
-        """Ensure each test starts with a fresh device registry."""
-        device_registry.clear()
-        yield
-        device_registry.clear()
-
-    def test_creates_device(self):
-        result = get_or_create_device("uuid-1", "My Light", "Switch", "Kitchen")
-        assert result["name"] == "My Light"
-        assert result["model"] == "Switch"
-        assert result["suggested_area"] == "Kitchen"
-        assert result["manufacturer"] == "Loxone"
-        assert ("loxone", "uuid-1") in result["identifiers"]
-
-    def test_returns_cached_on_second_call(self):
-        first = get_or_create_device("uuid-1", "Name A", "Switch", "Kitchen")
-        second = get_or_create_device("uuid-1", "Name B", "Dimmer", "Bedroom")
-        assert first is second
-        assert second["name"] == "Name A"
-
-    def test_clear_allows_fresh_creation(self):
-        """Simulates what happens on integration reload after cache clear."""
-        get_or_create_device("uuid-1", "Old Name", "Switch", "Kitchen")
-        device_registry.clear()
-        result = get_or_create_device("uuid-1", "New Name", "Switch", "Kitchen")
-        assert result["name"] == "New Name"
-
-    def test_multiple_devices_independent(self):
-        dev_a = get_or_create_device("uuid-a", "Light A", "Switch", "Room A")
-        dev_b = get_or_create_device("uuid-b", "Light B", "Dimmer", "Room B")
-        assert dev_a["name"] == "Light A"
-        assert dev_b["name"] == "Light B"
-        assert dev_a is not dev_b

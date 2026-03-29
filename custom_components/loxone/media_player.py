@@ -14,8 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import DEFAULT_AUDIO_ZONE_V2_PLAY_STATE, SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -85,9 +84,6 @@ class LoxoneAudioZoneV2(LoxoneEntity, MediaPlayerEntity):
         self._volume = 0
 
         self.type = "AudioZoneV2"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     async def event_handler(self, event):
         should_update = False

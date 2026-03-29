@@ -21,8 +21,7 @@ from voluptuous import All, Optional, Range
 
 from . import LoxoneEntity
 from .const import CONF_HVAC_AUTO_MODE, SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -125,10 +124,6 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
                 self._all_uuids.update(value)
             else:
                 self._all_uuids.add(value)
-
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     async def event_handler(self, event):
         update = False
@@ -319,10 +314,6 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
         self._stateAttribValues = {}
         self.type = "RoomControllerV2"
         self._modeList = kwargs["details"]["timerModes"]
-
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     def get_mode_from_id(self, mode_id):
         for mode in self._modeList:
@@ -521,9 +512,6 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         self._stateAttribUuids = kwargs["states"]
         self._stateAttribValues = {}
         self.type = "AcControl"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     async def event_handler(self, event):
         # _LOGGER.debug(f"Climate Event data: {event.data}")

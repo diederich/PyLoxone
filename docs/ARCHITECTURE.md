@@ -1,6 +1,8 @@
 # PyLoxone Architecture
 
 > Home Assistant custom integration for Loxone Miniserver
+>
+> For sync lifecycle and registry services, see [SYNC_ENGINE.md](SYNC_ENGINE.md).
 
 ## Project Identity
 

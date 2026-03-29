@@ -51,12 +51,6 @@ async_dispatcher_send(hass, f"loxone_event_{uuid}", data)
 async_dispatcher_connect(hass, f"loxone_event_{self.uuidAction}", self._handle_update)
 ```
 
-### IMP-003: Add connection validation to config flow
-
-`config_flow.py` only validates schema (Latin-1 characters, port format). It does not test connectivity. Users can save invalid credentials and only discover errors in logs.
-
-**Add:** A test connection step using `LoxoneAsyncHttpClient.get()` against the Miniserver API.
-
 ### IMP-005: Consolidate exception hierarchy
 
 Two overlapping sets of exceptions exist in `pyloxone_api/exceptions.py`:
@@ -176,50 +170,6 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 `async_media_stop()` sends `"pause"` instead of an actual stop command. If Loxone has a distinct stop command, it should be used.
 
-### MED-011: Device names prefixed with lowercase "loxone" instead of "Loxone"
-
-**File:** `helpers.py:18`
-**Impact:** All entities show up with a lowercase "loxone" prefix in the HA UI (e.g. "loxone Living Room Light" instead of "Loxone Living Room Light")
-
-The `get_or_create_device()` helper uses `DOMAIN` (which is `"loxone"`, lowercase per HA convention) as the device name prefix:
-
-```python
-"name": f"{DOMAIN} {device_name}",   # → "loxone My Light"
-```
-
-HA domains are always lowercase identifiers — they're not meant for display. The Loxone brand name is always capitalized.
-
-**Fix options:**
-
-1. **Simple** — hardcode the display name:
-
-   ```python
-   "name": f"Loxone {device_name}",
-   ```
-
-2. **Better** — use just the device name from the Miniserver structure file (it's already descriptive):
-
-   ```python
-   "name": device_name,
-   ```
-
-   The manufacturer field already says `"Loxone"`, so prefixing every device name with it is redundant.
-
-3. **Best** — migrate to proper `DeviceInfo` objects (see ARCH-005) and let the Miniserver device be the parent, removing the prefix entirely. This is how modern HA integrations work — individual entities don't each create their own device with a brand prefix.
-
-**Note:** The `button.py` entity creates `DeviceInfo` directly (without `get_or_create_device`) and does NOT prefix with `DOMAIN` — it uses just `self.name`. This inconsistency means buttons display differently from all other entities.
-
-### MED-012: Services registered per config entry, not globally
-
-**File:** `__init__.py` (line ~601)
-**Impact:** HA "Repairs" flags automations using `loxone.event_websocket_command` as "unknown action"
-
-All Loxone services (`event_websocket_command`, `event_secured_websocket_command`, `sync_areas`, `reload`, etc.) are registered inside `async_setup_entry`. If the config entry fails to load (e.g., Miniserver temporarily unreachable), no services are registered for that boot cycle. HA's automation validator then flags any automation using those services as having an "unknown action," even though the commands work once the integration recovers.
-
-**Workaround:** Dismiss the repair in Settings → System → Repairs. It will not reappear unless the integration fails to load again.
-
-**Fix:** Move service registration to `async_setup` so services exist regardless of config entry state. The handlers would need to look up the coordinator lazily (via `hass.data[DOMAIN]`) rather than capturing it at registration time, since the coordinator isn't available yet in `async_setup`.
-
 ### MED-013: `send_websocket_command` has no connection state check
 
 **File:** `pyloxone_api/connection.py` (`send_websocket_command`, line ~1099)
@@ -260,7 +210,7 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_switch.py`                  | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
 | `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
 | `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool); IRoomControllerV2 creation, `is_overridden` JSON parsing |
-| `test_init.py`                    | Setup, unload, cache-clear on unload, `sync_device_names` service (update/skip/ignore non-Loxone)                                                                   |
+| `test_init.py`                    | Setup, unload, services registered in `async_setup` (survive unload, raise when no coordinator), `sync_device_names` service (update/skip/ignore non-Loxone)         |
 | `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
 | `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
 | `test_alarm_control_panel.py`     | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
@@ -685,10 +635,6 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 - Reduce boilerplate
 - Make entity configuration declarative
 - Align with HA best practices
-
-### ARCH-005: Implement `DeviceInfo` properly
-
-`helpers.py` maintains its own `device_registry` dict (a module-level mutable global) separate from HA's device registry. This should be replaced with proper `DeviceInfo` objects returned from entity `device_info` properties, letting HA manage the device registry.
 
 ### ARCH-006: Add config entry migration tests
 

@@ -53,6 +53,7 @@ CONF_ACTIONID = "uuidAction"
 CONF_SCENE_GEN = "generate_scenes"
 CONF_SCENE_GEN_DELAY = "generate_scenes_delay"
 CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN = "generate_lightcontroller_subcontrols"
+CONF_CREATE_AREAS = "create_areas_on_setup"
 DEFAULT_FORCE_UPDATE = False
 
 SUPPORT_SUN_AUTOMATION = 1024

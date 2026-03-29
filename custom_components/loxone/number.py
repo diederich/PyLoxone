@@ -15,8 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -54,9 +53,6 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
         self._native_step = kwargs["details"]["step"]
 
         self.type = "Slider"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def should_poll(self):

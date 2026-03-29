@@ -16,6 +16,7 @@ from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import (
+    CONF_CREATE_AREAS,
     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
     CONF_SCENE_GEN,
     CONF_SCENE_GEN_DELAY,
@@ -32,6 +33,7 @@ MOCK_OPTIONS = {
     CONF_SCENE_GEN: True,
     CONF_SCENE_GEN_DELAY: 3,
     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: False,
+    CONF_CREATE_AREAS: True,
 }
 
 

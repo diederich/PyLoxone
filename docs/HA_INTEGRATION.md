@@ -4,6 +4,7 @@
 >
 > For the lights subsystem, see [LIGHTS_SUBSYSTEM.md](LIGHTS_SUBSYSTEM.md).
 > For the low-level API client, see [API_LAYER.md](API_LAYER.md).
+> For sync lifecycle and registry services, see [SYNC_ENGINE.md](SYNC_ENGINE.md).
 
 ## Integration Entry Point (`__init__.py`)
 
@@ -18,6 +19,15 @@ The largest file in the integration layer. Handles:
 ### Setup Flow
 
 ```python
+async_setup(hass, config)
+    │
+    ├── hass.data[DOMAIN] = {}
+    ├── _async_register_services(hass)      ← domain-level services (lazy coordinator lookup)
+    │     event_websocket_command
+    │     event_secured_websocket_command
+    │     sync_areas, sync_device_names, reload
+    └── return True
+
 async_setup_entry(hass, config_entry)
     │
     ├── Create LoxoneCoordinator
@@ -29,13 +39,6 @@ async_setup_entry(hass, config_entry)
     │
     ├── async_forward_entry_setups(LOXONE_PLATFORMS)    ← loads platforms
     ├── async_load_platform() for sensor + binary_sensor ← YAML custom entity escape hatch
-    │
-    ├── Register services:
-    │     event_websocket_command
-    │     event_secured_websocket_command
-    │     sync_areas
-    │     sync_device_names
-    │     reload
     │
     ├── BridgeRuntime.async_setup()   ← restore persisted device bridges
     │

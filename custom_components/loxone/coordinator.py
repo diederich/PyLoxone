@@ -68,6 +68,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         self.miniserver = MiniServer(
             self.hass, self.api.structure_file, self.config_entry
         )
+        await self.miniserver.async_update_device_registry()
 
         return None
 

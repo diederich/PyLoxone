@@ -15,8 +15,7 @@ from voluptuous import Any, Optional
 from . import LoxoneEntity
 from .binary_sensor import LoxoneDigitalSensor
 from .const import SENDDOMAIN
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device)
+from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 from .sensor import LoxoneSensor
 
@@ -145,9 +144,6 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         self._details = kwargs["details"]
 
         self.type = "Fan"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def extra_state_attributes(self):

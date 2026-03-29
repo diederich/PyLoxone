@@ -1,5 +1,8 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+markers = [
+    "no_auto_mock_connection: skip the autouse mock for Miniserver HTTP connection",
+]
 # E2E Miniserver tests live in tests_e2e_miniserver/ (separate from HA unit tests).
 # Run them with:  pytest tests_e2e_miniserver/ -s -v

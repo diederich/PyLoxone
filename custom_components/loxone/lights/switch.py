@@ -3,11 +3,10 @@ from typing import Any
 
 from homeassistant.components.light import ColorMode, LightEntity
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.helpers.entity import DeviceInfo, ToggleEntity
+from homeassistant.helpers.entity import DeviceInfo
 
 from .. import LoxoneEntity
 from ..const import DOMAIN, SENDDOMAIN
-from ..helpers import get_or_create_device
 
 
 class LoxoneLightSwitch(LoxoneEntity, LightEntity):
@@ -30,14 +29,8 @@ class LoxoneLightSwitch(LoxoneEntity, LightEntity):
 
         if self._light_controller_id:
             self.type = "LightControllerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
-            )
         else:
             self.type = "Light"
-            self._attr_device_info = get_or_create_device(
-                self.unique_id, self.name, self.type, self.room
-            )
 
         state_attributes = {
             "device_type": self.type,
@@ -46,6 +39,27 @@ class LoxoneLightSwitch(LoxoneEntity, LightEntity):
             state_attributes.update({"light_controller": self._light_controller_name})
 
         self._attr_extra_state_attributes.update(state_attributes)
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._light_controller_id:
+            info = DeviceInfo(
+                identifiers={(DOMAIN, self._light_controller_id)},
+                name=self._attr_name,
+                manufacturer="Loxone",
+                model=self.type,
+                suggested_area=getattr(self, "room", None),
+            )
+            try:
+                from ..miniserver import get_miniserver_from_hass
+
+                serial = get_miniserver_from_hass(self.hass).serial
+                if serial:
+                    info["via_device"] = (DOMAIN, serial)
+            except (KeyError, AttributeError):
+                pass
+            return info
+        return super().device_info
 
     @cached_property
     def unique_id(self) -> str:

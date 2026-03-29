@@ -10,6 +10,7 @@ This project maintains living documentation in `docs/`. Always read the relevant
 | [API_LAYER.md](docs/API_LAYER.md)               | `pyloxone_api/` internals — connection, crypto, message parsing |
 | [HA_INTEGRATION.md](docs/HA_INTEGRATION.md)     | Home Assistant platform entities, config flow, coordinator      |
 | [LIGHTS_SUBSYSTEM.md](docs/LIGHTS_SUBSYSTEM.md) | Light entity hierarchy, color pickers, mood handling            |
+| [SYNC_ENGINE.md](docs/SYNC_ENGINE.md)           | Sync lifecycle, registry sync services, device bridges overview |
 | [ISSUES_AND_TODOS.md](docs/ISSUES_AND_TODOS.md) | Known bugs, improvements, quick wins, testing strategy          |
 | [WORKLOG.md](docs/WORKLOG.md)                   | Session-by-session record of decisions, changes, investigations |
 

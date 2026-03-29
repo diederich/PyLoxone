@@ -7,11 +7,11 @@ from homeassistant.components.light import (ATTR_BRIGHTNESS,
                                             ATTR_COLOR_TEMP_KELVIN,
                                             ATTR_HS_COLOR, ColorMode,
                                             LightEntity)
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 
 from .. import LoxoneEntity
 from ..const import DOMAIN, SENDDOMAIN
-from ..helpers import get_or_create_device, hass_to_lox, lox_to_hass
+from ..helpers import hass_to_lox, lox_to_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,14 +39,29 @@ class TunableWhiteLight(LoxoneEntity, LightEntity):
 
         if self._light_controller_id:
             self.type = "LightControllerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
-            )
         else:
             self.type = "ColorPickerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._light_controller_id:
+            info = DeviceInfo(
+                identifiers={(DOMAIN, self._light_controller_id)},
+                name=self._attr_name,
+                manufacturer="Loxone",
+                model=self.type,
+                suggested_area=getattr(self, "room", None),
             )
+            try:
+                from ..miniserver import get_miniserver_from_hass
+
+                serial = get_miniserver_from_hass(self.hass).serial
+                if serial:
+                    info["via_device"] = (DOMAIN, serial)
+            except (KeyError, AttributeError):
+                pass
+            return info
+        return super().device_info
 
     @cached_property
     def unique_id(self) -> str:
@@ -141,14 +156,29 @@ class RGBColorPicker(LoxoneEntity, LightEntity):
 
         if self._light_controller_id:
             self.type = "LightControllerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
-            )
         else:
             self.type = "ColorPickerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._light_controller_id:
+            info = DeviceInfo(
+                identifiers={(DOMAIN, self._light_controller_id)},
+                name=self._attr_name,
+                manufacturer="Loxone",
+                model=self.type,
+                suggested_area=getattr(self, "room", None),
             )
+            try:
+                from ..miniserver import get_miniserver_from_hass
+
+                serial = get_miniserver_from_hass(self.hass).serial
+                if serial:
+                    info["via_device"] = (DOMAIN, serial)
+            except (KeyError, AttributeError):
+                pass
+            return info
+        return super().device_info
 
     @cached_property
     def unique_id(self) -> str:
@@ -263,11 +293,5 @@ class LumiTech(RGBColorPicker):
         """Initialize the LumiTech."""
         if self._light_controller_id:
             self.type = "LightControllerV2"
-            self._attr_device_info = get_or_create_device(
-                self._light_controller_id, self.name, self.type, self.room
-            )
         else:
             self.type = "LumiTech"
-            self._attr_device_info = get_or_create_device(
-                self.unique_id, self.name, self.type, self.room
-            )

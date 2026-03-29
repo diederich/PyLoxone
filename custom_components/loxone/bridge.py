@@ -26,9 +26,10 @@ from homeassistant.core import (
     callback,
 )
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.event import async_track_state_change_event, async_call_later
 
-from .const import EVENT
+from .const import DOMAIN, EVENT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -174,6 +175,7 @@ class BridgeRuntime:
                 self._activate(bridge)
             except Exception:
                 _LOGGER.exception("Failed to restore bridge: %s", raw)
+        self._sync_entity_disabled_state()
 
     async def async_teardown(self) -> None:
         """Cancel all listeners and timers."""
@@ -186,8 +188,53 @@ class BridgeRuntime:
         if self._self_update:
             self._self_update = False
             return
+        old_uuids = self.bridged_uuids
         await self.async_teardown()
         await self.async_setup()
+        # Re-enable entities that are no longer bridged
+        removed = old_uuids - self.bridged_uuids
+        if removed:
+            self._reenable_entities(removed)
+
+    # -- entity disable/enable -----------------------------------------------
+
+    def _sync_entity_disabled_state(self) -> None:
+        """Disable native Loxone entities whose control is used by a bridge."""
+        registry = er.async_get(self.hass)
+        for uuid in self.bridged_uuids:
+            entry = registry.async_get_entity_id(None, DOMAIN, uuid)
+            if entry is None:
+                # Try all platforms — async_get_entity_id needs a domain
+                for ent in registry.entities.values():
+                    if ent.platform == DOMAIN and ent.unique_id == uuid:
+                        entry = ent.entity_id
+                        break
+            if entry is None:
+                continue
+            ent_entry = registry.async_get(entry)
+            if ent_entry and ent_entry.disabled_by != er.RegistryEntryDisabler.INTEGRATION:
+                registry.async_update_entity(
+                    entry, disabled_by=er.RegistryEntryDisabler.INTEGRATION
+                )
+                _LOGGER.info(
+                    "Disabled entity %s — control used by device bridge", entry
+                )
+
+    def _reenable_entities(self, uuids: set[str]) -> None:
+        """Re-enable entities whose bridge was removed."""
+        registry = er.async_get(self.hass)
+        for ent in registry.entities.values():
+            if (
+                ent.platform == DOMAIN
+                and ent.unique_id in uuids
+                and ent.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+            ):
+                registry.async_update_entity(
+                    ent.entity_id, disabled_by=None
+                )
+                _LOGGER.info(
+                    "Re-enabled entity %s — bridge removed", ent.entity_id
+                )
 
     # -- internal ------------------------------------------------------------
 

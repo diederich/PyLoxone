@@ -23,8 +23,7 @@ from . import LoxoneEntity
 from .const import (SENDDOMAIN, SERVICE_DISABLE_SUN_AUTOMATION,
                     SERVICE_ENABLE_SUN_AUTOMATION, SERVICE_QUICK_SHADE,
                     SUPPORT_QUICK_SHADE, SUPPORT_SUN_AUTOMATION)
-from .helpers import (add_room_and_cat_to_value_values, get_all,
-                      get_or_create_device, map_range)
+from .helpers import (add_room_and_cat_to_value_values, get_all, map_range)
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
@@ -100,9 +99,6 @@ class LoxoneGate(LoxoneEntity, CoverEntity):
         self._is_opening = False
         self._is_closing = False
         self.type = "Gate"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
         if self._position is None:
             self._closed = True
@@ -221,9 +217,6 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         self._direction = 0
 
         self.type = "Window"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     async def event_handler(self, e):
         if self.states["position"] in e.data or self.states["direction"] in e.data:
@@ -353,9 +346,6 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
             self._closed = self.current_cover_position <= 0
 
         self.type = "Jalousie"
-        self._attr_device_info = get_or_create_device(
-            self.unique_id, self.name, self.type, self.room
-        )
 
     @property
     def supported_features(self):

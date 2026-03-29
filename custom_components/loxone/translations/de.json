@@ -1,5 +1,10 @@
 {
   "config": {
+    "error": {
+      "cannot_connect": "Verbindung zum Miniserver nicht möglich. Überprüfe Host, Port und Netzwerk.",
+      "invalid_auth": "Ungültiger Benutzername oder Passwort.",
+      "unknown": "Ein unerwarteter Fehler ist aufgetreten."
+    },
     "abort": {
       "single_instance_allowed": "Bereits konfiguriert"
     },
@@ -14,7 +19,8 @@
           "password": "Password",
           "generate_scenes": "Scenen generieren",
           "generate_lightcontroller_subcontrols": "Subcontrols für LightcontrollerV2 erzeugen",
-          "generate_scenes_delay": "Verzögerung beim erstellen der Scenen (wenn aktiviert)"
+          "generate_scenes_delay": "Verzögerung beim erstellen der Scenen (wenn aktiviert)",
+          "create_areas_on_setup": "HA-Bereiche aus Loxone-Räumen erstellen"
         }
       }
     }
@@ -38,7 +44,8 @@
           "password": "Password",
           "generate_scenes": "Szenen generieren",
           "generate_lightcontroller_subcontrols": "Subcontrols für LightcontrollerV2 erzeugen",
-          "generate_scenes_delay": "Verzögerung beim Erstellen der Szenen (wenn aktiviert)"
+          "generate_scenes_delay": "Verzögerung beim Erstellen der Szenen (wenn aktiviert)",
+          "create_areas_on_setup": "HA-Bereiche aus Loxone-Räumen erstellen"
         }
       },
       "bridge_menu": {

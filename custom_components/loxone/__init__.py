@@ -25,19 +25,19 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from .bridge import BridgeRuntime
 from homeassistant.setup import async_setup_component
 
 from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_COMMAND, ATTR_DEVICE,
-                    ATTR_UUID, ATTR_VALUE,
+                    ATTR_UUID, ATTR_VALUE, CONF_CREATE_AREAS,
                     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, CONF_SCENE_GEN,
                     CONF_SCENE_GEN_DELAY, DEFAULT, DEFAULT_DELAY_SCENE,
                     DEFAULT_PORT, DOMAIN, DOMAIN_DEVICES, ERROR_VALUE, EVENT,
                     LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
 from .coordinator import LoxoneCoordinator
-from .helpers import device_registry as helpers_device_registry, get_miniserver_type
+from .helpers import get_miniserver_type
 from .miniserver import MiniServer, get_miniserver_from_hass
 from .pyloxone_api.connection import LoxoneConnection
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
@@ -73,6 +73,204 @@ CONFIG_SCHEMA = vol.Schema(
 _UNDEF: dict = {}
 
 # TODO: get version and check for updates https://update.loxone.com/updatecheck.xml?serial=xxxxxxxxx
+
+
+def _get_coordinator(hass: HomeAssistant):
+    """Return the first available LoxoneCoordinator, or None."""
+    for value in hass.data.get(DOMAIN, {}).values():
+        if hasattr(value, "api"):
+            return value
+    return None
+
+
+async def _async_sync_areas(hass: HomeAssistant, data=None):
+    """Sync HA areas with Loxone room attributes on devices."""
+    data = data or {}
+    create_areas = data.get(ATTR_AREA_CREATE, False)
+    er_registry = er.async_get(hass)
+    ar_registry = ar.async_get(hass)
+    dr_registry = dr.async_get(hass)
+
+    loxone_entities = [e for e in er_registry.entities.values() if e.platform == DOMAIN]
+    _LOGGER.debug("sync_areas: found %d loxone entities (create_areas=%s)",
+                   len(loxone_entities), create_areas)
+
+    no_state = []
+    no_room = []
+    no_area = []
+
+    device_rooms: dict[str, str] = {}
+    device_entities: dict[str, list] = {}
+    orphan_entities = []
+
+    for entry in loxone_entities:
+        state = hass.states.get(entry.entity_id)
+        if not state:
+            no_state.append(entry.entity_id)
+            continue
+        if "room" not in state.attributes:
+            no_room.append(entry.entity_id)
+            continue
+        room_name = state.attributes["room"]
+
+        if entry.device_id:
+            device_rooms.setdefault(entry.device_id, room_name)
+            device_entities.setdefault(entry.device_id, []).append(entry)
+        else:
+            orphan_entities.append((entry, room_name))
+
+    devices_updated = 0
+    devices_ok = 0
+    overrides_cleared = 0
+
+    for device_id, room_name in device_rooms.items():
+        area = ar_registry.async_get_area_by_name(room_name)
+        if area is None and create_areas:
+            area = ar_registry.async_get_or_create(room_name)
+            _LOGGER.debug("sync_areas: created area '%s'", room_name)
+        if area is None:
+            no_area.append((device_id, room_name))
+            continue
+
+        device = dr_registry.async_get(device_id)
+        if device and device.area_id != area.id:
+            dr_registry.async_update_device(device_id, area_id=area.id)
+            _LOGGER.debug("sync_areas: device %s → area '%s' (was %s)",
+                          device.name or device_id, room_name, device.area_id)
+            devices_updated += 1
+        else:
+            devices_ok += 1
+
+        for entry in device_entities.get(device_id, []):
+            if entry.area_id is not None:
+                er_registry.async_update_entity(entry.entity_id, area_id=None)
+                overrides_cleared += 1
+
+    orphans_updated = 0
+    for entry, room_name in orphan_entities:
+        area = ar_registry.async_get_area_by_name(room_name)
+        if area is None and create_areas:
+            area = ar_registry.async_get_or_create(room_name)
+        if area is None:
+            no_area.append((entry.entity_id, room_name))
+            continue
+        if entry.area_id != area.id:
+            er_registry.async_update_entity(entry.entity_id, area_id=area.id)
+            orphans_updated += 1
+
+    _LOGGER.info(
+        "sync_areas: %d device(s) updated, %d already correct, "
+        "%d entity override(s) cleared, %d orphan(s) updated, "
+        "%d no state, %d no room attr, %d room not found",
+        devices_updated, devices_ok, overrides_cleared, orphans_updated,
+        len(no_state), len(no_room), len(no_area),
+    )
+    if no_state:
+        _LOGGER.debug("sync_areas: entities with no state: %s", no_state)
+    if no_room:
+        _LOGGER.debug("sync_areas: entities missing 'room' attribute: %s", no_room)
+    if no_area:
+        _LOGGER.debug("sync_areas: room not found in HA areas (create_areas=%s): %s",
+                      create_areas, no_area)
+
+
+async def _async_sync_device_names(hass: HomeAssistant):
+    """Sync HA device names from the current Loxone structure file."""
+    miniserver = get_miniserver_from_hass(hass)
+    structure = miniserver.lox_config.json
+    controls = structure.get("controls", {})
+
+    uuid_to_name = {
+        ctrl["uuidAction"]: ctrl["name"]
+        for ctrl in controls.values()
+        if "uuidAction" in ctrl and "name" in ctrl
+    }
+
+    dr_registry = dr.async_get(hass)
+    updated = 0
+    for device in dr_registry.devices.values():
+        for domain, uuid in device.identifiers:
+            if domain != DOMAIN:
+                continue
+            lox_name = uuid_to_name.get(uuid)
+            if lox_name and device.name != lox_name:
+                dr_registry.async_update_device(device.id, name=lox_name)
+                updated += 1
+    _LOGGER.info("sync_device_names: updated %d device(s)", updated)
+
+
+def _async_register_services(hass: HomeAssistant):
+    """Register domain-level Loxone services.
+
+    Called from async_setup so services exist even if no config entry has
+    loaded yet (e.g. Miniserver temporarily unreachable at boot).  Handlers
+    look up the coordinator lazily — if none is available they raise.
+    """
+
+    async def handle_websocket_command(call):
+        """Handle websocket command services."""
+        coordinator = _get_coordinator(hass)
+        if coordinator is None:
+            raise HomeAssistantError(
+                "Loxone Miniserver is not connected — cannot send command"
+            )
+        value = call.data.get(ATTR_VALUE, DEFAULT)
+        if call.data.get(ATTR_DEVICE) is None:
+            entity_uuid = call.data.get(ATTR_UUID, DEFAULT)
+        else:
+            entity_registry = er.async_get(hass)
+            entity_id = call.data.get(ATTR_DEVICE)
+            entity = entity_registry.async_get(entity_id)
+            entity_uuid = entity.unique_id
+        await coordinator.api.send_websocket_command(entity_uuid, value)
+
+    async def handle_secured_websocket_command(call):
+        """Handle secured websocket command services."""
+        coordinator = _get_coordinator(hass)
+        if coordinator is None:
+            raise HomeAssistantError(
+                "Loxone Miniserver is not connected — cannot send secured command"
+            )
+        value = call.data.get(ATTR_VALUE, DEFAULT)
+        code = call.data.get(ATTR_CODE, DEFAULT)
+        if call.data.get(ATTR_DEVICE) is None:
+            entity_uuid = call.data.get(ATTR_UUID, DEFAULT)
+        else:
+            entity_registry = er.async_get(hass)
+            entity_id = call.data.get(ATTR_DEVICE)
+            entity = entity_registry.async_get(entity_id)
+            entity_uuid = entity.unique_id
+        await coordinator.api.send_secured__websocket_command(
+            entity_uuid, value, code
+        )
+
+    async def handle_sync_areas(call):
+        await _async_sync_areas(hass, call.data)
+
+    async def handle_sync_device_names(call):
+        await _async_sync_device_names(hass)
+
+    async def handle_reload(call):
+        """Handle the service call to reload the integration."""
+        _LOGGER.info("Reloading Loxone integration via service call")
+        entries = hass.config_entries.async_entries(DOMAIN)
+        unloads = [
+            hass.config_entries.async_unload(entry.entry_id) for entry in entries
+        ]
+        await asyncio.gather(*unloads)
+        loads = [hass.config_entries.async_reload(entry.entry_id) for entry in entries]
+        await asyncio.gather(*loads)
+        _LOGGER.info("Loxone integration reload complete")
+
+    hass.services.async_register(
+        DOMAIN, "event_websocket_command", handle_websocket_command
+    )
+    hass.services.async_register(
+        DOMAIN, "event_secured_websocket_command", handle_secured_websocket_command
+    )
+    hass.services.async_register(DOMAIN, "sync_areas", handle_sync_areas)
+    hass.services.async_register(DOMAIN, "sync_device_names", handle_sync_device_names)
+    hass.services.async_register(DOMAIN, "reload", handle_reload)
 
 
 async def async_unload_entry(hass, config_entry):
@@ -119,17 +317,9 @@ async def async_unload_entry(hass, config_entry):
         except Exception as e:
             raise e
 
-    helpers_device_registry.clear()
-
-    # Tear down device bridges before removing services
+    # Tear down device bridges
     if hasattr(coordinator, "bridge_runtime") and coordinator.bridge_runtime:
         await coordinator.bridge_runtime.async_teardown()
-
-    hass.services.async_remove(DOMAIN, "event_websocket_command")
-    hass.services.async_remove(DOMAIN, "event_secured_websocket_command")
-    hass.services.async_remove(DOMAIN, "sync_areas")
-    hass.services.async_remove(DOMAIN, "sync_device_names")
-    hass.services.async_remove(DOMAIN, "reload")
 
     # Unload
     unload_ok = await hass.config_entries.async_unload_platforms(
@@ -139,13 +329,17 @@ async def async_unload_entry(hass, config_entry):
 
 
 async def async_setup(hass, config):
-    """setup loxone"""
+    """Set up the Loxone integration."""
+    hass.data.setdefault(DOMAIN, {})
+
     if DOMAIN in config:
         hass.async_create_task(
             hass.config_entries.flow.async_init(
                 DOMAIN, context={"source": "import"}, data=config[DOMAIN]
             )
         )
+
+    _async_register_services(hass)
     return True
 
 
@@ -225,9 +419,6 @@ async def create_group_for_loxone_entities(hass, entities, name, object_id):
 
 
 async def async_setup_entry(hass, config_entry):
-    if DOMAIN not in hass.data:
-        hass.data[DOMAIN] = {}
-
     if not config_entry.options:
         await async_set_options(hass, config_entry)
 
@@ -351,159 +542,6 @@ async def async_setup_entry(hass, config_entry):
         """Fire message on HomeAssistant Bus."""
         _LOGGER.debug(f"{message}")
         hass.bus.async_fire(EVENT, message)
-
-    async def handle_websocket_command(call):
-        """Handle websocket command services."""
-        value = call.data.get(ATTR_VALUE, DEFAULT)
-        if call.data.get(ATTR_DEVICE) is None:
-            entity_uuid = call.data.get(ATTR_UUID, DEFAULT)
-        else:
-            entity_registry = er.async_get(hass)
-            entity_id = call.data.get(ATTR_DEVICE)
-            entity = entity_registry.async_get(entity_id)
-            entity_uuid = entity.unique_id
-        await coordinator.api.send_websocket_command(entity_uuid, value)
-
-    async def handle_secured_websocket_command(call):
-        """Handle websocket command services."""
-        value = call.data.get(ATTR_VALUE, DEFAULT)
-        code = call.data.get(ATTR_CODE, DEFAULT)
-        if call.data.get(ATTR_DEVICE) is None:
-            entity_uuid = call.data.get(ATTR_UUID, DEFAULT)
-        else:
-            entity_registry = er.async_get(hass)
-            entity_id = call.data.get(ATTR_DEVICE)
-            entity = entity_registry.async_get(entity_id)
-            entity_uuid = entity.unique_id
-        await coordinator.api.send_secured__websocket_command(entity_uuid, value, code)
-
-    async def sync_areas_with_loxone(data=None):
-        data = data or {}
-        create_areas = data.get(ATTR_AREA_CREATE, False)
-        er_registry = er.async_get(hass)
-        ar_registry = ar.async_get(hass)
-        dr_registry = dr.async_get(hass)
-
-        loxone_entities = [e for e in er_registry.entities.values() if e.platform == DOMAIN]
-        _LOGGER.debug("sync_areas: found %d loxone entities (create_areas=%s)",
-                       len(loxone_entities), create_areas)
-
-        no_state = []
-        no_room = []
-        no_area = []
-
-        device_rooms: dict[str, str] = {}
-        device_entities: dict[str, list] = {}
-        orphan_entities = []
-
-        for entry in loxone_entities:
-            state = hass.states.get(entry.entity_id)
-            if not state:
-                no_state.append(entry.entity_id)
-                continue
-            if "room" not in state.attributes:
-                no_room.append(entry.entity_id)
-                continue
-            room_name = state.attributes["room"]
-
-            if entry.device_id:
-                device_rooms.setdefault(entry.device_id, room_name)
-                device_entities.setdefault(entry.device_id, []).append(entry)
-            else:
-                orphan_entities.append((entry, room_name))
-
-        devices_updated = 0
-        devices_ok = 0
-        overrides_cleared = 0
-
-        for device_id, room_name in device_rooms.items():
-            area = ar_registry.async_get_area_by_name(room_name)
-            if area is None and create_areas:
-                area = ar_registry.async_get_or_create(room_name)
-                _LOGGER.debug("sync_areas: created area '%s'", room_name)
-            if area is None:
-                no_area.append((device_id, room_name))
-                continue
-
-            device = dr_registry.async_get(device_id)
-            if device and device.area_id != area.id:
-                dr_registry.async_update_device(device_id, area_id=area.id)
-                _LOGGER.debug("sync_areas: device %s → area '%s' (was %s)",
-                              device.name or device_id, room_name, device.area_id)
-                devices_updated += 1
-            else:
-                devices_ok += 1
-
-            for entry in device_entities.get(device_id, []):
-                if entry.area_id is not None:
-                    er_registry.async_update_entity(entry.entity_id, area_id=None)
-                    overrides_cleared += 1
-
-        orphans_updated = 0
-        for entry, room_name in orphan_entities:
-            area = ar_registry.async_get_area_by_name(room_name)
-            if area is None and create_areas:
-                area = ar_registry.async_get_or_create(room_name)
-            if area is None:
-                no_area.append((entry.entity_id, room_name))
-                continue
-            if entry.area_id != area.id:
-                er_registry.async_update_entity(entry.entity_id, area_id=area.id)
-                orphans_updated += 1
-
-        _LOGGER.info(
-            "sync_areas: %d device(s) updated, %d already correct, "
-            "%d entity override(s) cleared, %d orphan(s) updated, "
-            "%d no state, %d no room attr, %d room not found",
-            devices_updated, devices_ok, overrides_cleared, orphans_updated,
-            len(no_state), len(no_room), len(no_area),
-        )
-        if no_state:
-            _LOGGER.debug("sync_areas: entities with no state: %s", no_state)
-        if no_room:
-            _LOGGER.debug("sync_areas: entities missing 'room' attribute: %s", no_room)
-        if no_area:
-            _LOGGER.debug("sync_areas: room not found in HA areas (create_areas=%s): %s",
-                          create_areas, no_area)
-
-    async def handle_sync_areas_with_loxone(call):
-        await sync_areas_with_loxone(call.data)
-
-    async def handle_sync_device_names(call):
-        """Sync HA device names from the current Loxone structure file."""
-        miniserver = get_miniserver_from_hass(hass)
-        structure = miniserver.lox_config.json
-        controls = structure.get("controls", {})
-
-        uuid_to_name = {
-            ctrl["uuidAction"]: ctrl["name"]
-            for ctrl in controls.values()
-            if "uuidAction" in ctrl and "name" in ctrl
-        }
-
-        dr_registry = dr.async_get(hass)
-        updated = 0
-        for device in dr_registry.devices.values():
-            for domain, uuid in device.identifiers:
-                if domain != DOMAIN:
-                    continue
-                lox_name = uuid_to_name.get(uuid)
-                if lox_name and device.name != lox_name:
-                    dr_registry.async_update_device(device.id, name=lox_name)
-                    updated += 1
-        _LOGGER.info("sync_device_names: updated %d device(s)", updated)
-
-    async def handle_reload(call):
-        """Handle the service call to reload the integration."""
-        _LOGGER.info("Reloading Loxone integration via service call")
-        entries = hass.config_entries.async_entries(DOMAIN)
-        unloads = [
-            hass.config_entries.async_unload(entry.entry_id) for entry in entries
-        ]
-        await asyncio.gather(*unloads)
-        loads = [hass.config_entries.async_reload(entry.entry_id) for entry in entries]
-        await asyncio.gather(*loads)
-        _LOGGER.info("Loxone integration reload complete")
 
     async def loxone_discovered(event):
         miniserver = get_miniserver_from_hass(hass)
@@ -696,22 +734,35 @@ async def async_setup_entry(hass, config_entry):
         except Exception as e:
             _LOGGER.error(e)
 
-    hass.services.async_register(
-        DOMAIN, "event_websocket_command", handle_websocket_command
-    )
-
-    hass.services.async_register(
-        DOMAIN, "event_secured_websocket_command", handle_secured_websocket_command
-    )
-    hass.services.async_register(DOMAIN, "sync_areas", handle_sync_areas_with_loxone)
-    hass.services.async_register(DOMAIN, "sync_device_names", handle_sync_device_names)
-    hass.services.async_register(DOMAIN, "reload", handle_reload)
-
     # -- Device Bridges (HA entity <-> Loxone control) ------------------------
 
     bridge_runtime = BridgeRuntime(hass, coordinator, config_entry)
     await bridge_runtime.async_setup()
     coordinator.bridge_runtime = bridge_runtime
+
+    # Auto-sync: align HA device names and areas with Loxone structure.
+    # On first setup, honour the user's "create areas" preference from the
+    # config flow.  On subsequent restarts only assign to existing areas.
+    initial_sync_done = config_entry.data.get("initial_sync_done", False)
+    if initial_sync_done:
+        create_areas = False
+    else:
+        create_areas = config_entry.options.get(CONF_CREATE_AREAS, True)
+
+    try:
+        await _async_sync_device_names(hass)
+        await _async_sync_areas(hass, {ATTR_AREA_CREATE: create_areas})
+        if not initial_sync_done:
+            hass.config_entries.async_update_entry(
+                config_entry,
+                data={**config_entry.data, "initial_sync_done": True},
+            )
+    except Exception:
+        _LOGGER.warning(
+            "Auto-sync failed during setup; you can retry via "
+            "loxone.sync_areas / loxone.sync_device_names services",
+            exc_info=True,
+        )
 
     async def _async_options_updated(hass_ref, entry):
         coord = hass_ref.data.get(DOMAIN, {}).get(entry.entry_id)
@@ -748,8 +799,12 @@ class LoxoneEntity(Entity):
     @DynamicAttrs
     """
 
+    _SKIP_KWARGS = frozenset({"device_info"})
+
     def __init__(self, **kwargs):
         for key in kwargs:
+            if key in self._SKIP_KWARGS:
+                continue
             if not hasattr(self, key):
                 if key == "name":
                     self._attr_name = kwargs[key]
@@ -787,6 +842,28 @@ class LoxoneEntity(Entity):
 
     async def event_handler(self, e):
         pass
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        """Return device info linking this entity to a Loxone device."""
+        if hasattr(self, "_attr_device_info") and self._attr_device_info is not None:
+            return self._attr_device_info
+        if not hasattr(self, "uuidAction"):
+            return None
+        info = DeviceInfo(
+            identifiers={(DOMAIN, self.uuidAction)},
+            name=self._attr_name,
+            manufacturer="Loxone",
+            model=getattr(self, "type", None),
+            suggested_area=getattr(self, "room", None),
+        )
+        try:
+            serial = get_miniserver_from_hass(self.hass).serial
+            if serial:
+                info["via_device"] = (DOMAIN, serial)
+        except (KeyError, AttributeError):
+            pass
+        return info
 
     @cached_property
     def name(self):

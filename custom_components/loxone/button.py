@@ -12,7 +12,6 @@ from typing import final
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
@@ -101,13 +100,3 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
             "device_type": self.type,
         }
 
-    @property
-    def device_info(self):
-        """Return device information."""
-        return DeviceInfo(
-            identifiers={(DOMAIN, self.unique_id)},
-            name=self.name,
-            manufacturer="Loxone",
-            model=self.type,
-            suggested_area=self.room,
-        )
