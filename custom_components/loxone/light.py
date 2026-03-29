@@ -71,10 +71,7 @@ async def async_setup_entry(
 
         if generate_subcontrols and "subControls" in light_controller:
             for sub_control_uuid in light_controller["subControls"]:
-                if (
-                    sub_control_uuid.find("masterValue") > -1
-                    or sub_control_uuid.find("masterColor") > 1
-                ):
+                if "masterValue" in sub_control_uuid or "masterColor" in sub_control_uuid:
                     continue
                 sub_control = light_controller["subControls"][sub_control_uuid]
                 if sub_control.get("uuidAction") in bridged_uuids:

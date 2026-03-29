@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 3) — Fix masterColor filter in light subcontrol discovery
+
+### Changes
+
+- **MED-001 / Quick Win #6:** `sub_control_uuid.find("masterColor") > 1` only matched if "masterColor" appeared at string index 2+. Changed to `"masterColor" in sub_control_uuid`. Also simplified the adjacent `masterValue` check to use `in` for consistency.
+
+---
+
 ## 2026-03-29 (fix 2) — Remove sys.exit(-1) from LoxoneEntity
 
 ### Changes

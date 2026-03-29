@@ -192,17 +192,9 @@ async def async_added_to_hass(self):
 
 Not wired up: `manifest.json` doesn't declare `"system_health"` as a dependency, so HA never loads this module. If it were loaded, it would crash — references `v.serial`, `v.project_name`, `v.local_url`, `v.software_version` on the coordinator, but those live on `v.miniserver`. The `for k, v in … return` pattern also silently ignores multi-entry configs. Either wire it up properly or delete it.
 
-### MED-001: `masterColor` filter typo
+### ~~MED-001: `masterColor` filter typo~~
 
-**File:** `light.py`
-
-```python
-# Current (wrong):
-if sub_control_uuid.find("masterColor") > 1:  # only matches at index 2+
-
-# Fix:
-if "masterColor" in sub_control_uuid:
-```
+~~**File:** `light.py`~~ — Fixed `> 1` → `in` operator; also simplified `masterValue` check to match ✅
 
 ### MED-002: Standalone `ColorPickerV2` never discovered
 
@@ -818,7 +810,7 @@ Tasks that can be done in under 30 minutes each:
 | 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
 | ~~4~~   | ~~Remove `print()` from coordinator.py~~                                                     | ~~Clean up debug output~~ ✅                     |
 | 5   | Fix `_LOGGER.error` format strings in colorpickers.py                                        | Correct logging                                  |
-| 6   | Fix `masterColor` filter from `> 1` to `> -1`                                                | Correct light discovery                          |
+| ~~6~~   | ~~Fix `masterColor` filter from `> 1` to `> -1`~~                                            | ~~Correct light discovery~~ ✅                   |
 | 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
 | ~~8~~   | ~~Remove `sys.exit(-1)` from LoxoneEntity~~                                                  | ~~Prevent HA process kill~~ ✅                   |
 | 9   | Replace `eval()` with `ast.literal_eval()` where possible                                    | Security hardening                               |
