@@ -243,10 +243,8 @@ class LoxoneMiniserverInfoSensor(LoxoneEntity, SensorEntity):
         return None
 
     async def async_added_to_hass(self) -> None:
-        """Static sensor — no event bus subscription needed."""
-
-    async def async_will_remove_from_hass(self) -> None:
-        """Nothing to clean up."""
+        """Static sensor — no event bus subscription, but still track availability."""
+        self._register_coordinator_listener()
 
 
 async def async_setup_platform(

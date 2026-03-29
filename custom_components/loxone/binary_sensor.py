@@ -1,4 +1,4 @@
-"""Support for Fritzbox binary sensors."""
+"""Loxone binary sensor platform."""
 
 from __future__ import annotations
 
@@ -14,14 +14,18 @@ from homeassistant.components.sensor import CONF_STATE_CLASS
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
                                  CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
-                                 STATE_OFF, STATE_ON, STATE_UNKNOWN)
+                                 EntityCategory, STATE_OFF, STATE_ON,
+                                 STATE_UNKNOWN)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import get_miniserver_from_hass
 
@@ -65,6 +69,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up entry."""
     miniserver = get_miniserver_from_hass(hass)
+    coordinator: LoxoneCoordinator = hass.data[DOMAIN][config_entry.entry_id]
     loxconfig = miniserver.lox_config.json
     entities = []
 
@@ -82,6 +87,11 @@ async def async_setup_entry(
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
         sensor.update({"type": "smoke"})
         entities.append(LoxoneDigitalSensor(**sensor))
+
+    if miniserver.serial:
+        entities.append(
+            LoxoneConnectivitySensor(coordinator, miniserver.serial)
+        )
 
     @callback
     def async_add_binary_sensors(_):
@@ -235,3 +245,29 @@ class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
     def name(self):
         """Return the name of the sensor."""
         return self._name
+
+
+class LoxoneConnectivitySensor(CoordinatorEntity[LoxoneCoordinator], BinarySensorEntity):
+    """Reports whether the Loxone Miniserver WebSocket is connected."""
+
+    _attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_has_entity_name = True
+    _attr_name = "Connection"
+
+    def __init__(self, coordinator: LoxoneCoordinator, serial: str) -> None:
+        super().__init__(coordinator)
+        self._serial = serial
+        self._attr_unique_id = f"{serial}_connectivity"
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.last_update_success
+
+    @property
+    def available(self) -> bool:
+        return True
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(identifiers={(DOMAIN, self._serial)})

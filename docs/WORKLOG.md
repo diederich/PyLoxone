@@ -4,6 +4,50 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-30 — Architectural hardening (post-reconnect)
+
+### Decisions
+
+- Commands sent while the Miniserver is disconnected were silently dropped or caused unhandled exceptions. Added guarded `async_send_command` / `async_send_secured_command` methods to the coordinator — entity event bus sends log a warning, service calls raise `HomeAssistantError` with the connection state.
+- On a large Miniserver, every coordinator update triggered `async_write_ha_state()` on every entity, even when availability didn't change. Added a `_prev_available` guard so state is only written when the flag actually flips.
+- `stop_event` (on `EVENT_HOMEASSISTANT_STOP`) raced with `async_cleanup` (on entry unload) — both called `api.close()`, and token save could fail if the connection was already closed. Moved token save into `async_cleanup` and removed the redundant `stop_event` closure entirely.
+
+### Changes
+
+- **`coordinator.py`:** Added `async_send_command()`, `async_send_secured_command()` with connection state guard. Added `async_save_token()` call in `async_cleanup()` before `api.close()`.
+- **`__init__.py`:** Updated `loxone_send` to use guarded coordinator methods. Added `ConnectionState` check to service handlers. Added `_prev_available` to `LoxoneEntity._handle_coordinator_update`. Removed `stop_event`, `EVENT_HOMEASSISTANT_STOP` listener/import.
+
+### Test results
+
+- 293 tests pass (no new tests needed — behaviour change is internal).
+
+---
+
+## 2026-03-30 — In-process reconnect and connectivity sensor
+
+### Decisions
+
+- Replaced the "reload entire integration on disconnect" architecture with in-process reconnect using exponential backoff (1s to 300s). Entities now survive disconnects and toggle `available` via the coordinator's `last_update_success`.
+- Moved all connection lifecycle management (`message_callback`, `handle_task_result`, `start_event`, `stop_event`) from `async_setup_entry` closures into `LoxoneCoordinator` methods. This fixes the longstanding bug where `async_unload_entry` tried to cancel `coordinator._listening_task` that was never set.
+- On disconnect, a new `LoxoneConnection` is created per reconnect attempt (avoids the `_closed = True` problem in `close()`). Structure file is re-fetched each time for consistency after Miniserver restarts.
+- Added a gold-standard `BinarySensorDeviceClass.CONNECTIVITY` entity ("Connection") on the Miniserver device. It extends `CoordinatorEntity` and always reports `available=True` so users can see the disconnected state.
+- All `LoxoneEntity` subclasses now register as coordinator listeners and report `available=False` when the Miniserver is disconnected.
+- Closes ARCH-003 (entity availability).
+
+### Changes
+
+- **`coordinator.py`:** Complete rewrite. Added `ConnectionState` enum, `_create_api()`, `_handle_task_result()`, `_async_reconnect()` with backoff, `_message_callback()`, `async_start_listening()`, `async_save_token()`. `async_cleanup()` now cancels both `_listening_task` and `_reconnect_task`.
+- **`__init__.py`:** Removed `websockets` import, `LoxoneConnection` import, and several exception imports no longer needed. Removed `_reload_after_delay`, `handle_task_result`, `message_callback`, `start_event` closures. Simplified `stop_event` to delegate to `coordinator.async_save_token()`. Simplified `async_unload_entry`. Added `available` property, `_register_coordinator_listener()`, and `_handle_coordinator_update()` to `LoxoneEntity`.
+- **`binary_sensor.py`:** Added `LoxoneConnectivitySensor(CoordinatorEntity, BinarySensorEntity)` with `CONNECTIVITY` device class, `DIAGNOSTIC` category. Registered in `async_setup_entry`.
+- **`sensor.py`:** Updated `LoxoneMiniserverInfoSensor.async_added_to_hass` to register coordinator listener for availability tracking.
+- **`test_coordinator.py`:** New test file with 16 tests covering connectivity sensor creation/device link/availability, connection state tracking, reconnect logic (token error, cancel, shutdown guard), entity availability toggling, and cleanup during reconnect.
+
+### Test results
+
+- 293 tests pass (277 existing + 16 new coordinator/connectivity tests).
+
+---
+
 ## 2026-03-30 — Tier 2: Miniserver diagnostic info sensors
 
 ### Decisions

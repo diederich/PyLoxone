@@ -39,7 +39,7 @@
 │  ┌───────────────────────────┴───────────────────────────────────┐     │
 │  │                     coordinator.py                             │     │
 │  │  LoxoneCoordinator (DataUpdateCoordinator)                    │     │
-│  │  - Connection lifecycle                                       │     │
+│  │  - Connection lifecycle + in-process reconnect                │     │
 │  │  - MiniServer construction                                    │     │
 │  └───────────────────────────┬───────────────────────────────────┘     │
 │                              │                                         │
@@ -151,10 +151,12 @@ PyLoxone/
    c. HTTP GET → RSA public key
 4. Coordinator builds MiniServer from structure file
 5. Platforms forwarded → entities created from structure controls
-6. api.start_listening() opens WebSocket:
+6. coordinator.async_start_listening() opens WebSocket:
    a. AES key exchange (RSA-encrypted)
    b. Token-based authentication
    c. Async listen loop begins
+7. On disconnect → coordinator reconnects in-process with exponential backoff
+   (entities stay registered, toggle available via last_update_success)
 ```
 
 ### Runtime Event Flow
@@ -167,7 +169,7 @@ Loxone Miniserver
 LoxoneConnection._listen()
     │  Parses header + payload via websocket_protocol
     ▼
-message_callback()                     [__init__.py]
+coordinator._message_callback()        [coordinator.py]
     │  Fires hass.bus event per UUID
     ▼
 hass.bus → "loxone_event"

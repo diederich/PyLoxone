@@ -620,14 +620,6 @@ The coordinator currently only manages the connection — `_async_update_data` i
 - Replace with a simple connection manager class
 - Use HA's `async_setup_entry` lifecycle directly
 
-### ARCH-003: Implement entity availability
-
-Entities never report themselves as unavailable. When the WebSocket disconnects, all entities should go unavailable. This requires:
-
-- Tracking connection state in the coordinator
-- Propagating availability to all entities
-- Restoring availability on reconnect
-
 ### ARCH-004: Use entity descriptions
 
 Modern HA integrations use `EntityDescription` dataclasses for entity metadata. Most platforms here define attributes inline in `__init__`. Migrating to `SensorEntityDescription`, `BinarySensorEntityDescription`, etc. would:
