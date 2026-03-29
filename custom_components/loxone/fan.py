@@ -1,4 +1,4 @@
-"""Interfaces with Alarm.com alarm control panels."""
+"""Support for Loxone Ventilation controls as HA fan entities."""
 
 from __future__ import annotations
 
@@ -163,7 +163,12 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
     @property
     def supported_features(self):
         """Flag supported features."""
-        return FanEntityFeature.PRESET_MODE | FanEntityFeature.SET_SPEED
+        return (
+            FanEntityFeature.PRESET_MODE
+            | FanEntityFeature.SET_SPEED
+            | FanEntityFeature.TURN_ON
+            | FanEntityFeature.TURN_OFF
+        )
 
     async def event_handler(self, event):
         # _LOGGER.debug(f"Fan Event data: {event.data}")

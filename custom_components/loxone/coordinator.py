@@ -77,7 +77,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         This is the place to pre-process the data to lookup tables
         so entities can quickly look up their data.
         """
-        print("_async_update_data")
+        _LOGGER.debug("_async_update_data")
         return None
 
     async def async_cleanup(self):

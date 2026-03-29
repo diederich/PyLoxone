@@ -42,11 +42,13 @@ async def test_fan_entity_created(
 async def test_fan_supported_features(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """Fan should support preset mode and set speed."""
+    """Fan should support preset mode, set speed, turn on, and turn off."""
     state = hass.states.get(FAN_ENTITY_ID)
     features = state.attributes.get("supported_features")
     assert features & FanEntityFeature.PRESET_MODE
     assert features & FanEntityFeature.SET_SPEED
+    assert features & FanEntityFeature.TURN_ON
+    assert features & FanEntityFeature.TURN_OFF
 
 
 async def test_fan_preset_modes(

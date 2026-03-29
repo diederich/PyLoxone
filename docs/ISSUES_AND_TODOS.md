@@ -31,14 +31,9 @@ The root cause is twofold:
 
 **Fix:** Sub-entities should use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`) or keep their original `uuidAction` as the unique_id and store `parent_id` separately for device grouping only.
 
-### BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags
+### ~~BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags~~
 
-**File:** `fan.py` (line 178)
-**Impact:** `fan.turn_on` and `fan.turn_off` services raise `ServiceNotSupported` in HA 2024+
-
-`supported_features` returns `FanEntityFeature.PRESET_MODE | FanEntityFeature.SET_SPEED` but the entity defines `async_turn_on` and `async_turn_off` methods. Since HA 2024.8, `TURN_ON` and `TURN_OFF` must be declared in `supported_features` for those services to work.
-
-**Fix:** Add `FanEntityFeature.TURN_ON | FanEntityFeature.TURN_OFF` to the return value.
+**Status:** Fixed (see Completed section below)
 
 ### Completed
 
@@ -51,6 +46,8 @@ The root cause is twofold:
 - ~~BUG-009: `RGBColorPicker` `None` attribute access — brightness/hs_color default to safe values~~ ✅
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
 - ~~BUG-011: `async_unload_entry` removes services `quick_shade`, `enable_sun_automation`, `disable_sun_automation` never registered in `async_setup_entry` — crashes unload when no cover entities exist~~ ✅
+- ~~BUG-015: `sync_areas` never updates entities already assigned to an area — `entry.area_id is None` guard too strict~~ ✅
+- ~~BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags — `fan.turn_on`/`fan.turn_off` raise `ServiceNotSupported` in HA 2024+~~ ✅
 
 ---
 
@@ -232,14 +229,9 @@ except (ValueError, KeyError, IndexError) as exc:
 
 In the exception handler, `sys.exit(-1)` kills the entire Home Assistant process. Should log an error and let HA handle the failure.
 
-### MED-005: Debug `print()` in coordinator
+### ~~MED-005: Debug `print()` in coordinator~~
 
-**File:** `coordinator.py`
-
-```python
-async def _async_update_data(self):
-    print("_async_update_data")  # Remove or replace with _LOGGER.debug()
-```
+~~**File:** `coordinator.py`~~ — Replaced with `_LOGGER.debug()` ✅
 
 ### MED-006: `LoxoneAlarm.code_arm_required` — Side effect in property
 
@@ -336,7 +328,7 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 | #       | Issue                                                        | File                                             |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, fan.py, alarm_control_panel.py |
+| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, ~~fan.py~~, alarm_control_panel.py |
 | LOW-002 | Typo `reponse` in `read_user_salt_response`                  | pyloxone_api/loxone_token.py:31                  |
 | LOW-003 | Typo `shade_postion_as_text`                                 | cover.py                                         |
 | LOW-004 | Typo `subcontol`                                             | switch.py                                        |
@@ -371,6 +363,8 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_button.py`                  | Pushbutton entity creation, extra attributes, press sends pulse, event updates state, ignores unrelated events                                                       |
 | `test_light.py`                   | LightControllerV2 creation, mood list JSON parsing (BUG-008 regression), effect commands; RGBColorPicker subcontrol creation, hsv/temp event parsing, None-guard turn_on (BUG-009) |
 | `test_media_player.py`            | AudioZoneV2 entity creation, device class, supported features, playState events (playing/paused/idle), play/pause/next/prev/volume commands                          |
+| `test_bridge.py`                  | DeviceBridge serialization, `_values_equal` helper, `get_mapper` factory, all BridgeMapper implementations (Dimmer, ColorPicker, LightSwitch, Switch, BinarySensor, Analog), BridgeRuntime lifecycle, entity suppression |
+| `test_sync_areas.py`             | Area assignment, create_areas flag, re-sync after area deletion, wrong-area correction, idempotency (BUG-015 regression)                                             |
 
 Infrastructure:
 
@@ -796,19 +790,15 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
 
-### ~~ARCH-008: Sync HA entities with Loxone controls~~ ✅ (implemented)
+### ~~ARCH-008: Bridge HA entities to Loxone controls~~ ✅ (implemented)
 
-Implemented as `sync.py` with `loxone.sync` / `loxone.unsync` services and options flow UI. Features:
-- Bidirectional data model: `vi_name`/`vi_uuid` (expose, HA → Loxone) and `vo_name`/`vo_uuid` (subscribe, Loxone → HA) — set either or both per binding
-- Name-based resolution (`vi_name` + optional `room`) or direct UUID
-- Type conversion: binary→0/1, analog→float, text→string; skips `unavailable`/`unknown`
-- Echo/loop protection: skip_unchanged, analog epsilon (0.01), trailing-edge cooldown (default 1s)
-- Bindings persisted in `config_entry.options["sync"]`
-- Options flow UI: menu-based (Settings / Sync Bindings), separate Loxone Input and Output dropdowns, Add / Remove / Done steps
-- Update listener re-initializes sync bindings when options change via UI
-
-**Remaining work:**
-- Value scaling (e.g., HA brightness 0-255 → Loxone 0-100)
+Redesigned from v1 "sync bindings" to a device-level "Device Bridge" (`bridge.py` + `bridge_mappers.py`). Maps a single HA entity (e.g. Hue light, EP One sensor) to a single Loxone control or sub-control with type-aware value conversion:
+- Supported mappings: `light` ↔ `ColorPickerV2`/`Dimmer`/`Switch`, `switch` ↔ `Switch`, `binary_sensor` → `Switch` (VI), `sensor` → `Slider` (VI)
+- Auto-detection of direction and mapping type from HA entity domain + Loxone control type
+- Echo/loop protection and trailing-edge cooldown debounce
+- Entity suppression: bridged Loxone sub-controls don't create duplicate native HA entities
+- Bridges persisted in `config_entry.options["bridges"]`
+- UI-first: Options flow menu (Settings / Device Bridges) with Add / Remove / Done steps, entity selector + Loxone control picker
 
 ### ARCH-007: Multi-Miniserver support
 
@@ -827,7 +817,7 @@ Tasks that can be done in under 30 minutes each:
 | --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 1   | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py                 | Fixes AC temperature control                     |
 | 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
-| 4   | Remove `print()` from coordinator.py                                                         | Clean up debug output                            |
+| ~~4~~   | ~~Remove `print()` from coordinator.py~~                                                     | ~~Clean up debug output~~ ✅                     |
 | 5   | Fix `_LOGGER.error` format strings in colorpickers.py                                        | Correct logging                                  |
 | 6   | Fix `masterColor` filter from `> 1` to `> -1`                                                | Correct light discovery                          |
 | 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
