@@ -4,6 +4,31 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 — Fix sync_areas to operate at device level (other session)
+
+### Changes
+
+- **BUG-016:** `sync_areas` was assigning areas to individual entities, but HA entities inherit area from their parent device. Rewrote to group by device, assign via device registry, and clear stale entity-level overrides. (`9be41b0`)
+- **BUG-015:** Also fixed the earlier issue where `sync_areas` never updated entities already assigned to an area (the `entry.area_id is None` guard was too strict). Subsumed into the device-level rewrite.
+- Fixed deploy script to default to `--restart` since code changes require a full HA Core restart.
+
+---
+
+## 2026-03-29 — Clean up ISSUES_AND_TODOS convention
+
+### Decisions
+
+- Changed convention: completed items are now **removed** from ISSUES_AND_TODOS.md entirely (the worklog is the record of what was done). Previously they were kept struck-through, which added clutter.
+- Updated AGENTS.md to reflect the new convention.
+
+### Changes
+
+- Removed all struck-through completed items from every section (Critical Bugs, High-Priority, Medium-Priority, Low-Priority, Architectural, Quick Wins).
+- Removed "Completed" subsections and "Completed Quick Wins" table.
+- Updated AGENTS.md ISSUES_AND_TODOS section with new rules.
+
+---
+
 ## 2026-03-29 (fix 5) — Narrow bare except in message.py
 
 ### Changes
@@ -143,6 +168,7 @@ Session-by-session record of work done on PyLoxone. Newest first.
 ### Investigations
 
 - Full codebase audit: catalogued 15 bugs, 8 high-priority improvements, 12 medium-priority issues, 14 quick wins
+- BUG-007 (cover dispatcher `async_add_covers` unused): reclassified as not a bug — dead code, no change needed
 - Identified entity duplication issue (controls registered via both `async_load_platform` loop and `async_setup_platform` stubs)
 - Mapped complete light entity hierarchy: `LightControllerV2` → sub-controls (Switch, Dimmer, EIBDimmer, ColorPickerV2 with Rgb/LumiTech/TunableWhite picker types)
 - Analyzed connection.py god object (1420 lines) and proposed decomposition

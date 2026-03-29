@@ -16,10 +16,6 @@ These will cause crashes or incorrect behavior for users.
 
 Docstring says `username password host port` but code reads `sys.argv[1]` as host.
 
-### ~~BUG-011: `async_unload_entry` removes services never registered in `async_setup_entry`~~
-
-**Status:** Fixed (see Completed section below)
-
 ### BUG-013: Ventilation sub-entities collide on unique_id with the fan entity
 
 **File:** `fan.py` (lines 68-136)
@@ -30,25 +26,6 @@ The root cause is twofold:
 2. All entities (fan + sub-entities) are added through the fan platform's `async_add_entities` in a single list, so they share the same unique_id namespace
 
 **Fix:** Sub-entities should use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`) or keep their original `uuidAction` as the unique_id and store `parent_id` separately for device grouping only.
-
-### ~~BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags~~
-
-**Status:** Fixed (see Completed section below)
-
-### Completed
-
-- ~~BUG-001: `LoxoneAcControl.async_set_temperature` — Wrong kwarg key~~ ✅ (`d277d9e`)
-- ~~BUG-003: `websocket_protocol.py` — `_last_header` can be `None`, causing `AttributeError` on malformed messages~~ ✅ (`4f97ae6`)
-- ~~BUG-006: Binary sensor `NEW_SENSOR = "binairy_sensors"` typo — mismatched dispatcher signal key~~ ✅ (`82c4de4`)
-- ~~BUG-007: Cover dispatcher `async_add_covers` defined but unused — `async_add_entities` passed directly (dead code, not a real bug)~~ ✅ (reclassified — no code change needed)
-- ~~BUG-005: Dead `async_load_platform` loop and `async_setup_platform` stubs — narrowed to sensor/binary_sensor only (YAML escape hatch), removed 11 no-op stubs~~ ✅
-- ~~BUG-008: `eval()` on external data in colorpickers, lightcontroller, climate — replaced with `ast.literal_eval()` / `json.loads()`~~ ✅ (`529ba8b`)
-- ~~BUG-009: `RGBColorPicker` `None` attribute access — brightness/hs_color default to safe values~~ ✅
-- ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
-- ~~BUG-011: `async_unload_entry` removes services `quick_shade`, `enable_sun_automation`, `disable_sun_automation` never registered in `async_setup_entry` — crashes unload when no cover entities exist~~ ✅
-- ~~BUG-015: `sync_areas` never updates entities already assigned to an area — `entry.area_id is None` guard too strict~~ ✅
-- ~~BUG-016: `sync_areas` assigns areas to entities instead of devices — entities should inherit area from device, not have entity-level overrides~~ ✅
-- ~~BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags — `fan.turn_on`/`fan.turn_off` raise `ServiceNotSupported` in HA 2024+~~ ✅
 
 ---
 
@@ -172,10 +149,6 @@ async def async_added_to_hass(self):
 
 **Migration:** Mechanical — change `message_callback`, change base class subscription, update each platform's `event_handler(self, e)` → `_handle_update(self, value)` to receive the value directly instead of a dict.
 
-### Completed
-
-- ~~IMP-004: Fix `iot_class` in manifest~~ ✅ (`8e5fd22`)
-
 ---
 
 ## Medium-Priority Issues
@@ -192,27 +165,11 @@ async def async_added_to_hass(self):
 
 Not wired up: `manifest.json` doesn't declare `"system_health"` as a dependency, so HA never loads this module. If it were loaded, it would crash — references `v.serial`, `v.project_name`, `v.local_url`, `v.software_version` on the coordinator, but those live on `v.miniserver`. The `for k, v in … return` pattern also silently ignores multi-entry configs. Either wire it up properly or delete it.
 
-### ~~MED-001: `masterColor` filter typo~~
-
-~~**File:** `light.py`~~ — Fixed `> 1` → `in` operator; also simplified `masterValue` check to match ✅
-
 ### MED-002: Standalone `ColorPickerV2` never discovered
 
 **File:** `light.py`
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
-
-### ~~MED-003: Bare `except:` in message parsing~~
-
-~~**File:** `pyloxone_api/message.py:230`~~ — Narrowed to `(TypeError, re.error)` with debug logging ✅
-
-### ~~MED-004: `LoxoneEntity` calls `sys.exit(-1)`~~
-
-~~**File:** `__init__.py`~~ — Replaced with `_LOGGER.exception()`; removed `import sys` and `import traceback` ✅
-
-### ~~MED-005: Debug `print()` in coordinator~~
-
-~~**File:** `coordinator.py`~~ — Replaced with `_LOGGER.debug()` ✅
 
 ### MED-006: `LoxoneAlarm.code_arm_required` — Side effect in property
 
@@ -231,10 +188,6 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 **File:** `cover.py`
 
 Lamella positioning uses a random value, making behavior non-deterministic.
-
-### ~~MED-009: Logger format errors in colorpickers~~
-
-~~**File:** `lights/colorpickers.py:103,243`~~ — Fixed both occurrences to use `%s` formatting ✅
 
 ### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
 
@@ -301,11 +254,10 @@ All Loxone services (`event_websocket_command`, `event_secured_websocket_command
 
 | #       | Issue                                                        | File                                             |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, ~~fan.py~~, alarm_control_panel.py |
+| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, alarm_control_panel.py         |
 | LOW-002 | Typo `reponse` in `read_user_salt_response`                  | pyloxone_api/loxone_token.py:31                  |
 | LOW-003 | Typo `shade_postion_as_text`                                 | cover.py                                         |
 | LOW-004 | Typo `subcontol`                                             | switch.py                                        |
-| ~~LOW-005~~ | ~~Typo `"binairy_sensors"`~~                             | ~~binary_sensor.py~~ ✅                          |
 | LOW-006 | Duplicate `key="power"` in `SENSOR_TYPES`                    | sensor.py                                        |
 | LOW-007 | `ToggleEntity` imported but unused                           | lights/switch.py                                 |
 | LOW-008 | `cast` imported but unused                                   | config_flow.py                                   |
@@ -360,8 +312,6 @@ Additional test tracks:
 | `tests_e2e_miniserver/test_discover.py` | UDP broadcast discovery test (requires live Miniserver on LAN). Moved from legacy `pyloxone_api/tests/`.                                        |
 | `tests_e2e_miniserver/conftest.py`      | Session-scoped fixtures for live Miniserver connection (credentials from env vars or `.env`).                                                    |
 | `scripts/dump_miniserver`               | Script to fetch `LoxAPP3.json` from a real Miniserver and save it as a dump fixture with auto-generated expectations.                           |
-
-~~Legacy test files (were in `pyloxone_api/tests/`):~~ Cleaned up — `test_run_alone.py` (dead stub) deleted; `test_discover.py` moved to `tests_e2e_miniserver/`. The `pyloxone_api/tests/` directory has been removed. ✅
 
 No CI test jobs yet.
 
@@ -763,16 +713,6 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
 
-### ~~ARCH-008: Bridge HA entities to Loxone controls~~ ✅ (implemented)
-
-Redesigned from v1 "sync bindings" to a device-level "Device Bridge" (`bridge.py` + `bridge_mappers.py`). Maps a single HA entity (e.g. Hue light, EP One sensor) to a single Loxone control or sub-control with type-aware value conversion:
-- Supported mappings: `light` ↔ `ColorPickerV2`/`Dimmer`/`Switch`, `switch` ↔ `Switch`, `binary_sensor` → `Switch` (VI), `sensor` → `Slider` (VI)
-- Auto-detection of direction and mapping type from HA entity domain + Loxone control type
-- Echo/loop protection and trailing-edge cooldown debounce
-- Entity suppression: bridged Loxone sub-controls don't create duplicate native HA entities
-- Bridges persisted in `config_entry.options["bridges"]`
-- UI-first: Options flow menu (Settings / Device Bridges) with Add / Remove / Done steps, entity selector + Loxone control picker
-
 ### ARCH-007: Multi-Miniserver support
 
 Comments say "Only one Miniserver" but `hass.data[DOMAIN]` is keyed by `entry_id`, suggesting multi-instance was partially considered. Several helpers (e.g., `get_miniserver_from_hass`, diagnostics) assume a single instance. Either:
@@ -790,20 +730,9 @@ Tasks that can be done in under 30 minutes each:
 | --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 1   | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py                 | Fixes AC temperature control                     |
 | 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
-| ~~4~~   | ~~Remove `print()` from coordinator.py~~                                                     | ~~Clean up debug output~~ ✅                     |
-| ~~5~~   | ~~Fix `_LOGGER.error` format strings in colorpickers.py~~                                    | ~~Correct logging~~ ✅                           |
-| ~~6~~   | ~~Fix `masterColor` filter from `> 1` to `> -1`~~                                            | ~~Correct light discovery~~ ✅                   |
 | 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
-| ~~8~~   | ~~Remove `sys.exit(-1)` from LoxoneEntity~~                                                  | ~~Prevent HA process kill~~ ✅                   |
 | 9   | Replace `eval()` with `ast.literal_eval()` where possible                                    | Security hardening                               |
 | 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |
 | 11  | Remove unused imports (`cast`, `ToggleEntity`)                                               | Code hygiene                                     |
 | 12  | Remove dead files (`helper.py`, `api.py`)                                                    | Reduce confusion                                 |
-| ~~13~~  | ~~Fix device name prefix: `DOMAIN` → `"Loxone"` (or just use `device_name`) in `helpers.py:18`~~ | ~~Correct capitalization in HA UI~~ ✅                  |
 | 14  | Add missing `name`/`description` to all services in `services.yaml`                          | Proper service metadata for HA action validation |
-
-### Completed Quick Wins
-
-| #   | Task                                                | Commit    |
-| --- | --------------------------------------------------- | --------- |
-| 3   | Change `iot_class` to `local_push` in manifest.json | `8e5fd22` |

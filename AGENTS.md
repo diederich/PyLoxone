@@ -83,24 +83,8 @@ The testplan can reference unit tests, but should often also include a manual te
 
 ## ISSUES_AND_TODOS.md — Living Document
 
-This is the project's source of truth for what's broken, what needs improvement, and what's been done. Treat it as a living document:
+This is the project's source of truth for **open** work — what's broken, what needs improvement, and what's planned. The worklog (`docs/WORKLOG.md`) is the record of what was done and when.
 
 - **Add issues as you find them.** When you encounter a bug, smell, or improvement opportunity while working on something else, add it to the appropriate section (Critical Bugs, High/Medium/Low Priority, Quick Wins). Use the next available ID in that section's sequence.
-- **Mark items done when you fix them.** Use strikethrough + checkmark + commit hash. For quick wins table rows, strikethrough the entire row and append ✅.
-- **Move completed items to the bottom.** Each major section should end with a "Completed" subsection. Move finished items there so the active items stay prominent and the document stays readable. Example:
-
-  ```markdown
-  ## Critical Bugs
-
-  ### BUG-005: ... ← active items at the top
-
-  ### BUG-006: ...
-
-  ### Completed
-
-  - ~~BUG-001: description~~ ✅ (`abc1234`)
-  - ~~BUG-003: description~~ ✅ (`def5678`)
-  ```
-
-- **Keep the Quick Wins table clean.** Completed quick wins accumulate at the bottom of the table, strikethrough. If more than half the table is done, move completed rows to a separate "Completed Quick Wins" table below it.
-- **Don't remove items.** Even completed work stays in the doc (struck through) so there's a record of what was done and when.
+- **Remove items when you fix them.** Delete the entry from ISSUES_AND_TODOS.md entirely. The worklog already captures what was fixed, when, and why — no need to keep struck-through clutter here. For quick wins tables, just delete the row.
+- **Keep IDs stable.** Don't renumber remaining items after removing one. The next new item gets the next unused ID in its section (e.g. if BUG-014 is removed, the next bug is still BUG-017, not BUG-014).
