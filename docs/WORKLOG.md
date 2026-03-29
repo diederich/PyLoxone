@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 6) — Fix __main__.py docstring argument order
+
+### Changes
+
+- **BUG-010:** Docstring said `username password host port` but code reads `host port username password`. The code order is correct (connection info first, credentials second) — fixed the docstring to match.
+
+---
+
 ## 2026-03-29 — Fix sync_areas to operate at device level (other session)
 
 ### Changes

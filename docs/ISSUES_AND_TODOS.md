@@ -9,13 +9,6 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-010: `__main__.py` argument order mismatch
-
-**File:** `pyloxone_api/__main__.py`
-**Impact:** Standalone CLI connects with wrong credentials
-
-Docstring says `username password host port` but code reads `sys.argv[1]` as host.
-
 ### BUG-013: Ventilation sub-entities collide on unique_id with the fan entity
 
 **File:** `fan.py` (lines 68-136)
