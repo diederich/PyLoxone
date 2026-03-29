@@ -170,12 +170,6 @@ Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone Co
 
 The property getter mutates `self._code`. Properties should be side-effect-free.
 
-### MED-008: `LoxoneJalousie` uses `random.uniform()` for tilt
-
-**File:** `cover.py`
-
-Lamella positioning uses a random value, making behavior non-deterministic.
-
 ### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
 
 **File:** `media_player.py`

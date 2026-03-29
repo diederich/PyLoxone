@@ -6,7 +6,7 @@ https://github.com/JoDehli/PyLoxone
 """
 
 import logging
-import random
+import itertools
 from typing import Any
 
 from homeassistant.components.cover import (ATTR_POSITION, ATTR_TILT_POSITION,
@@ -336,6 +336,11 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
         self._is_automatic = False
         self._auto_text = ""
         self._auto_state = 0
+        # Miniserver ignores manualLamelle commands when the value matches
+        # the current position. A tiny jitter ensures the command is always
+        # treated as new. The offset cycles through 4 values and is too small
+        # to affect physical lamella position.
+        self._lamelle_jitter = itertools.cycle([0.001, 0.002, 0.003, 0.004])
 
         if "isAutomatic" in self.details:
             self._is_automatic = self.details["isAutomatic"]
@@ -569,8 +574,8 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
         )
 
     def open_cover_tilt(self, **kwargs):
-        """Close the cover tilt."""
-        position = 0.0 + random.uniform(0.000000001, 0.00900000)
+        """Open the cover tilt."""
+        position = 0.0 + next(self._lamelle_jitter)
         self.hass.bus.fire(
             SENDDOMAIN, dict(uuid=self.uuidAction, value=f"manualLamelle/{position}")
         )
@@ -581,7 +586,7 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
 
     def close_cover_tilt(self, **kwargs):
         """Close the cover tilt."""
-        position = 100.0 + random.uniform(0.000000001, 0.00900000)
+        position = 100.0 + next(self._lamelle_jitter)
         self.hass.bus.fire(
             SENDDOMAIN, dict(uuid=self.uuidAction, value=f"manualLamelle/{position}")
         )
@@ -590,7 +595,7 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
         """Move the cover tilt to a specific position."""
         tilt_position = kwargs.get(ATTR_TILT_POSITION)
         mapped_pos = map_range(tilt_position, 0, 100, 100, 0)
-        position = mapped_pos + random.uniform(0.000000001, 0.00900000)
+        position = mapped_pos + next(self._lamelle_jitter)
         self.hass.bus.fire(
             SENDDOMAIN, dict(uuid=self.uuidAction, value=f"manualLamelle/{position}")
         )

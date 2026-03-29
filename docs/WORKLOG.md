@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 8) — Replace random tilt jitter with deterministic cycle
+
+### Changes
+
+- **MED-008:** `LoxoneJalousie` used `random.uniform()` to add a tiny offset to `manualLamelle` commands — a cache-busting trick so the Miniserver doesn't ignore repeated same-value commands. Replaced with `itertools.cycle([0.001, 0.002, 0.003, 0.004])` for deterministic, reproducible behavior. Added a comment explaining *why* the jitter exists. Also fixed `open_cover_tilt` docstring (said "Close" instead of "Open"). Removed `import random`.
+
+---
+
 ## 2026-03-29 (fix 7) — Remove unused httpx dependency
 
 ### Changes
