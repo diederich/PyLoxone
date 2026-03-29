@@ -2,11 +2,22 @@
   "msInfo": {
     "serialNr": "504F94A0FEA2",
     "msName": "Test Miniserver",
-    "projectName": "Test",
+    "projectName": "Test Project",
     "swVersion": "14.5.12.7",
     "localUrl": "192.168.1.100",
     "tempUnit": 0,
-    "miniserverType": 0
+    "miniserverType": 0,
+    "location": "Kollerschlag",
+    "latitude": 48.6082,
+    "longitude": 13.8384,
+    "altitude": 94,
+    "currentUser": {
+      "name": "admin",
+      "uuid": "test-user-uuid",
+      "isAdmin": true,
+      "changePassword": false,
+      "userRights": 4294967295
+    }
   },
   "rooms": {
     "room-1": { "name": "Living Room", "uuid": "room-1" }

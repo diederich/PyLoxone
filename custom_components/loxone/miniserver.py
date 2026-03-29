@@ -79,6 +79,30 @@ class MiniServer:
         return ".".join([str(x) for x in self.lox_config.get("softwareVersion", "")])
 
     @property
+    def project_name(self):
+        return self.lox_config.get("msInfo", {}).get("projectName", None)
+
+    @property
+    def location(self):
+        return self.lox_config.get("msInfo", {}).get("location", None)
+
+    @property
+    def latitude(self):
+        return self.lox_config.get("msInfo", {}).get("latitude", None)
+
+    @property
+    def longitude(self):
+        return self.lox_config.get("msInfo", {}).get("longitude", None)
+
+    @property
+    def altitude(self):
+        return self.lox_config.get("msInfo", {}).get("altitude", None)
+
+    @property
+    def current_user(self) -> dict | None:
+        return self.lox_config.get("msInfo", {}).get("currentUser", None)
+
+    @property
     def miniserver_id(self) -> str:
         """Return the unique identifier of the Miniserver."""
         return self.config_entry.unique_id

@@ -1,11 +1,20 @@
 """Tests for Loxone sensor entities."""
 
+import json
+from pathlib import Path
+
 import pytest
 from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT
+from custom_components.loxone.const import DOMAIN, EVENT
+
+MINISERVER_SERIAL = "504F94A0FEA2"
+
+FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 
 @pytest.fixture
@@ -24,20 +33,40 @@ TEXT_STATE_UUID = "txt10000-0000-0000-0000000000000001"
 METER_ACTUAL_UUID = "mtr10000-0000-0000-0000000000000010"
 METER_TOTAL_UUID = "mtr10000-0000-0000-0000000000000011"
 
-VERSION_ENTITY_ID = "sensor.loxone_software_version"
-KEEPALIVE_ENTITY_ID = "sensor.loxone_last_keep_alive_message"
+VERSION_ENTITY_ID = "sensor.test_miniserver_software_version"
+KEEPALIVE_ENTITY_ID = "sensor.test_miniserver_keep_alive"
+PROJECT_ENTITY_ID = "sensor.test_miniserver_project_name"
+LOCATION_ENTITY_ID = "sensor.test_miniserver_location"
+USER_ENTITY_ID = "sensor.test_miniserver_connected_user"
 
 
 # -- Built-in sensors (always created) ----------------------------------------
 
 
-async def test_version_sensor_created(
+async def test_version_sensor_disabled_by_default(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """softwareVersion [14,5,12,7] should become '14.5.12.7'."""
-    state = hass.states.get(VERSION_ENTITY_ID)
-    assert state is not None
-    assert state.state == "14.5.12.7"
+    """Version sensor should be registered but disabled by default."""
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(VERSION_ENTITY_ID)
+    assert entry is not None
+    assert entry.unique_id == f"{MINISERVER_SERIAL}_software_version"
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_version_sensor_on_miniserver_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Version sensor should be attached to the miniserver device."""
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(VERSION_ENTITY_ID)
+    assert entry is not None
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
 
 
 async def test_keep_alive_sensor_created(
@@ -46,6 +75,102 @@ async def test_keep_alive_sensor_created(
     """Keep-alive sensor should always be present."""
     state = hass.states.get(KEEPALIVE_ENTITY_ID)
     assert state is not None
+
+
+async def test_keep_alive_sensor_on_miniserver_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Keep-alive sensor should be attached to the miniserver device."""
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(KEEPALIVE_ENTITY_ID)
+    assert entry is not None
+    assert entry.unique_id == f"{MINISERVER_SERIAL}_keep_alive"
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+# -- Miniserver info sensors (Tier 2) ----------------------------------------
+
+
+async def test_project_name_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Project name sensor should show the Loxone Config project name."""
+    state = hass.states.get(PROJECT_ENTITY_ID)
+    assert state is not None
+    assert state.state == "Test Project"
+
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(PROJECT_ENTITY_ID)
+    assert entry.unique_id == f"{MINISERVER_SERIAL}_project_name"
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+async def test_location_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Location sensor should show the location name with coordinate attributes."""
+    state = hass.states.get(LOCATION_ENTITY_ID)
+    assert state is not None
+    assert state.state == "Kollerschlag"
+    assert state.attributes["latitude"] == pytest.approx(48.6082)
+    assert state.attributes["longitude"] == pytest.approx(13.8384)
+    assert state.attributes["altitude"] == 94
+
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(LOCATION_ENTITY_ID)
+    assert entry.unique_id == f"{MINISERVER_SERIAL}_location"
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+async def test_connected_user_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Connected user sensor should show the API username with is_admin attribute."""
+    state = hass.states.get(USER_ENTITY_ID)
+    assert state is not None
+    assert state.state == "admin"
+    assert state.attributes["is_admin"] is True
+
+    ent_reg = er.async_get(hass)
+    entry = ent_reg.async_get(USER_ENTITY_ID)
+    assert entry.unique_id == f"{MINISERVER_SERIAL}_connected_user"
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+async def test_miniserver_sensors_missing_data(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """Sensors should not be created when msInfo fields are absent."""
+    minimal = json.loads((FIXTURE_DIR / "structure_minimal.json").read_text())
+    minimal["msInfo"].pop("projectName", None)
+    mock_loxone_connection.structure_file = minimal
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    assert hass.states.get("sensor.test_miniserver_project_name") is None
+    assert hass.states.get("sensor.test_miniserver_location") is None
+    assert hass.states.get("sensor.test_miniserver_connected_user") is None
 
 
 # -- InfoOnlyAnalog (LoxoneSensor) -------------------------------------------

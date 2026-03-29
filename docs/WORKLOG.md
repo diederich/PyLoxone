@@ -4,6 +4,50 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-30 — Tier 2: Miniserver diagnostic info sensors
+
+### Decisions
+
+- Added three new diagnostic sensors to the miniserver device: **Project name**, **Location** (with lat/lon/alt attributes), and **Connected user** (with is_admin attribute).
+- Used a description-based pattern (`MiniserverSensorDescription` dataclass + `LoxoneMiniserverInfoSensor` class) for clean declarative sensor definitions — easy to extend with future miniserver sensors.
+- Static sensors override `async_added_to_hass` to skip the event bus subscription (no runtime state changes).
+- Sensors are only created when the corresponding `msInfo` field is present (graceful degradation).
+- Disabled the software version sensor by default (`entity_registry_enabled_default = False`) since it duplicates `sw_version` on the device itself. Still available for users who want automations.
+
+### Changes
+
+- **`miniserver.py`:** Added properties: `project_name`, `location`, `latitude`, `longitude`, `altitude`, `current_user`.
+- **`sensor.py`:** Added `MiniserverSensorDescription`, `MINISERVER_SENSOR_DESCRIPTIONS` (3 entries), `LoxoneMiniserverInfoSensor`. Added `_attr_entity_registry_enabled_default = False` to `LoxoneVersionSensor`. Updated `async_setup_entry` to iterate descriptions.
+- **`structure_sensors.json`:** Added `location`, `latitude`, `longitude`, `altitude`, `currentUser` to `msInfo`.
+- **`test_sensor.py`:** Added `test_project_name_sensor`, `test_location_sensor`, `test_connected_user_sensor`, `test_miniserver_sensors_missing_data`. Updated version sensor test to verify disabled-by-default behavior.
+
+### Test results
+
+- All 277 tests pass (20 sensor tests including 4 new).
+
+---
+
+## 2026-03-30 — Tier 1: Attach diagnostic sensors to miniserver device
+
+### Decisions
+
+- `LoxoneKeepAliveSensor` and `LoxoneVersionSensor` were orphaned entities (no `device_info`) because they lacked a `uuidAction`. They clearly belong to the miniserver device.
+- Adopted gold-standard HA patterns: `has_entity_name = True` (entity name is a suffix to the device name), `entity_category = DIAGNOSTIC` (these are system-level info, not user-facing controls).
+- Scoped `unique_id` to the miniserver serial (`{serial}_keep_alive`, `{serial}_software_version`) for multi-miniserver readiness.
+- Updated icons: `mdi:heart-pulse` for keep-alive (heartbeat metaphor), `mdi:package-up` for software version (firmware).
+- Entity names shortened from "Loxone Last Keep Alive Message" / "Loxone Software Version" to "Keep alive" / "Software version" — with `has_entity_name = True`, HA prepends the device name automatically.
+
+### Changes
+
+- **`sensor.py`:** Both classes now accept a `serial` parameter, set `_attr_has_entity_name = True`, `_attr_entity_category = EntityCategory.DIAGNOSTIC`, and override `device_info` to return `DeviceInfo(identifiers={(DOMAIN, serial)})`. `async_setup_entry` passes `miniserver.serial` to both constructors.
+- **`test_sensor.py`:** Updated entity IDs to match new `has_entity_name` convention. Added `test_version_sensor_on_miniserver_device` and `test_keep_alive_sensor_on_miniserver_device` verifying device linkage, unique_id format, and entity_category.
+
+### Test results
+
+- All 273 tests pass (16 sensor tests including 2 new, plus full suite).
+
+---
+
 ## 2026-03-30 — MED-012: Register services in async_setup
 
 ### Decisions

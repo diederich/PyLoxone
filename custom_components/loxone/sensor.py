@@ -7,6 +7,7 @@ https://github.com/JoDehli/PyLoxone
 
 import logging
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property
 from typing import Any
@@ -20,9 +21,9 @@ from homeassistant.components.sensor import (CONF_STATE_CLASS, PLATFORM_SCHEMA,
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
                                  CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
-                                 LIGHT_LUX, PERCENTAGE, STATE_UNKNOWN,
-                                 UnitOfEnergy, UnitOfPower, UnitOfSpeed,
-                                 UnitOfTemperature)
+                                 EntityCategory, LIGHT_LUX, PERCENTAGE,
+                                 STATE_UNKNOWN, UnitOfEnergy, UnitOfPower,
+                                 UnitOfSpeed, UnitOfTemperature)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -33,7 +34,7 @@ from homeassistant.util import dt as dt_util
 from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN, THROTTLE_KEEP_ALIVE_TIME
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
+from .miniserver import MiniServer, get_miniserver_from_hass
 
 NEW_SENSOR = "sensors"
 
@@ -149,6 +150,105 @@ SENSOR_TYPES: tuple[LoxoneEntityDescription, ...] = (
 SENSOR_FORMATS = [desc.loxone_format_string for desc in SENSOR_TYPES]
 
 
+# ---------------------------------------------------------------------------
+# Miniserver diagnostic sensor descriptions
+# ---------------------------------------------------------------------------
+
+
+def _no_extra_attrs(_ms: MiniServer) -> dict[str, Any]:
+    return {}
+
+
+@dataclass(frozen=True)
+class MiniserverSensorDescription:
+    """Describes a static diagnostic sensor on the miniserver device."""
+
+    key: str
+    name: str
+    icon: str
+    value_fn: Callable[[MiniServer], str | None]
+    extra_attrs_fn: Callable[[MiniServer], dict[str, Any]] = _no_extra_attrs
+
+
+def _location_attrs(ms: MiniServer) -> dict[str, Any]:
+    attrs: dict[str, Any] = {}
+    if ms.latitude is not None:
+        attrs["latitude"] = ms.latitude
+    if ms.longitude is not None:
+        attrs["longitude"] = ms.longitude
+    if ms.altitude is not None:
+        attrs["altitude"] = ms.altitude
+    return attrs
+
+
+def _current_user_attrs(ms: MiniServer) -> dict[str, Any]:
+    user = ms.current_user
+    if user and "isAdmin" in user:
+        return {"is_admin": user["isAdmin"]}
+    return {}
+
+
+MINISERVER_SENSOR_DESCRIPTIONS: tuple[MiniserverSensorDescription, ...] = (
+    MiniserverSensorDescription(
+        key="project_name",
+        name="Project name",
+        icon="mdi:file-cog-outline",
+        value_fn=lambda ms: ms.project_name,
+    ),
+    MiniserverSensorDescription(
+        key="location",
+        name="Location",
+        icon="mdi:map-marker",
+        value_fn=lambda ms: ms.location,
+        extra_attrs_fn=_location_attrs,
+    ),
+    MiniserverSensorDescription(
+        key="connected_user",
+        name="Connected user",
+        icon="mdi:account",
+        value_fn=lambda ms: ms.current_user.get("name") if ms.current_user else None,
+        extra_attrs_fn=_current_user_attrs,
+    ),
+)
+
+
+class LoxoneMiniserverInfoSensor(LoxoneEntity, SensorEntity):
+    """Static diagnostic sensor attached to the miniserver device."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+
+    def __init__(
+        self, description: MiniserverSensorDescription, miniserver: MiniServer
+    ) -> None:
+        super().__init__()
+        self._serial = miniserver.serial
+        self._attr_name = description.name
+        self._attr_icon = description.icon
+        self._attr_unique_id = f"{miniserver.serial}_{description.key}"
+        self._attr_native_value = description.value_fn(miniserver)
+        self._attr_extra_state_attributes.update(
+            {k: v for k, v in description.extra_attrs_fn(miniserver).items()}
+        )
+
+    @cached_property
+    def unique_id(self) -> str:
+        return self._attr_unique_id
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._serial:
+            return DeviceInfo(identifiers={(DOMAIN, self._serial)})
+        return None
+
+    async def async_added_to_hass(self) -> None:
+        """Static sensor — no event bus subscription needed."""
+
+    async def async_will_remove_from_hass(self) -> None:
+        """Nothing to clean up."""
+
+
 async def async_setup_platform(
     hass: HomeAssistant,
     config: ConfigType,
@@ -174,12 +274,17 @@ async def async_setup_entry(
 ) -> None:
     """Set up entry."""
     miniserver = get_miniserver_from_hass(hass)
+    serial = miniserver.serial
 
     loxconfig = miniserver.lox_config.json
-    entities: list[Any] = [LoxoneKeepAliveSensor()]
+    entities: list[Any] = [LoxoneKeepAliveSensor(serial=serial)]
 
     if "softwareVersion" in loxconfig:
-        entities.append(LoxoneVersionSensor(loxconfig["softwareVersion"]))
+        entities.append(LoxoneVersionSensor(loxconfig["softwareVersion"], serial=serial))
+
+    for desc in MINISERVER_SENSOR_DESCRIPTIONS:
+        if desc.value_fn(miniserver) is not None:
+            entities.append(LoxoneMiniserverInfoSensor(desc, miniserver))
 
     for sensor in get_all(loxconfig, "InfoOnlyAnalog"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
@@ -272,48 +377,57 @@ class LoxoneCustomSensor(LoxoneEntity, SensorEntity):
 
 
 class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
-    _attr_name = "Loxone Last Keep Alive Message"
-    _attr_icon = "mdi:information-outline"
-    _attr_unique_id = "loxone_keep_alive_sensor_uuid"
-    _attr_device_class = SensorDeviceClass.TIMESTAMP  # tell HA this is a timestamp
+    _attr_has_entity_name = True
+    _attr_name = "Keep alive"
+    _attr_icon = "mdi:heart-pulse"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(self, **kwargs):
+    def __init__(self, serial: str | None = None, **kwargs):
         super().__init__(**kwargs)
+        self._serial = serial
         self._attr_native_value = None
+        self._attr_unique_id = (
+            f"{serial}_keep_alive" if serial else "loxone_keep_alive_sensor_uuid"
+        )
 
     @cached_property
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._attr_unique_id
 
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._serial:
+            return DeviceInfo(identifiers={(DOMAIN, self._serial)})
+        return None
+
     async def event_handler(self, e):
         if "keep_alive" in e.data and e.data["keep_alive"] == "received":
             now = dt_util.utcnow()
-            # only update if at least 60 seconds passed since last update
             if self._attr_native_value is not None:
                 time_since_last = (now - self._attr_native_value).total_seconds()
                 if time_since_last < THROTTLE_KEEP_ALIVE_TIME:
-                    # too soon, skip this update
                     return
 
-            # update the timestamp
             self._attr_native_value = now
             self.async_schedule_update_ha_state()
 
-    @property
-    def extra_state_attributes(self):
-        """Return device specific state attributes."""
-        return {**self._attr_extra_state_attributes}
-
 
 class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
+    _attr_has_entity_name = True
     _attr_should_poll = False
-    _attr_name = "Loxone Software Version"
-    _attr_icon = "mdi:information-outline"
-    _attr_unique_id = "loxone_software_version"
+    _attr_name = "Software version"
+    _attr_icon = "mdi:package-up"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
 
-    def __init__(self, version_list, **kwargs):
+    def __init__(self, version_list, serial: str | None = None, **kwargs):
         super().__init__(**kwargs)
+        self._serial = serial
+        self._attr_unique_id = (
+            f"{serial}_software_version" if serial else "loxone_software_version"
+        )
         try:
             self._attr_native_value = ".".join([str(x) for x in version_list])
         except Exception:
@@ -323,6 +437,12 @@ class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._attr_unique_id
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        if self._serial:
+            return DeviceInfo(identifiers={(DOMAIN, self._serial)})
+        return None
 
 
 class LoxoneTextSensor(LoxoneEntity, SensorEntity):
