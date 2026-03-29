@@ -47,6 +47,7 @@ The root cause is twofold:
 - ~~BUG-012: `LoxoneDigitalSensor._state_uuid` selection uses `if/if/elif` instead of `if/elif/elif` — smoke and digital sensors listened on `uuidAction` instead of their intended state UUIDs~~ ✅ (`56af52d`)
 - ~~BUG-011: `async_unload_entry` removes services `quick_shade`, `enable_sun_automation`, `disable_sun_automation` never registered in `async_setup_entry` — crashes unload when no cover entities exist~~ ✅
 - ~~BUG-015: `sync_areas` never updates entities already assigned to an area — `entry.area_id is None` guard too strict~~ ✅
+- ~~BUG-016: `sync_areas` assigns areas to entities instead of devices — entities should inherit area from device, not have entity-level overrides~~ ✅
 - ~~BUG-014: `LoxoneVentilation` missing `TURN_ON`/`TURN_OFF` feature flags — `fan.turn_on`/`fan.turn_off` raise `ServiceNotSupported` in HA 2024+~~ ✅
 
 ---
@@ -364,7 +365,7 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_light.py`                   | LightControllerV2 creation, mood list JSON parsing (BUG-008 regression), effect commands; RGBColorPicker subcontrol creation, hsv/temp event parsing, None-guard turn_on (BUG-009) |
 | `test_media_player.py`            | AudioZoneV2 entity creation, device class, supported features, playState events (playing/paused/idle), play/pause/next/prev/volume commands                          |
 | `test_bridge.py`                  | DeviceBridge serialization, `_values_equal` helper, `get_mapper` factory, all BridgeMapper implementations (Dimmer, ColorPicker, LightSwitch, Switch, BinarySensor, Analog), BridgeRuntime lifecycle, entity suppression |
-| `test_sync_areas.py`             | Area assignment, create_areas flag, re-sync after area deletion, wrong-area correction, idempotency (BUG-015 regression)                                             |
+| `test_sync_areas.py`             | Device-level area assignment, entity override cleanup, create_areas flag, re-sync after area deletion, wrong-area device move, idempotency (BUG-015/BUG-016 regression) |
 
 Infrastructure:
 

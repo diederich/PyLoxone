@@ -379,25 +379,94 @@ async def async_setup_entry(hass, config_entry):
             entity_uuid = entity.unique_id
         await coordinator.api.send_secured__websocket_command(entity_uuid, value, code)
 
-    async def sync_areas_with_loxone(data={}):
-        create_areas = data.get(ATTR_AREA_CREATE, DEFAULT)
-        if create_areas not in [True, False]:
-            create_areas = False
-        lox_items = []
+    async def sync_areas_with_loxone(data=None):
+        data = data or {}
+        create_areas = data.get(ATTR_AREA_CREATE, False)
         er_registry = er.async_get(hass)
         ar_registry = ar.async_get(hass)
-        for id, entry in er_registry.entities.items():
-            if entry.platform == DOMAIN:
-                state = hass.states.get(entry.entity_id)
-                if hasattr(state, "attributes") and "room" in state.attributes:
-                    area = ar_registry.async_get_area_by_name(state.attributes["room"])
-                    if area is None and create_areas:
-                        area = ar_registry.async_get_or_create(state.attributes["room"])
-                    if area and entry.area_id is None:
-                        lox_items.append((entry.entity_id, area.id))
+        dr_registry = dr.async_get(hass)
 
-        for _ in lox_items:
-            er_registry.async_update_entity(_[0], area_id=_[1])
+        loxone_entities = [e for e in er_registry.entities.values() if e.platform == DOMAIN]
+        _LOGGER.debug("sync_areas: found %d loxone entities (create_areas=%s)",
+                       len(loxone_entities), create_areas)
+
+        no_state = []
+        no_room = []
+        no_area = []
+
+        device_rooms: dict[str, str] = {}
+        device_entities: dict[str, list] = {}
+        orphan_entities = []
+
+        for entry in loxone_entities:
+            state = hass.states.get(entry.entity_id)
+            if not state:
+                no_state.append(entry.entity_id)
+                continue
+            if "room" not in state.attributes:
+                no_room.append(entry.entity_id)
+                continue
+            room_name = state.attributes["room"]
+
+            if entry.device_id:
+                device_rooms.setdefault(entry.device_id, room_name)
+                device_entities.setdefault(entry.device_id, []).append(entry)
+            else:
+                orphan_entities.append((entry, room_name))
+
+        devices_updated = 0
+        devices_ok = 0
+        overrides_cleared = 0
+
+        for device_id, room_name in device_rooms.items():
+            area = ar_registry.async_get_area_by_name(room_name)
+            if area is None and create_areas:
+                area = ar_registry.async_get_or_create(room_name)
+                _LOGGER.debug("sync_areas: created area '%s'", room_name)
+            if area is None:
+                no_area.append((device_id, room_name))
+                continue
+
+            device = dr_registry.async_get(device_id)
+            if device and device.area_id != area.id:
+                dr_registry.async_update_device(device_id, area_id=area.id)
+                _LOGGER.debug("sync_areas: device %s → area '%s' (was %s)",
+                              device.name or device_id, room_name, device.area_id)
+                devices_updated += 1
+            else:
+                devices_ok += 1
+
+            for entry in device_entities.get(device_id, []):
+                if entry.area_id is not None:
+                    er_registry.async_update_entity(entry.entity_id, area_id=None)
+                    overrides_cleared += 1
+
+        orphans_updated = 0
+        for entry, room_name in orphan_entities:
+            area = ar_registry.async_get_area_by_name(room_name)
+            if area is None and create_areas:
+                area = ar_registry.async_get_or_create(room_name)
+            if area is None:
+                no_area.append((entry.entity_id, room_name))
+                continue
+            if entry.area_id != area.id:
+                er_registry.async_update_entity(entry.entity_id, area_id=area.id)
+                orphans_updated += 1
+
+        _LOGGER.info(
+            "sync_areas: %d device(s) updated, %d already correct, "
+            "%d entity override(s) cleared, %d orphan(s) updated, "
+            "%d no state, %d no room attr, %d room not found",
+            devices_updated, devices_ok, overrides_cleared, orphans_updated,
+            len(no_state), len(no_room), len(no_area),
+        )
+        if no_state:
+            _LOGGER.debug("sync_areas: entities with no state: %s", no_state)
+        if no_room:
+            _LOGGER.debug("sync_areas: entities missing 'room' attribute: %s", no_room)
+        if no_area:
+            _LOGGER.debug("sync_areas: room not found in HA areas (create_areas=%s): %s",
+                          create_areas, no_area)
 
     async def handle_sync_areas_with_loxone(call):
         await sync_areas_with_loxone(call.data)

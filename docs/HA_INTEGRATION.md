@@ -35,10 +35,9 @@ async_setup_entry(hass, config_entry)
     │     event_secured_websocket_command
     │     sync_areas
     │     sync_device_names
-    │     sync / unsync            ← new: expose HA state to Loxone VIs
     │     reload
     │
-    ├── LoxoneSync.async_setup()   ← restore persisted sync bindings
+    ├── BridgeRuntime.async_setup()   ← restore persisted device bridges
     │
     ├── Register event listeners:
     │     loxone_send → loxone_send()
@@ -53,10 +52,8 @@ async_setup_entry(hass, config_entry)
 | --------------------------------- | ------ | ------------------------------------ |
 | `event_websocket_command`         | Domain | Send WS command by UUID or entity ID |
 | `event_secured_websocket_command` | Domain | Secured WS command with PIN code     |
-| `sync_areas`                      | Domain | Sync HA areas from Loxone rooms      |
+| `sync_areas`                      | Domain | Sync HA device areas from Loxone rooms (clears entity-level overrides) |
 | `sync_device_names`               | Domain | Sync HA device names from structure  |
-| `sync`                            | Domain | Bind HA entity state to Loxone VI    |
-| `unsync`                          | Domain | Remove a sync binding                |
 | `reload`                          | Domain | Reload integration                   |
 | `enable_sun_automation`           | Entity | Enable jalousie sun automation       |
 | `disable_sun_automation`          | Entity | Disable jalousie sun automation      |
@@ -91,24 +88,29 @@ class LoxoneEntity(Entity):
 
 **Concern:** Every entity receives every event and filters client-side. With many entities and frequent updates, this is O(entities × events).
 
-## Sync Module (`sync.py`)
+## Device Bridge (`bridge.py` + `bridge_mappers.py`)
 
-Binds HA entities to Loxone controls in one or both directions:
+Maps a single HA entity (e.g. a Hue light, EP One sensor) to a single Loxone control or sub-control. The integration auto-detects the mapping type from the HA entity domain and Loxone control type, handling value conversion, scaling, and echo protection automatically.
 
-- **Expose (HA → Loxone):** Listens for HA `state_changed` events and pushes converted values to a Loxone Virtual Input via `jdev/sps/io/{uuid}/{value}`.
-- **Subscribe (Loxone → HA):** Listens for Loxone event-table updates on a Virtual Output UUID and updates the bound HA entity via domain-appropriate service calls (`input_boolean`, `input_number`, `input_text`) or `async_set` fallback.
+### Supported mappings
 
-Each binding can set either direction, or both for bidirectional sync.
+| HA Domain        | Loxone Type      | Behaviour                                       |
+| ---------------- | ---------------- | ----------------------------------------------- |
+| `light`          | `ColorPickerV2`  | Brightness + HS color + color temp, bidirectional. Protocol: `hsv(h,s,v)` / `temp(brightness,kelvin)` |
+| `light`          | `Dimmer`/`EIBDimmer` | Brightness (0-255 ↔ 0-100) + on/off, bidirectional |
+| `light`          | `Switch`         | On/off only, bidirectional                      |
+| `switch`         | `Switch`         | On/off, bidirectional                           |
+| `binary_sensor`  | `Switch` (VI)    | Expose only (HA state → 0/1)                   |
+| `sensor`         | `Slider` (VI)    | Expose only (HA state → float)                 |
 
 ### Key concepts
 
-- **SyncBinding** — persisted in `config_entry.options["sync"]`, maps an `entity_id` to Loxone controls with type (binary/analog/text), optional attribute, and cooldown. Fields: `vi_name`/`vi_uuid` (expose), `vo_name`/`vo_uuid` (subscribe) — at least one direction required.
-- **Name resolution** — `vi_name` resolved to UUID from the structure file; optional `room` qualifier for disambiguation
-- **Echo/loop protection** — three layers: skip_unchanged (tracks `last_sent_value`), analog epsilon (0.01), trailing-edge cooldown debounce (default 1s)
-- **Services** — `loxone.sync` to add bindings, `loxone.unsync` to remove them; managed by `LoxoneSync` class instantiated in `async_setup_entry`
-- **Options Flow UI** — menu-based options flow in `config_flow.py` with Add / Remove / Done steps; separate Loxone Input and Output control dropdowns populated from the structure file
-- **Update listener** — `config_entry.add_update_listener` triggers `async_options_updated()` when options change via the UI, re-initializing bindings; internal changes via services use `_self_update` flag to avoid double-init
-- **Persistence** — bindings survive restarts via `config_entry.options`; on setup, current state is pushed immediately
+- **DeviceBridge** — persisted in `config_entry.options["bridges"]`, maps an `entity_id` to a Loxone `uuidAction` + control type + state UUIDs. No manual sync_type, direction, or attribute fields — all derived from the entity domain and control type.
+- **BridgeMapper** — abstract base class with concrete implementations per Loxone control type (`ColorPickerMapper`, `DimmerMapper`, `SwitchMapper`, etc.). Each mapper implements `ha_state_to_command()` (HA → Loxone) and `loxone_value_to_ha()` (Loxone → HA).
+- **BridgeRuntime** — manages bridge lifecycle: activates listeners on HA state changes and Loxone events, applies cooldown (trailing-edge debounce) and echo protection (suppress round-trip loops in bidirectional bridges).
+- **Entity suppression** — when a Loxone sub-control is used in a bridge, the integration skips creating the native HA entity for it, preventing duplicates.
+- **Options Flow UI** — menu-based: Settings / Device Bridges, with Add Bridge (entity selector + Loxone control picker) / Remove Bridge / Done steps. The control picker shows both top-level controls and LightControllerV2 sub-controls from the structure file.
+- **Direction auto-detection** — derived from the Loxone control type and available state UUIDs. Sub-controls with feedback states (e.g. `position` for Dimmer, `color` for ColorPickerV2) are bidirectional; top-level VIs without feedback are expose-only.
 
 ## Coordinator (`coordinator.py`)
 

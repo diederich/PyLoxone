@@ -11,6 +11,7 @@ This project maintains living documentation in `docs/`. Always read the relevant
 | [HA_INTEGRATION.md](docs/HA_INTEGRATION.md)     | Home Assistant platform entities, config flow, coordinator      |
 | [LIGHTS_SUBSYSTEM.md](docs/LIGHTS_SUBSYSTEM.md) | Light entity hierarchy, color pickers, mood handling            |
 | [ISSUES_AND_TODOS.md](docs/ISSUES_AND_TODOS.md) | Known bugs, improvements, quick wins, testing strategy          |
+| [WORKLOG.md](docs/WORKLOG.md)                   | Session-by-session record of decisions, changes, investigations |
 
 ## Loxone API Reference
 
@@ -23,20 +24,21 @@ This project maintains living documentation in `docs/`. Always read the relevant
 
 Home Assistant runs on a remote machine. After making code changes, **ask the user if they'd like to deploy and test** before moving on to the next task.
 
-The deploy script requires a `.deploy.env` file in the repo root (gitignored). If it doesn't exist, tell the user to create one with `HA_URL`, `HA_SSH`, and `HA_CONFIG`. Example:
+The deploy script requires a `.deploy.env` file in the repo root (gitignored). If it doesn't exist, tell the user to create one with `HA_URL`, `HA_SSH`, `HA_CONFIG`, and `HA_TOKEN`. Example:
 
 ```
 HA_URL="http://your-ha-host:8123"
 HA_SSH="your-ha-host"
 HA_CONFIG="/config"
+HA_TOKEN="your-long-lived-access-token"
 ```
 
-To deploy, run `scripts/deploy` from the repo root (or from anywhere — it auto-resolves the repo root). This will:
+Create `HA_TOKEN` in HA: Profile → Security → Long-Lived Access Tokens.
 
-1. Sync `custom_components/loxone/` to the HA machine via rsync (or scp fallback)
-2. Restart Home Assistant Core
+To deploy, run `scripts/deploy` from the repo root (or from anywhere — it auto-resolves the repo root):
 
-Platform-only changes (e.g. `sensor.py`, `light.py`) can alternatively be reloaded from the HA UI (Settings → Integrations → PyLoxone → ⋮ → Reload) without a full restart — mention this option to the user when applicable.
+- **`scripts/deploy`** — Syncs files and restarts Home Assistant Core (~30-60s). **This is the default** because Python source changes require a full restart to take effect.
+- **`scripts/deploy --reload`** — Syncs files and reloads the integration via the HA REST API (~2s). Requires `HA_TOKEN`. **Only use this when you haven't changed any `.py` files** (e.g. YAML-only tweaks, `services.yaml`, `strings.json`). A reload does NOT re-import Python modules.
 
 ## Testing
 
@@ -60,6 +62,7 @@ pip install -r requirements.txt -r requirements_test.txt
 1. **Read before writing.** Before changing a file, check the docs above for context on that area of the codebase.
 2. **Update docs with code.** If a code change requires a doc update, include both in the same commit.
 3. **Run tests after changes.** After modifying code in `custom_components/` or `tests/`, run `python -m pytest tests/ -v` and fix any failures before considering the task done. When adding new functionality, add or update tests to cover it.
+4. **Update the worklog.** At the end of each session (or when asked to commit), add an entry to `docs/WORKLOG.md` with the date, a title, and sections for decisions, changes, and investigations. Newest entries go at the top.
 
 ## Commit Messages
 

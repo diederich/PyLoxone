@@ -3,15 +3,44 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
+usage() {
+  echo "Usage: scripts/deploy [--reload]"
+  echo ""
+  echo "  (default)    Sync files and restart Home Assistant Core (~30-60s)"
+  echo "  --reload     Sync files and reload the integration only (~2s)"
+  echo "               ⚠ Reload does NOT pick up Python source changes — only"
+  echo "               use this for YAML/config tweaks or when you know the"
+  echo "               Python modules haven't changed."
+}
+
+MODE="restart"
+for arg in "$@"; do
+  case "$arg" in
+    --reload) MODE="reload" ;;
+    --restart) MODE="restart" ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unknown option: $arg"; usage; exit 1 ;;
+  esac
+done
+
 ENV_FILE=".deploy.env"
 if [ ! -f "$ENV_FILE" ]; then
   echo "Error: $ENV_FILE not found. Create it with:"
   echo '  HA_URL="http://your-ha-host:8123"'
   echo '  HA_SSH="your-ha-host"'
   echo '  HA_CONFIG="/config"'
+  echo '  HA_TOKEN="your-long-lived-access-token"  # for fast reloads'
   exit 1
 fi
 source "$ENV_FILE"
+
+if [ "$MODE" = "reload" ] && [ -z "${HA_TOKEN:-}" ]; then
+  echo "Warning: HA_TOKEN not set — cannot reload, falling back to full restart."
+  echo "  For fast reloads (~2s), create a long-lived access token:"
+  echo "  HA → Profile → Security → Long-Lived Access Tokens"
+  echo ""
+  MODE="restart"
+fi
 
 REMOTE_DIR="$HA_CONFIG/custom_components/loxone"
 LOCAL_DIR="custom_components/loxone"
@@ -34,8 +63,23 @@ else
   scp -r "$LOCAL_DIR" "$HA_SSH:$HA_CONFIG/custom_components/"
 fi
 
-echo "==> Deployed. Restarting Home Assistant Core..."
-ssh "$HA_SSH" "ha core restart"
+if [ "$MODE" = "restart" ]; then
+  echo "==> Restarting Home Assistant Core..."
+  ssh "$HA_SSH" "ha core restart"
+  echo "==> Restart triggered. HA will be back in ~30-60s."
+else
+  echo "==> Reloading Loxone integration..."
+  HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
+    -X POST "$HA_URL/api/services/loxone/reload" \
+    -H "Authorization: Bearer $HA_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d '{}')
+  if [ "$HTTP_CODE" -ge 200 ] && [ "$HTTP_CODE" -lt 300 ]; then
+    echo "==> Reload complete (~2s)."
+  else
+    echo "==> Reload failed (HTTP $HTTP_CODE). Try 'scripts/deploy --restart'."
+    exit 1
+  fi
+fi
 
-echo "==> Restart triggered. HA will be back in ~30-60s."
 echo "    Logs: $HA_URL/config/logs"
