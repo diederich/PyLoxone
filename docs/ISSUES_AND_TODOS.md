@@ -224,11 +224,9 @@ except (ValueError, KeyError, IndexError) as exc:
     _LOGGER.debug("Failed to clean up control: %s", exc)
 ```
 
-### MED-004: `LoxoneEntity` calls `sys.exit(-1)`
+### ~~MED-004: `LoxoneEntity` calls `sys.exit(-1)`~~
 
-**File:** `__init__.py`
-
-In the exception handler, `sys.exit(-1)` kills the entire Home Assistant process. Should log an error and let HA handle the failure.
+~~**File:** `__init__.py`~~ — Replaced with `_LOGGER.exception()`; removed `import sys` and `import traceback` ✅
 
 ### ~~MED-005: Debug `print()` in coordinator~~
 
@@ -822,7 +820,7 @@ Tasks that can be done in under 30 minutes each:
 | 5   | Fix `_LOGGER.error` format strings in colorpickers.py                                        | Correct logging                                  |
 | 6   | Fix `masterColor` filter from `> 1` to `> -1`                                                | Correct light discovery                          |
 | 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
-| 8   | Remove `sys.exit(-1)` from LoxoneEntity                                                      | Prevent HA process kill                          |
+| ~~8~~   | ~~Remove `sys.exit(-1)` from LoxoneEntity~~                                                  | ~~Prevent HA process kill~~ ✅                   |
 | 9   | Replace `eval()` with `ast.literal_eval()` where possible                                    | Security hardening                               |
 | 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |
 | 11  | Remove unused imports (`cast`, `ToggleEntity`)                                               | Code hygiene                                     |

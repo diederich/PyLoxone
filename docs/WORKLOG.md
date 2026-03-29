@@ -4,6 +4,16 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 2) — Remove sys.exit(-1) from LoxoneEntity
+
+### Changes
+
+- **MED-004 / Quick Win #8:** Removed `sys.exit(-1)` from `LoxoneEntity.__init__` — an unhandled `setattr` exception would kill the entire HA process. Replaced with `_LOGGER.exception()`.
+- Also fixed `_LOGGER.error` missing "not" ("Could set" → "Could not set") and switched to `%s` formatting.
+- Removed now-unused `import sys` and `import traceback`.
+
+---
+
 ## 2026-03-29 — Small fixes: fan feature flags, coordinator print, docstring
 
 ### Changes
