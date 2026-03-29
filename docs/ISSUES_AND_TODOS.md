@@ -170,12 +170,6 @@ Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone Co
 
 The property getter mutates `self._code`. Properties should be side-effect-free.
 
-### MED-007: `httpx` dependency unused
-
-**File:** `manifest.json`
-
-`httpx` is listed as a dependency but the codebase uses `aiohttp` for HTTP. Either switch to `httpx` or remove the dependency.
-
 ### MED-008: `LoxoneJalousie` uses `random.uniform()` for tilt
 
 **File:** `cover.py`

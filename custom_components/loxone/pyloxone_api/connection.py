@@ -49,15 +49,6 @@ from .message import (BaseMessage, BinaryFile, Keepalive, LLResponse,
 from .websocket_protocol import LoxoneClientConnection
 
 _LOGGER = logging.getLogger(__name__)
-import warnings
-
-# Filter out the specific warning
-warnings.filterwarnings(
-    "ignore",
-    message="Detected blocking call to load_verify_locations",
-    module="httpx._config",
-)
-
 
 def time_elapsed_in_seconds():
     return int(round(time.time()))
@@ -942,7 +933,7 @@ class LoxoneConnection(LoxoneBaseConnection):
             _LOGGER.error(f"Failed to initialize connection: {e}", exc_info=True)
             raise
         finally:
-            # Async httpx client must always be closed
+            # Ensure HTTP session is closed if we created it
             if session is None and connector:
                 try:
                     await connector.session.close()

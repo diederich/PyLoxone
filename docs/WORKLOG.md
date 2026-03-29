@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 7) — Remove unused httpx dependency
+
+### Changes
+
+- **MED-007:** Removed `httpx` from `manifest.json` requirements — the codebase uses `aiohttp`, not `httpx`. Also removed the stale `warnings.filterwarnings` for `httpx._config` and a misleading comment in `connection.py`. Removed unused `import warnings`.
+
+---
+
 ## 2026-03-29 (fix 6) — Fix __main__.py docstring argument order
 
 ### Changes
