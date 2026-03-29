@@ -227,7 +227,8 @@ def clean_up_control(control):
     control = check_and_decode_if_needed(control)
     try:
         return re.sub(r"^salt/[0-9a-fA-F]+", "", control)
-    except:
+    except (TypeError, re.error) as exc:
+        _LOGGER.debug("Failed to clean up control: %s", exc)
         return control
 
 

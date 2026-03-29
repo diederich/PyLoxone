@@ -4,6 +4,14 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-03-29 (fix 5) — Narrow bare except in message.py
+
+### Changes
+
+- **MED-003:** `clean_up_control()` used bare `except:` which catches `SystemExit`, `KeyboardInterrupt`, etc. Narrowed to `(TypeError, re.error)` — the only exceptions `re.sub` can raise on bad input — and added `_LOGGER.debug()`.
+
+---
+
 ## 2026-03-29 (fix 4) — Fix logger format strings in colorpickers
 
 ### Changes

@@ -202,19 +202,9 @@ Not wired up: `manifest.json` doesn't declare `"system_health"` as a dependency,
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
 
-### MED-003: Bare `except:` in message parsing
+### ~~MED-003: Bare `except:` in message parsing~~
 
-**File:** `pyloxone_api/message.py:230`
-
-```python
-# Current:
-except:
-    pass
-
-# Fix:
-except (ValueError, KeyError, IndexError) as exc:
-    _LOGGER.debug("Failed to clean up control: %s", exc)
-```
+~~**File:** `pyloxone_api/message.py:230`~~ — Narrowed to `(TypeError, re.error)` with debug logging ✅
 
 ### ~~MED-004: `LoxoneEntity` calls `sys.exit(-1)`~~
 
