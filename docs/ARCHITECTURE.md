@@ -109,6 +109,20 @@ PyLoxone/
 │       ├── light.py                 # Light platform entry point
 │       ├── bridge.py               # Device-level bridge (HA entity <-> Loxone control)
 │       ├── bridge_mappers.py       # Type-specific bridge mappers
+│       ├── websocket.py            # WebSocket API commands + panel registration
+│       │
+│       ├── frontend/               # Custom panel (Lit/TypeScript sidebar app)
+│       │   ├── src/                # TypeScript source
+│       │   │   ├── loxone-panel.ts # Panel entry point (tabs: Devices, Areas, Bridges)
+│       │   │   ├── devices-view.ts # Loxone controls <-> HA entities table
+│       │   │   ├── areas-view.ts   # Room-to-area mapping + sync
+│       │   │   ├── bridges-view.ts # Bridge CRUD
+│       │   │   ├── api.ts          # WebSocket/service API helpers
+│       │   │   └── types.ts        # TypeScript interfaces
+│       │   ├── test/               # Vitest tests
+│       │   ├── loxone-panel.js     # Built bundle (served by HA)
+│       │   ├── build.mjs           # esbuild build script
+│       │   └── package.json
 │       │
 │       ├── lights/                  # Light entity implementations
 │       │   ├── colorpickers.py

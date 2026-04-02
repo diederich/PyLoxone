@@ -4,6 +4,65 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-02 — Panel polish, Status tab, sync fixes
+
+### Decisions
+
+- Switched panel to `embed_iframe=False` so it renders in HA's DOM and inherits theme CSS variables (dark mode fix).
+- Added MD5-based cache-busting hash to the panel JS URL so browser always loads the latest bundle after a deploy.
+- Deploy script now builds the frontend (`node build.mjs`) automatically before syncing, with `npm ci` on first run.
+- Area sync now also reads the Loxone structure file's `rooms` dict directly, so empty rooms (no controls/entities) still get HA areas created.
+- Diagnostics separates disabled entities from enabled-but-stateless entities to avoid false positives from bridged controls.
+
+### Changes
+
+- **`websocket.py`:** `embed_iframe=False`, cache-busting `?v=<md5>` on `module_url`, new `loxone/get_status` WS command (connection health, Miniserver metadata, diagnostics).
+- **`__init__.py`:** `_async_sync_areas` now creates HA areas for all Loxone rooms from the structure file (not just rooms that have entities).
+- **`scripts/deploy`:** Added `npm ci` + `node build.mjs` step before rsync.
+- **`frontend/bridges-view.ts`:** Replaced raw text inputs with searchable combo boxes for both HA entities (grouped by domain) and Loxone controls (grouped by room). Added state column with live entity values and direction arrow (→).
+- **`frontend/devices-view.ts`:** Sortable column headers (name, type, room, entities). Refresh button. Domain breakdown in summary (e.g. "42 sensor, 18 light, 12 switch").
+- **`frontend/status-view.ts` (new):** Status tab with Connection/Configuration cards and Diagnostics section (connection health, entities without state, disabled entity count, bridge count, integration summary).
+- **`frontend/loxone-panel.ts`:** Added Status tab.
+- **`frontend/src/api.ts`, `types.ts`:** Added `fetchStatus` and `GetStatusResult`.
+
+### Test results
+
+- 16 WS Python tests pass, 14 init tests pass
+- 10 Vitest frontend tests pass
+- Deployed and verified on live HA instance (dark mode, area sync, entity picker, status tab)
+
+---
+
+## 2026-03-31 — Loxone Custom Panel (sidebar dashboard)
+
+### Decisions
+
+- Built a custom panel (sidebar app) for managing Loxone integration, similar to the KNX integration's approach.
+- Used **Lit/TypeScript** for the frontend, bundled with **esbuild** (Rollup was too slow for Lit's dependency tree). Frontend source lives in `custom_components/loxone/frontend/src/`, bundle outputs to `frontend/loxone-panel.js`.
+- **Hybrid API approach**: WebSocket commands (`loxone/get_devices`, `loxone/get_areas`, `loxone/get_bridges`, `loxone/set_entity_enabled`, `loxone/add_bridge`, `loxone/remove_bridge`) for data queries and mutations; existing HA services (`loxone.sync_areas`, `loxone.sync_device_names`) for sync actions.
+- WS commands registered in `async_setup` (always available), panel registration in `async_setup_entry` (gracefully fails if `panel_custom` unavailable, e.g. in tests).
+- Panel registration is optional — `panel_custom` is NOT in manifest dependencies to avoid breaking tests (no `hass_frontend` in test env). Instead, `async_setup_component` is called dynamically.
+- Multi-layer testing: **pytest** for WS API commands (16 tests), **Vitest** for frontend API helpers (10 tests), TypeScript type checking via `tsc --noEmit`.
+- **Aligned with KNX platinum pattern:** single `register_panel()` coroutine (WS + panel), `after_dependencies: ["panel_custom"]`, `dependencies: ["http", "websocket_api"]`, `frontend_panels` guard for double-registration prevention.
+
+### Changes
+
+- **`websocket.py` (new):** Single `register_panel()` entry point (KNX pattern) — registers WS commands and sidebar panel together from `async_setup_entry`.
+- **`frontend/` (new):** Lit/TypeScript panel with four tabs — Devices (side-by-side table with enable/disable), Areas (room mapping + sync), Bridges (CRUD), Status (connection health + diagnostics).
+- **`__init__.py`:** Calls `register_panel(hass)` from `async_setup_entry`.
+- **`manifest.json`:** Added `after_dependencies: ["panel_custom"]`, `dependencies: ["http", "websocket_api"]`.
+- **`.gitignore`:** Added `frontend/node_modules/`.
+- **`test_websocket.py` (new):** 16 tests covering all WS commands.
+- **`frontend/test/api.test.ts` (new):** 10 Vitest tests for all API functions.
+
+### Test results
+
+- 309 Python tests pass (16 new)
+- 10 Vitest frontend tests pass (all new)
+- TypeScript typechecks clean
+
+---
+
 ## 2026-03-30 — Architectural hardening (post-reconnect)
 
 ### Decisions

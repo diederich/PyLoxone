@@ -53,3 +53,6 @@ tmp*
 
 # E2E test snapshots (machine-specific, not committed)
 tests_e2e_miniserver/snapshots/
+
+# Frontend build artifacts
+custom_components/loxone/frontend/node_modules/

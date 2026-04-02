@@ -153,11 +153,29 @@ async def _async_sync_areas(hass: HomeAssistant, data=None):
             er_registry.async_update_entity(entry.entity_id, area_id=area.id)
             orphans_updated += 1
 
+    rooms_created = 0
+    if create_areas:
+        coordinator = None
+        for value in hass.data.get(DOMAIN, {}).values():
+            if hasattr(value, "api"):
+                coordinator = value
+                break
+        if coordinator:
+            structure = coordinator.api.structure_file or {}
+            for room in structure.get("rooms", {}).values():
+                room_name = room.get("name", "")
+                if room_name and ar_registry.async_get_area_by_name(room_name) is None:
+                    ar_registry.async_get_or_create(room_name)
+                    rooms_created += 1
+                    _LOGGER.debug("sync_areas: created area '%s' from structure file", room_name)
+
     _LOGGER.info(
         "sync_areas: %d device(s) updated, %d already correct, "
         "%d entity override(s) cleared, %d orphan(s) updated, "
+        "%d room(s) created from structure, "
         "%d no state, %d no room attr, %d room not found",
         devices_updated, devices_ok, overrides_cleared, orphans_updated,
+        rooms_created,
         len(no_state), len(no_room), len(no_area),
     )
     if no_state:
@@ -627,6 +645,13 @@ async def async_setup_entry(hass, config_entry):
 
         except Exception as e:
             _LOGGER.error(e)
+
+    # -- Custom panel + WebSocket API ------------------------------------------
+    from .websocket import register_panel
+    try:
+        await register_panel(hass)
+    except Exception:
+        _LOGGER.warning("Could not register Loxone custom panel", exc_info=True)
 
     # -- Device Bridges (HA entity <-> Loxone control) ------------------------
 

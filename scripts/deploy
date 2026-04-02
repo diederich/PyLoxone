@@ -50,12 +50,30 @@ if [ ! -d "$LOCAL_DIR" ]; then
   exit 1
 fi
 
+FRONTEND_DIR="$LOCAL_DIR/frontend"
+if [ -f "$FRONTEND_DIR/build.mjs" ]; then
+  if [ ! -d "$FRONTEND_DIR/node_modules" ]; then
+    echo "==> Installing frontend dependencies..."
+    (cd "$FRONTEND_DIR" && npm ci --silent)
+  fi
+  echo "==> Building frontend..."
+  (cd "$FRONTEND_DIR" && node build.mjs)
+fi
+
 echo "==> Deploying to $HA_SSH:$REMOTE_DIR ..."
 
 if ssh "$HA_SSH" "command -v rsync" &>/dev/null; then
   rsync -avz --delete \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
+    --exclude='frontend/node_modules' \
+    --exclude='frontend/src' \
+    --exclude='frontend/test' \
+    --exclude='frontend/package.json' \
+    --exclude='frontend/package-lock.json' \
+    --exclude='frontend/tsconfig.json' \
+    --exclude='frontend/vitest.config.ts' \
+    --exclude='frontend/build.mjs' \
     "$LOCAL_DIR/" "$HA_SSH:$REMOTE_DIR/"
 else
   echo "    (rsync not available on remote, using scp)"

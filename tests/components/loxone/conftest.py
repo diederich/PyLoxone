@@ -12,6 +12,8 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNA
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations in all HA unit tests."""
     yield
+
+
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
