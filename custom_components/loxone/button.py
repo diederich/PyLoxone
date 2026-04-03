@@ -46,17 +46,13 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
     """Representation of a Loxone pushbutton."""
 
     __last_pressed_isoformat: str | None = None
-    _attr_unique_id: str | None = None
+    _attr_has_entity_name = True
+    _attr_name = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._attr_icon = None
+        self._attr_name = None
         self._attr_unique_id = self.uuidAction
-
-    @property
-    def icon(self):
-        """Return the icon to use for device if any."""
-        return self._attr_icon
 
     # noinspection PyFinal
     @cached_property

@@ -66,42 +66,22 @@ async def async_setup_entry(
 
 
 class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
-    """Representation of a loxone switch"""
+    """Representation of a Loxone timed switch."""
+
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_assumed_state = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._icon = None
-        self._assumed = False
+        self._attr_name = None
         self._state = STATE_UNKNOWN
         self._delay_remain = 0.0
         self._delay_time_total = 0.0
 
-        if "deactivationDelay" in self.states:
-            self._deactivation_delay = self.states["deactivationDelay"]
-        else:
-            self._deactivation_delay = ""
-
-        if "deactivationDelayTotal" in self.states:
-            self._deactivation_delay_total = self.states["deactivationDelayTotal"]
-        else:
-            self._deactivation_delay_total = ""
-
+        self._deactivation_delay = self.states.get("deactivationDelay", "")
+        self._deactivation_delay_total = self.states.get("deactivationDelayTotal", "")
         self.type = "TimeSwitch"
-
-    @property
-    def should_poll(self):
-        """No polling needed for a demo switch."""
-        return False
-
-    @property
-    def icon(self):
-        """Return the icon to use for device if any."""
-        return self._icon
-
-    @property
-    def assumed_state(self):
-        """Return if the state is based on assumptions."""
-        return self._assumed
 
     @property
     def is_on(self):
@@ -163,31 +143,17 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
 
 
 class LoxoneSwitch(LoxoneEntity, SwitchEntity):
-    """Representation of a loxone switch"""
+    """Representation of a Loxone switch."""
+
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_assumed_state = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        """Initialize the Loxone switch."""
+        self._attr_name = None
         self._state = STATE_UNKNOWN
-        self._icon = None
-        self._assumed = False
-
         self.type = "Switch"
-
-    @property
-    def should_poll(self):
-        """No polling needed for a demo switch."""
-        return False
-
-    @property
-    def icon(self):
-        """Return the icon to use for device if any."""
-        return self._icon
-
-    @property
-    def assumed_state(self):
-        """Return if the state is based on assumptions."""
-        return self._assumed
 
     @property
     def is_on(self):

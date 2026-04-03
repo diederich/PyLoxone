@@ -1,9 +1,9 @@
-"""
-Component to create an interface to the Loxone Miniserver.
+"""Loxone Miniserver message types and binary protocol parsing
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/pyloxone-api
 """
+from __future__ import annotations
 
 import hashlib
 import json
@@ -11,48 +11,16 @@ import logging
 import math
 import re
 import struct
-import time
 import uuid
 from enum import IntEnum
-from functools import lru_cache
-from typing import Optional, Union
 
 from .exceptions import LoxoneException
 
 _LOGGER = logging.getLogger(__name__)
 
-# small in-memory cache for expensive encoding detection results
-_encoding_cache: dict[str, Optional[str]] = {}
-_DETECT_SAMPLE_SIZE = 512  # sample length used for detection & caching
-_DETECT_MAX_BYTES = 4096  # only run heavy detection for messages <= this size
-
-
-class AsyncTimer:
-    def __init__(self, label: str, logger: logging.Logger = _LOGGER):
-        self.label = label
-        self.logger = logger
-
-    async def __aenter__(self):
-        self._start = time.perf_counter()
-        return self
-
-    async def __aexit__(self, exc_type, exc, tb):
-        elapsed = time.perf_counter() - self._start
-        self.logger.debug("%s took %.6f s", self.label, elapsed)
-
-
-class SyncTimer:
-    def __init__(self, label: str, logger: logging.Logger = _LOGGER):
-        self.label = label
-        self.logger = logger
-
-    def __enter__(self):
-        self._start = time.perf_counter()
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        elapsed = time.perf_counter() - self._start
-        self.logger.debug("%s took %.6f s", self.label, elapsed)
+_encoding_cache: dict[str, str | None] = {}
+_DETECT_SAMPLE_SIZE = 512
+_DETECT_MAX_BYTES = 4096
 
 
 def detect_encoding(byte_string):
@@ -370,9 +338,10 @@ def parse_header(header: bytes) -> MessageHeader:
     return MessageHeader(header)
 
 
-def parse_message(message: bytes | str, message_type: int) -> BaseMessage:
-    """Return an instance of the appropriate BaseMessage subclass"""
+def parse_message(message: bytes | str, message_type: int | MessageType) -> BaseMessage:
+    """Return the appropriate BaseMessage subclass instance."""
     for klass in BaseMessage.__subclasses__():
         if klass.message_type == message_type:
             return klass(message)
     raise LoxoneException(f"Unknown message type {message_type}")
+

@@ -4,6 +4,58 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 2+3a: API decomposition, typed model, has_entity_name migration
+
+### Decisions
+
+- Extracted crypto into `crypto.py` (pure functions), deleted dead code (`helper.py`, `api.py`), consolidated duplicate exception hierarchy.
+- Created typed structure model (`structure.py`) with `LoxoneStructure`, `MsInfo`, `LoxoneRoom`, `LoxoneCategory`, `LoxoneControl` dataclasses.  Integrated into `MiniServer` alongside backward-compatible dict access.
+- Cleaned up `message.py` (removed unused timer classes, improved type annotations).
+- Started Phase 3 `has_entity_name=True` migration on 6 simple platforms: button, number, text, switch, alarm_control_panel, media_player.  Each entity class now properly separates device name (from `_loxone_name`) from entity name (`None` for single-entity-per-device).
+- Fixed a subtle init ordering bug: `_attr_name` must be set before any `hasattr(self, "name")` check to avoid caching stale values.  Restructured `LoxoneEntity.__init__` to handle "name" early and skip it in the generic kwarg loop.
+
+### Changes
+
+- **`pyloxone_api/crypto.py`:** New — pure AES/RSA/HMAC functions.
+- **`pyloxone_api/structure.py`:** New — typed LoxAPP3.json model.
+- **`pyloxone_api/connection.py`:** Single class, uses crypto imports, `_handle_text_event()` extracted.
+- **`pyloxone_api/exceptions.py`:** Consolidated; legacy names are aliases.
+- **`pyloxone_api/message.py`:** Removed AsyncTimer/SyncTimer, improved annotations.
+- **`miniserver.py`:** Properties delegate to `self.structure`, `LoxoneStructure` integrated.
+- **`__init__.py`:** `_loxone_name` stored separately for `device_info`; `_attr_name` set conditionally (only when kwargs has "name"); removed `@cached_property def name` override.
+- **Platforms (button, number, text, switch, alarm, media_player):** `_attr_has_entity_name = True`, `_attr_name = None`, removed boilerplate properties (`icon`, `should_poll`, `assumed_state`).
+- **Deleted:** `helper.py`, `api.py`.
+- **Tests:** 39 new tests (crypto + structure). Total: 348 passing.
+
+---
+
+## 2026-04-03 — Phase 2a: Decompose connection.py, typed structure model
+
+### Decisions
+
+- Extracted all cryptographic operations from the 1420-line `connection.py` "god object" into a new `crypto.py` module with pure, stateless functions.  This makes crypto operations independently testable and reduces `connection.py` to ~500 lines focused on the WebSocket lifecycle.
+- Eliminated the `LoxoneBaseConnection` → `LoxoneConnection` inheritance hierarchy in favor of a single `LoxoneConnection` class that composes crypto functions via imports.
+- Consolidated the dual exception hierarchy: `ConnectionFailure`, `UnauthorizedError`, `ResponseError`, `HttpApiError`, `MessageError` are now aliases pointing to the canonical `Loxone*` exceptions.  All exceptions now properly inherit from `LoxoneException`.
+- Deleted dead code: `helper.py` (never imported), `api.py` (empty placeholder).
+- Created typed structure file model (`structure.py`) with `LoxoneStructure`, `MsInfo`, `LoxoneRoom`, `LoxoneCategory`, `LoxoneControl` dataclasses.  Integrated into `MiniServer` as a `structure` attribute while preserving backward-compatible `lox_config.json` dict access.
+
+### Changes
+
+- **`pyloxone_api/crypto.py`:** New module — `generate_aes_key()`, `generate_iv()`, `generate_salt()`, `new_salt_needed()`, `encrypt_command()`, `decrypt_command()`, `make_session_key()`, `parse_public_key()`, `hash_credentials()`, `hash_token()`, `hash_secure_command()`.
+- **`pyloxone_api/structure.py`:** New module — `LoxoneStructure.from_dict()`, `MsInfo`, `LoxoneRoom`, `LoxoneCategory`, `LoxoneControl` with `get_state_uuids()`, `controls_by_type()`, `room_name()`, `category_name()`.
+- **`pyloxone_api/connection.py`:** Rewritten — single `LoxoneConnection` class using `crypto.py` functions.  Removed `LoxoneBaseConnection`.  Extracted `_handle_text_event()` from the 250-line `_websocket_event()` for readability.
+- **`pyloxone_api/exceptions.py`:** All exceptions inherit from `LoxoneException`.  Legacy names are aliases.
+- **`miniserver.py`:** Properties now delegate to `self.structure` (typed model) instead of raw dict traversal.
+- **Deleted:** `pyloxone_api/helper.py`, `pyloxone_api/api.py`.
+- **Tests:** 39 new tests — 21 for `crypto.py` (key gen, salt expiry, AES roundtrip, HMAC hashing, RSA, public key parsing), 18 for `structure.py` (parsing, lookups, edge cases).  Total suite: 348 tests (up from 309).
+- **Docs:** Updated `API_LAYER.md` (module map, crypto/structure sections, exception tree, resolved design concerns), `ISSUES_AND_TODOS.md` (removed IMP-001, IMP-005, trimmed IMP-006).
+
+### Test Results
+
+- 348 tests pass, 3 pre-existing warnings (mock coroutine noise).
+
+---
+
 ## 2026-04-03 — Phase 0+1: runtime_data, O(1) dispatch, reauth, config flow rewrite
 
 ### Decisions

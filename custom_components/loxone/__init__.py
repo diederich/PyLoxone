@@ -734,19 +734,20 @@ class LoxoneEntity(Entity):
     _SKIP_KWARGS = frozenset({"device_info"})
 
     def __init__(self, **kwargs):
+        self._loxone_name: str = kwargs.get("name", "")
+        if "name" in kwargs:
+            self._attr_name = self._loxone_name
+
         for key in kwargs:
-            if key in self._SKIP_KWARGS:
+            if key in self._SKIP_KWARGS or key == "name":
                 continue
             if not hasattr(self, key):
-                if key == "name":
-                    self._attr_name = kwargs[key]
-                else:
-                    setattr(self, key, kwargs[key])
+                setattr(self, key, kwargs[key])
             else:
                 try:
                     setattr(self, key, kwargs[key])
                 except AttributeError:
-                    _LOGGER.error("Could not set %s for %s", key, self.name)
+                    _LOGGER.error("Could not set %s for %s", key, self._loxone_name)
                 except Exception:
                     _LOGGER.exception("Unexpected error setting %s", key)
 
@@ -824,7 +825,7 @@ class LoxoneEntity(Entity):
             return None
         info = DeviceInfo(
             identifiers={(DOMAIN, self.uuidAction)},
-            name=self._attr_name,
+            name=self._loxone_name,
             manufacturer="Loxone",
             model=getattr(self, "type", None),
             suggested_area=getattr(self, "room", None),
@@ -836,14 +837,6 @@ class LoxoneEntity(Entity):
         except (KeyError, AttributeError):
             pass
         return info
-
-    @cached_property
-    def name(self):
-        return self._attr_name
-
-    # @name.setter
-    # def name(self, n):
-    #     self._attr_name = n
 
     @staticmethod
     def _clean_unit(lox_format):

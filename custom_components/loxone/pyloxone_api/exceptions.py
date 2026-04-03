@@ -1,47 +1,42 @@
-"""
-Component to create an interface to the Loxone Miniserver.
-
-For more details about this component, please refer to the documentation at
-https://github.com/JoDehli/pyloxone-api
-"""
+"""Exception hierarchy for pyloxone_api."""
 
 
 class LoxoneException(Exception):
-    """Base class for all Loxone Exceptions"""
+    """Base class for all Loxone exceptions."""
 
     response = None
 
 
-class LoxoneOutOfServiceException(Exception):
-    """Raised when the Miniserver goes down for a reboot"""
+class LoxoneConnectionClosedOk(LoxoneException):
+    """WebSocket closed normally."""
 
 
-class LoxoneConnectionClosedOk(Exception):
-    """Raised when websocket ClosedOk received. Should we reconnect?"""
+class LoxoneConnectionError(LoxoneException):
+    """Network connection interrupted."""
 
 
-class LoxoneConnectionError(Exception):
-    """Raised the network connection is interrupted"""
+class LoxoneOutOfServiceException(LoxoneException):
+    """Miniserver is rebooting."""
 
 
 class LoxoneHTTPStatusError(LoxoneException):
-    """An exception indicating an unusual http response from the miniserver"""
+    """Unusual HTTP response from the Miniserver."""
 
 
 class LoxoneRequestError(LoxoneException):
-    """An exception raised during an http request"""
+    """HTTP request error."""
 
 
 class LoxoneUnauthorisedError(LoxoneRequestError):
-    """Unauthorised web request. Incorrect credentials"""
+    """Incorrect credentials (HTTP 401)."""
 
 
 class LoxoneTokenError(LoxoneRequestError):
-    """Unauthorised web request. Incorrect credentials"""
+    """Token invalid or expired."""
 
 
 class LoxoneCommandError(LoxoneException):
-    """An exception raised when a command is sent to the miniserver"""
+    """Command rejected by Miniserver."""
 
     def __init__(self, code: int, message: str) -> None:
         self.code = code
@@ -52,46 +47,24 @@ class LoxoneCommandError(LoxoneException):
 
 
 class LoxoneTimeOutError(LoxoneException):
-    """An exception indicating an unusual http response from the miniserver"""
+    """Request timed out."""
 
 
 class LoxoneServiceUnAvailableError(LoxoneRequestError):
-    """Service Unavailable; The Miniserver is restarting and not ready for requests"""
+    """Miniserver is restarting (HTTP 503)."""
 
 
 class LoxoneMaxNumOfConnectionsError(LoxoneRequestError):
-    """Maximum number of allowed concurrent connections reached"""
+    """Max concurrent connections reached (HTTP 429)."""
 
 
 class LoxoneUnrecognizedCommandError(LoxoneRequestError):
-    """Unrecognized command"""
+    """Unrecognized command (HTTP 400)."""
 
 
-class ConnectionFailure(Exception):
-    """Error during connection."""
-
-    pass
-
-
-class UnauthorizedError(ConnectionFailure):
-    """Error from ms.channel.unauthorized event."""
-
-    pass
-
-
-class ResponseError(Exception):
-    """Error in response."""
-
-    pass
-
-
-class HttpApiError(Exception):
-    """Error using HTTP API."""
-
-    pass
-
-
-class MessageError(Exception):
-    """Error from ms.error event."""
-
-    pass
+# Legacy aliases — kept for backward compatibility with external consumers.
+ConnectionFailure = LoxoneConnectionError
+UnauthorizedError = LoxoneUnauthorisedError
+ResponseError = LoxoneRequestError
+HttpApiError = LoxoneHTTPStatusError
+MessageError = LoxoneException

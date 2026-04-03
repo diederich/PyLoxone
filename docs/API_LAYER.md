@@ -21,15 +21,15 @@ The package can run standalone (`python -m custom_components.loxone.pyloxone_api
 pyloxone_api/
 ├── __init__.py              # Package entry, logger
 ├── __main__.py              # Standalone CLI (~45 lines)
-├── api.py                   # Placeholder — empty (~10 lines)
-├── connection.py            # Core: WS lifecycle, crypto, auth (~1420 lines)
+├── connection.py            # WS lifecycle, open/listen/close (~500 lines)
+├── crypto.py                # Pure crypto: AES, RSA, HMAC, salt (~165 lines)
+├── structure.py             # Typed structure file model (~175 lines)
 ├── websocket_protocol.py    # WS framing layer (~105 lines)
 ├── message.py               # Message types and parsing (~378 lines)
 ├── loxone_token.py          # Token dataclass (~70 lines)
 ├── loxone_http_client.py    # HTTP client with Basic Auth (~245 lines)
 ├── discover.py              # UDP broadcast discovery (~60 lines)
-├── helper.py                # HMAC utilities — UNUSED (~45 lines)
-├── exceptions.py            # Exception hierarchy (~97 lines)
+├── exceptions.py            # Exception hierarchy (~65 lines)
 ├── const.py                 # Constants (~67 lines)
 └── tests/
     ├── __init__.py
@@ -37,24 +37,12 @@ pyloxone_api/
     └── test_run_alone.py    # Placeholder (no actual tests)
 ```
 
-## connection.py — The Heart of the Client
+## connection.py — Connection Lifecycle
 
-This is the largest and most critical file (~1420 lines). It contains two main classes:
+Orchestrates HTTP bootstrap and WebSocket lifecycle. Crypto operations are
+delegated to `crypto.py`. Contains a single class:
 
-### `LoxoneBaseConnection`
-
-Handles low-level concerns:
-
-| Responsibility           | Key Methods                                                   |
-|--------------------------|---------------------------------------------------------------|
-| URL/host validation      | `__init__`, `_parse_url`, `_detect_scheme`                    |
-| Crypto setup             | `_generate_aes_key`, `_generate_iv`, `_generate_salt`         |
-| AES encryption/decryption| `_encrypt_command`, `_decrypt_command`                        |
-| HMAC/hashing             | `_hash_token`, `_hash_credentials`                            |
-| Salt management          | `_generate_salt`, salt rotation by age/use count              |
-| Token storage            | `_token: LoxoneToken`                                         |
-
-### `LoxoneConnection(LoxoneBaseConnection)`
+### `LoxoneConnection`
 
 Handles the connection lifecycle:
 
@@ -114,6 +102,44 @@ Client                              Miniserver
   │──── "enablebinstatusupdate" ────────►│   Subscribe to state updates
   │◄──── Binary state events ───────────│
 ```
+
+## crypto.py — Pure Cryptographic Operations
+
+All functions are stateless — they take inputs and return outputs, making
+them easy to test independently. Extracted from the former `LoxoneBaseConnection`
+class.
+
+| Function             | Purpose                                               |
+|----------------------|-------------------------------------------------------|
+| `generate_aes_key()` | Random 32-byte AES-256 key                            |
+| `generate_iv()`      | Random 16-byte AES-CBC initialisation vector          |
+| `generate_salt()`    | Random 16-byte hex salt for command encryption        |
+| `new_salt_needed()`  | Check if salt expired by count or age                 |
+| `encrypt_command()`  | AES-256-CBC encrypt with `salt/` or `nextSalt/` prefix|
+| `decrypt_command()`  | AES-256-CBC decrypt a Miniserver response             |
+| `make_session_key()` | RSA-encrypt AES key+IV for key exchange               |
+| `parse_public_key()` | Convert Loxone's certificate format to PEM            |
+| `hash_credentials()` | HMAC-hash username:password for token acquisition     |
+| `hash_token()`       | HMAC-hash a token for refresh/auth commands           |
+| `hash_secure_command()` | Build encrypted URI for visual-password controls   |
+
+## structure.py — Typed Structure File Model
+
+Typed dataclasses for `LoxAPP3.json`:
+
+| Class              | Fields                                                        |
+|--------------------|---------------------------------------------------------------|
+| `LoxoneStructure`  | `ms_info`, `rooms`, `categories`, `controls`, `software_version`, `raw` |
+| `MsInfo`           | `serial_nr`, `miniserver_type`, `ms_name`, `project_name`, `location`, etc. |
+| `LoxoneRoom`       | `uuid`, `name`                                                |
+| `LoxoneCategory`   | `uuid`, `name`                                                |
+| `LoxoneControl`    | `uuid`, `uuid_action`, `name`, `control_type`, `states`, `details`, `sub_controls`, `raw` |
+
+Parse a raw dict via `LoxoneStructure.from_dict(raw_json)`. The `MiniServer`
+class automatically creates a `structure` attribute from the config data.
+
+Convenience methods: `room_name(uuid)`, `category_name(uuid)`,
+`controls_by_type(*types)`, `software_version_str`.
 
 ## message.py — Message Types
 
@@ -216,28 +242,25 @@ Client                                Network
 
 ## exceptions.py — Exception Hierarchy
 
+All exceptions inherit from `LoxoneException`. Legacy aliases (`ConnectionFailure`,
+`UnauthorizedError`, `ResponseError`, `HttpApiError`, `MessageError`) are kept as
+simple assignments for backward compatibility but point to the canonical classes.
+
 ```
 LoxoneException (base)
 ├── LoxoneConnectionClosedOk        # Graceful close
-├── LoxoneConnectionError           # Connection failure
+├── LoxoneConnectionError           # Connection failure (= ConnectionFailure)
 ├── LoxoneOutOfServiceException     # Miniserver rebooting
-├── LoxoneHTTPStatusError           # Generic HTTP error
-├── LoxoneRequestError              # Request-level error
-├── LoxoneTokenError                # Token issue
-├── LoxoneUnauthorisedError         # 401
+├── LoxoneHTTPStatusError           # Generic HTTP error (= HttpApiError)
+├── LoxoneRequestError              # Request-level error (= ResponseError)
+│   ├── LoxoneUnauthorisedError     # 401 (= UnauthorizedError)
+│   ├── LoxoneTokenError            # Token invalid/expired
+│   ├── LoxoneServiceUnAvailableError # 503
+│   ├── LoxoneMaxNumOfConnectionsError # 429
+│   └── LoxoneUnrecognizedCommandError # 400
 ├── LoxoneCommandError              # Command rejected
-├── LoxoneTimeOutError              # Timeout
-├── LoxoneServiceUnAvailableError   # 503
-├── LoxoneMaxNumOfConnectionsError  # 429
-├── LoxoneUnrecognizedCommandError  # 400
-├── ConnectionFailure               # Alt connection failure
-├── UnauthorizedError               # Alt 401
-├── ResponseError                   # Response parse error
-├── HttpApiError                    # HTTP API error
-└── MessageError                    # Message parse error
+└── LoxoneTimeOutError              # Timeout
 ```
-
-**Note:** There is significant overlap — `LoxoneConnectionError` vs `ConnectionFailure`, `LoxoneUnauthorisedError` vs `UnauthorizedError`. This suggests organic growth without consolidation.
 
 ## const.py — Constants
 
@@ -265,28 +288,19 @@ LoxoneException (base)
 | **Low** | Typo `reponse` in `read_user_salt_response` | `loxone_token.py:31` |
 | **Medium** | `send_websocket_command` doesn't check `is_connected` before enqueueing — commands pile up during disconnects | `connection.py:~1099` |
 
-### Dead Code
-
-| Item | Location | Notes |
-|------|----------|-------|
-| `helper.py` | Entire file | Never imported; `connection.py` has its own `_hash_token()` |
-| `api.py` | Entire file | Empty placeholder; all API surface lives in `connection.py` |
-| `hash_algorithms` dict | `helper.py` | Defined but never used |
-
 ### Missing Tests
 
-The test suite is essentially non-functional:
+In-repo tests (`pyloxone_api/tests/`) are essentially non-functional:
 
 - `test_run_alone.py` — loads env vars, does nothing
 - `test_discover.py` — requires live network, no mocking
 
-No tests exist for:
+The main test suite (`tests/components/loxone/`) now covers `crypto.py` (21 tests)
+and `structure.py` (18 tests). Still untested:
 - Connection lifecycle
 - Authentication and token management
 - Message parsing (all types)
-- AES encryption/decryption
 - HTTP error handling
-- Salt rotation
 - Reconnection logic
 
 ### Security Observations
@@ -302,11 +316,11 @@ No tests exist for:
 
 ### Design Concerns
 
-1. **`connection.py` is a god object** — 1420 lines handling HTTP setup, WS lifecycle, encryption, token management, salt rotation, keep-alive, reconnection, and command dispatch. Should be decomposed.
+1. ~~**`connection.py` is a god object**~~ — **Resolved**: Crypto extracted to `crypto.py`; connection slimmed from ~1420 to ~500 lines.
 
-2. **Dual exception hierarchies** — Two sets of overlapping exceptions (`LoxoneConnectionError` / `ConnectionFailure`, `LoxoneUnauthorisedError` / `UnauthorizedError`) suggest a partial refactor that was never completed.
+2. ~~**Dual exception hierarchies**~~ — **Resolved**: Consolidated to `Loxone*` naming; legacy names kept as aliases.
 
-3. **`api.py` is dead** — The intended API abstraction layer was never implemented. `connection.py` serves as both transport and API.
+3. ~~**`api.py` is dead**~~ — **Resolved**: Deleted.
 
 4. **No connection state abstraction** — `is_connected` checks `connection.protocol.state.name == "OPEN"` which depends on `websockets` library internals and can break across versions.
 

@@ -74,12 +74,14 @@ def play_state_to_media_player_state(play_state: int) -> MediaPlayerState:
 class LoxoneAudioZoneV2(LoxoneEntity, MediaPlayerEntity):
     """Representation of a AudioZoneV2 Loxone device."""
 
-    def __init__(self, **kwargs):
-        _LOGGER.debug(f"Input AudioZoneV2: {kwargs}")
-        super().__init__(**kwargs)
-        self.hass = kwargs["hass"]
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_device_class = MediaPlayerDeviceClass.SPEAKER
 
-        self._attr_device_class = MediaPlayerDeviceClass.SPEAKER
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._attr_name = None
+        self.hass = kwargs["hass"]
         self._state = play_state_to_media_player_state(DEFAULT_AUDIO_ZONE_V2_PLAY_STATE)
         self._volume = 0
 

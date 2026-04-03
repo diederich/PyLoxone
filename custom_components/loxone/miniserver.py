@@ -1,8 +1,6 @@
-import asyncio
 import logging
-import traceback
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
@@ -10,6 +8,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import format_mac
 
 from .helpers import get_miniserver_type
+from .pyloxone_api.structure import LoxoneStructure
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "loxone"
@@ -40,7 +39,7 @@ def get_miniserver_from_config(hass, config):
 
 @dataclass
 class ConfigDataClass:
-    json: Optional[Dict[str, Any]] = None
+    json: Optional[dict[str, Any]] = None
 
     def get(self, key, default=None):
         if self.json is not None:
@@ -65,45 +64,49 @@ class MiniServer:
         self.config_entry = config_entry
         self.listeners = []
 
+        self.structure: LoxoneStructure = LoxoneStructure.from_dict(
+            lox_config if lox_config else {}
+        )
+
     @property
     def serial(self):
-        return self.lox_config.get("msInfo", {}).get("serialNr", None)
+        return self.structure.ms_info.serial_nr or None
 
     @property
     def miniserver_type(self):
-        return self.lox_config.get("msInfo", {}).get("miniserverType", None)
+        return self.structure.ms_info.miniserver_type
 
     @property
     def name(self):
-        return self.lox_config.get("msInfo", {}).get("msName", None)
+        return self.structure.ms_info.ms_name or None
 
     @property
     def software_version(self):
-        return ".".join([str(x) for x in self.lox_config.get("softwareVersion", "")])
+        return self.structure.software_version_str
 
     @property
     def project_name(self):
-        return self.lox_config.get("msInfo", {}).get("projectName", None)
+        return self.structure.ms_info.project_name or None
 
     @property
     def location(self):
-        return self.lox_config.get("msInfo", {}).get("location", None)
+        return self.structure.ms_info.location or None
 
     @property
     def latitude(self):
-        return self.lox_config.get("msInfo", {}).get("latitude", None)
+        return self.structure.ms_info.latitude or None
 
     @property
     def longitude(self):
-        return self.lox_config.get("msInfo", {}).get("longitude", None)
+        return self.structure.ms_info.longitude or None
 
     @property
     def altitude(self):
-        return self.lox_config.get("msInfo", {}).get("altitude", None)
+        return self.structure.ms_info.altitude or None
 
     @property
     def current_user(self) -> dict | None:
-        return self.lox_config.get("msInfo", {}).get("currentUser", None)
+        return self.structure.ms_info.current_user
 
     @property
     def miniserver_id(self) -> str:

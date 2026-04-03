@@ -57,8 +57,12 @@ async def async_setup_entry(
 
 
 class LoxoneAlarm(LoxoneEntity, AlarmControlPanelEntity):
+    _attr_has_entity_name = True
+    _attr_name = None
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self._state = 0.0
         self._disabled_move = 0.0
         self._level = 0.0

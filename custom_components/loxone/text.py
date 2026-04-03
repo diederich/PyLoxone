@@ -48,37 +48,22 @@ async def async_setup_entry(
 
 
 class LoxoneText(LoxoneEntity, TextEntity):
-    """Representation of a loxone text"""
+    """Representation of a Loxone text (TextInput control)."""
+
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_assumed_state = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        """Initialize the Loxone text."""
+        self._attr_name = None
         self._state = STATE_UNKNOWN
-        self._icon = None
-        self._assumed = False
         self._native_value = ""
-
         self.type = "TextInput"
 
     @property
-    def should_poll(self):
-        """No polling needed for a demo text."""
-        return False
-
-    @property
-    def icon(self):
-        """Return the icon to use for device if any."""
-        return self._icon
-
-    @property
     def native_value(self):
-        """Return the native_min_value to use for device if any."""
         return self._native_value
-
-    @property
-    def assumed_state(self):
-        """Return if the state is based on assumptions."""
-        return self._assumed
 
     async def event_handler(self, e):
         if self.uuidAction in e.data:

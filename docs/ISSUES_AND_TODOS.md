@@ -24,39 +24,11 @@ The root cause is twofold:
 
 ## High-Priority Improvements
 
-### IMP-001: Decompose `connection.py` (1420 lines)
-
-The file is a god object handling HTTP setup, WebSocket lifecycle, encryption, token management, salt rotation, keep-alive, reconnection, and command dispatch.
-
-**Suggested decomposition:**
-
-| New Module      | Responsibility                       |
-| --------------- | ------------------------------------ |
-| `crypto.py`     | AES/RSA encryption, salt management  |
-| `auth.py`       | Token lifecycle, HMAC, key exchange  |
-| `connection.py` | WebSocket connect/listen/send only   |
-| `session.py`    | HTTP setup, structure file retrieval |
-
-### IMP-005: Consolidate exception hierarchy
-
-Two overlapping sets of exceptions exist in `pyloxone_api/exceptions.py`:
-
-| Group A (older?)          | Group B (newer?)    |
-| ------------------------- | ------------------- |
-| `LoxoneConnectionError`   | `ConnectionFailure` |
-| `LoxoneUnauthorisedError` | `UnauthorizedError` |
-| `LoxoneHTTPStatusError`   | `HttpApiError`      |
-
-Pick one naming convention and consolidate.
-
-### IMP-006: Remove dead code
+### IMP-006: Remove remaining dead code
 
 | Item                         | Location                                                 |
 | ---------------------------- | -------------------------------------------------------- |
-| `helper.py` (entire file)    | `pyloxone_api/` — never imported                         |
-| `api.py` (entire file)       | `pyloxone_api/` — empty placeholder                      |
 | `REQUIREMENTS` list          | `__init__.py` — obsolete, manifest.json is authoritative |
-| `hash_algorithms` dict       | `pyloxone_api/helper.py`                                 |
 | `__color_mode_reported`      | `lights/colorpickers.py`                                 |
 | `_sequence_uuid`             | `lights/colorpickers.py`                                 |
 | `async_config_entry_updated` | `__init__.py` — empty function                           |

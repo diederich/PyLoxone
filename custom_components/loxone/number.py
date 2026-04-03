@@ -42,53 +42,23 @@ async def async_setup_entry(
 
 
 class LoxoneNumber(LoxoneEntity, NumberEntity):
-    """Representation of a loxone number"""
+    """Representation of a Loxone number (Slider control)."""
+
+    _attr_has_entity_name = True
+    _attr_name = None
+    _attr_assumed_state = False
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        """Initialize the Loxone number."""
+        self._attr_name = None
         self._state = STATE_UNKNOWN
-        self._icon = None
-        self._assumed = False
-        self._native_max_value = kwargs["details"]["max"]
-        self._native_min_value = kwargs["details"]["min"]
-        self._native_step = kwargs["details"]["step"]
-
+        self._attr_native_max_value = kwargs["details"]["max"]
+        self._attr_native_min_value = kwargs["details"]["min"]
+        self._attr_native_step = kwargs["details"]["step"]
         self.type = "Slider"
 
     @property
-    def should_poll(self):
-        """No polling needed for a demo number."""
-        return False
-
-    @property
-    def icon(self):
-        """Return the icon to use for device if any."""
-        return self._icon
-
-    @property
-    def native_max_value(self):
-        """Return the native_max_value to use for device if any."""
-        return self._native_max_value
-
-    @property
-    def native_min_value(self):
-        """Return the native_min_value to use for device if any."""
-        return self._native_min_value
-
-    @property
-    def native_step(self):
-        """Return the native_min_value to use for device if any."""
-        return self._native_step
-
-    @property
-    def assumed_state(self):
-        """Return if the state is based on assumptions."""
-        return self._assumed
-
-    @property
     def native_value(self):
-        """Return the state of the sensor."""
         return self._state
 
     async def event_handler(self, e):
