@@ -9,8 +9,8 @@ from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+import homeassistant.helpers.issue_registry as ir
 
 from .miniserver import MiniServer
 from .pyloxone_api.connection import LoxoneConnection, LoxoneException
@@ -18,6 +18,8 @@ from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
                                       LoxoneConnectionError,
                                       LoxoneOutOfServiceException,
                                       LoxoneTokenError)
+
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -129,6 +131,15 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 "Token is no longer valid. Will re-authenticate on reconnect."
             )
             clear_token = True
+            ir.async_create_issue(
+                self.hass,
+                DOMAIN,
+                "token_expired",
+                is_fixable=False,
+                is_persistent=False,
+                severity=ir.IssueSeverity.WARNING,
+                translation_key="token_expired",
+            )
         except LoxoneOutOfServiceException:
             _LOGGER.warning("Miniserver reports out of service. Will reconnect.")
         except LoxoneConnectionError:
@@ -160,6 +171,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
     async def _async_reconnect(self, clear_token: bool = False) -> None:
         """Reconnect to the Miniserver with exponential backoff."""
         self.connection_state = ConnectionState.RECONNECTING
+        _attempts = 0
 
         if clear_token:
             self.hass.config_entries.async_update_entry(
@@ -201,16 +213,30 @@ class LoxoneCoordinator(DataUpdateCoordinator):
 
                 self.connection_state = ConnectionState.CONNECTED
                 self.async_set_updated_data({"connected": True})
+                ir.async_delete_issue(self.hass, DOMAIN, "token_expired")
+                ir.async_delete_issue(self.hass, DOMAIN, "persistent_disconnect")
                 _LOGGER.info("Reconnected to Miniserver at %s", self._host)
                 return
             except asyncio.CancelledError:
                 raise
             except Exception as err:
+                _attempts += 1
                 delay = min(delay * 2, _RECONNECT_MAX_DELAY)
                 _LOGGER.warning(
-                    "Reconnect to %s failed: %s. Next attempt in %.0fs",
-                    self._host, err, delay,
+                    "Reconnect to %s failed (%d): %s. Next attempt in %.0fs",
+                    self._host, _attempts, err, delay,
                 )
+                if _attempts == 3:
+                    ir.async_create_issue(
+                        self.hass,
+                        DOMAIN,
+                        "persistent_disconnect",
+                        is_fixable=False,
+                        is_persistent=False,
+                        severity=ir.IssueSeverity.ERROR,
+                        translation_key="persistent_disconnect",
+                        translation_placeholders={"host": self._host},
+                    )
                 if self.api:
                     try:
                         await self.api.close()

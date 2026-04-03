@@ -91,6 +91,16 @@
       }
     }
   },
+  "issues": {
+    "token_expired": {
+      "title": "Loxone authentication token expired",
+      "description": "The Miniserver rejected the stored authentication token. The integration will attempt to re-authenticate automatically. If this persists, go to **Settings → Devices & Services → Loxone** and re-enter your credentials."
+    },
+    "persistent_disconnect": {
+      "title": "Cannot reach Loxone Miniserver",
+      "description": "Multiple reconnection attempts to **{host}** have failed. Check that the Miniserver is powered on, reachable on the network, and not in maintenance mode. The integration will keep retrying in the background."
+    }
+  },
   "services": {
     "reload": {
        "name": "Pyloxone Reload",

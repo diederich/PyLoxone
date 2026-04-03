@@ -91,6 +91,16 @@
       }
     }
   },
+  "issues": {
+    "token_expired": {
+      "title": "Loxone-Authentifizierungstoken abgelaufen",
+      "description": "Der Miniserver hat das gespeicherte Authentifizierungstoken abgelehnt. Die Integration versucht automatisch, sich erneut zu authentifizieren. Falls das Problem weiterhin besteht, gehe zu **Einstellungen → Geräte & Dienste → Loxone** und gib die Zugangsdaten erneut ein."
+    },
+    "persistent_disconnect": {
+      "title": "Loxone Miniserver nicht erreichbar",
+      "description": "Mehrere Verbindungsversuche zu **{host}** sind fehlgeschlagen. Prüfe, ob der Miniserver eingeschaltet und im Netzwerk erreichbar ist und sich nicht im Wartungsmodus befindet. Die Integration versucht weiterhin im Hintergrund eine Verbindung herzustellen."
+    }
+  },
   "services": {
     "reload": {
       "name": "Pyloxone Reload",

@@ -4,6 +4,30 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 5: Redacted diagnostics + repair issues
+
+### Decisions
+
+- Diagnostics now redact sensitive data (credentials, host, token, msInfo, users) while preserving debug-useful info (control types, states, rooms, connection state).
+- Repair issues created for two scenarios: token expiration (WARNING) and persistent disconnect after 3 failed reconnects (ERROR). Both auto-clear on successful reconnect.
+- Phase 4 (custom device triggers/actions/conditions) skipped — HA auto-provides these through entity platforms now that `has_entity_name=True` and `DeviceInfo` are properly configured.
+
+### Changes
+
+- **`diagnostics.py`:** Rewrote to use `async_redact_data` for config, `_redact_structure` for LoxAPP3.json (redacts msInfo/users, summarises controls without raw details). Includes connection state and miniserver metadata.
+- **`coordinator.py`:** Added `ir.async_create_issue` on token error and after 3 reconnect failures. `ir.async_delete_issue` on successful reconnect.
+- **`translations/en.json`, `translations/de.json`:** Added `issues` section with `token_expired` and `persistent_disconnect` repair issue strings.
+- **`tests/test_diagnostics.py`:** New — 4 tests covering redaction, connection state, miniserver info, and structure sanitisation.
+- **`tests/test_repairs.py`:** New — 2 tests covering repair issue creation on token error and clearance on reconnect.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 354 passed, 3 warnings.
+- Deploy to HA and verify diagnostics download redacts sensitive data.
+- Simulate disconnection to verify repair issue appears.
+
+---
+
 ## 2026-04-03 — Phase 3: Complete has_entity_name migration
 
 ### Decisions
