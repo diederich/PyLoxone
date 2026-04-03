@@ -26,7 +26,9 @@ The root cause is twofold:
 
 ### IMP-007: Fix sync/async inconsistencies
 
-`hass.bus.fire()` is used throughout entity service methods (turn_on, turn_off, etc.) which may run in threads. Switching to `async_fire()` requires careful per-method analysis — sync methods must use thread-safe versions. `hass.loop.call_later()` in scene.py should be `async_call_later()`.
+`hass.bus.fire()` is still used from entity service methods (`turn_on`, `turn_off`, etc.); this was **intentionally kept synchronous** where those paths can run on the executor or from sync contexts — `async_fire()` is not a safe wholesale replacement without per-call-site analysis. Remaining actionable item: `hass.loop.call_later()` in `scene.py` should become `async_call_later()` / `async_create_task()` when on the event loop.
+
+**scene.py:** Scenes now expose `device_info` and are tied to the config entry via `entry_id` scoping. (Broader platform notes live in [HA_INTEGRATION.md](HA_INTEGRATION.md); that doc’s older “no LoxoneEntity / no device_info” bullets are stale for scenes.)
 
 | Current (sync)               | Replace with (async)                          | Files                          |
 | ---------------------------- | --------------------------------------------- | ------------------------------ |
@@ -89,12 +91,12 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | File (tests)                      | What's covered                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `test_helpers.py`                 | `map_range`, brightness conversions, color temp, `get_all`, `get_miniserver_type`, room/cat lookup, `get_or_create_device` cache behavior — all parametrized with edge cases |
-| `test_config_flow.py`             | User step, entry title, port coercion, latin-1 validation (username + password), options flow                                                                       |
+| `test_config_flow.py`             | User step, entry title, port coercion, latin-1 validation (username + password), options flow (menu, settings, bridges), reauth flow (success + invalid auth), reconfigure flow (success + bad credentials), duplicate serial abort, HTTP 500 error, options settings latin-1 validation, bridge unknown control rejection, DHCP discovery (new + already configured) |
 | `test_switch.py`                  | Entity creation, attributes, event→state (on/off), command dispatch (On/Off), no-op when already on, TimedSwitch delay attributes                                   |
 | `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
 | `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool); IRoomControllerV2 creation, `is_overridden` JSON parsing |
 | `test_init.py`                    | Setup, unload, services registered in `async_setup` (survive unload, raise when no coordinator), `sync_device_names` service (update/skip/ignore non-Loxone)         |
-| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalReturned), energy dashboard attrs (device_class/state_class on totals + actual), fallback classification from details.type, version + keep-alive sensors |
+| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalReturned), energy dashboard attrs (device_class/state_class on totals + actual), fallback classification from details.type, version + keep-alive sensors, meter unit mismatch repair issue creation, matching unit no-repair |
 | `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
 | `test_alarm_control_panel.py`     | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
 | `test_fan.py`                     | Ventilation entity creation, supported features, preset modes, speed/mode events, set_percentage command                                                             |
@@ -410,15 +412,17 @@ These test the API client in isolation. No HA fixtures needed — just plain pyt
 
 #### Tier 2 — Config Flow & Init Tests (needs HA fixtures)
 
+`test_config_flow.py` now covers the user step, reauth, reconfigure, DHCP discovery (new + already configured), options (menu, settings, bridges), and related edge cases — **this tier is largely complete for config flow**. Remaining gaps are mostly `__init__.py` (migration paths, extra service coverage).
+
 | Component               | What to Test                                                         | Approach                                |
 | ----------------------- | -------------------------------------------------------------------- | --------------------------------------- |
-| `config_flow.py`        | User step with valid/invalid input, Latin-1 validation, options flow | `hass.config_entries.flow.async_init()` |
+| `config_flow.py`        | Core paths covered in `test_config_flow.py`; add tests only for new flow steps | `hass.config_entries.flow.async_init()` |
 | `__init__.py` setup     | `async_setup_entry` with mocked API, platform forwarding             | `init_integration` fixture              |
 | `__init__.py` unload    | `async_unload_entry` cleanup                                         | Verify listeners removed                |
 | `__init__.py` migration | v1→v2→v3 config migration paths                                      | `MockConfigEntry` with old versions     |
 | `__init__.py` services  | `event_websocket_command`, `sync_areas`, `reload`                    | Service call assertions                 |
 
-**Estimated effort:** 2–3 days. **Value:** High — config flow is the first user touchpoint.
+**Estimated effort:** ~1 day remaining (migrations + service edge cases). **Value:** High — entry setup and migrations are still high-impact.
 
 #### Tier 3 — Platform Entity Tests (needs HA fixtures + structure fixtures)
 
@@ -499,11 +503,13 @@ The API client is already quasi-independent. Making it a proper Python package w
 
 ### ARCH-002: Use `DataUpdateCoordinator` properly or replace
 
-The coordinator currently only manages the connection — `_async_update_data` is a no-op. Either:
+`_async_update_data` still returns immediately (no periodic “data fetch” via the coordinator’s polling hook), but **`LoxoneDataUpdateCoordinator` is actively used** for connection lifecycle: structure-file polling, repair/issue bookkeeping, and reconnect with backoff. That is a hybrid — better than “coordinator unused,” but still architecturally imperfect versus either a dedicated connection manager or driving real periodic updates through `_async_update_data` / the update interval.
 
-- Use it for periodic polling of health/status
+Options remain:
+
+- Use `_async_update_data` for periodic health/status (or fold existing timers into one model)
 - Replace with a simple connection manager class
-- Use HA's `async_setup_entry` lifecycle directly
+- Lean further on `async_setup_entry` lifecycle and shrink coordinator responsibilities
 
 ### ARCH-004: Use entity descriptions
 

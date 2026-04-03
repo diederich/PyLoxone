@@ -4,6 +4,15 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Docs accuracy pass
+
+### Changes
+- **ARCHITECTURE.md** — updated runtime deps (httpx → async-upnp-client), added repairs.py and frontend monitor/console/status views to directory listing, updated panel tabs list, added coordinator lifecycle description, corrected event routing to dispatcher model, added scene platform section, added config flow validation/discovery/reconfigure descriptions
+- **HA_INTEGRATION.md** — updated config flow to describe HTTP validation, reauth, reconfigure, DHCP discovery; updated coordinator section (removed debug print, added structure polling/repairs/dispatcher); corrected event routing from broadcast to per-UUID dispatcher; updated scene class name (LoxoneLightScene) and noted device_info/entry_id scoping; deprecated get_miniserver_from_hass in favor of runtime_data
+- **ISSUES_AND_TODOS.md** — expanded test_config_flow.py coverage description with new tests (reauth, reconfigure, DHCP, duplicate serial, etc.); updated test_sensor.py with meter mismatch tests; updated ARCH-002 to reflect coordinator's active role; marked Tier 2 config flow tests largely complete; clarified IMP-007 sync/async intentional design
+
+---
+
 ## 2026-04-03 — Gold/Platinum quality scale push
 
 ### Decisions

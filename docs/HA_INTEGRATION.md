@@ -166,6 +166,8 @@ def get_miniserver_from_hass(hass):
     return None
 ```
 
+This helper still exists for legacy call sites, but **new code should prefer `config_entry.runtime_data`** (the `LoxoneCoordinator` for that entry) so behavior is correct with multiple Miniservers.
+
 ## Config Flow (`config_flow.py`)
 
 Uses standard `ConfigFlow` with live connection validation, serial-based `unique_id`, and `async_step_reauth`:
@@ -181,12 +183,9 @@ OPTIONS_FLOW = {
 
 ### Validation
 
-Only validates:
+Validates credentials via HTTP (`_async_validate_credentials`) and fetches the Miniserver serial (`_async_fetch_serial`) for use as `unique_id`. Supports `async_step_reauth` (re-authenticate on credential failure), `async_step_reconfigure` (change connection settings), and `async_step_dhcp` (DHCP auto-discovery via MAC prefix `504F94`).
 
-- Username/password are Latin-1 encodable (Loxone requirement)
-- Port is castable to int
-
-**Does not** test actual connectivity during setup. A user can configure invalid credentials and only discover the error at runtime.
+User/password must remain Latin-1 encodable where the flow enforces it, and host/port/schema fields are validated as part of setup.
 
 ## Platform Analysis
 
@@ -312,12 +311,14 @@ def is_overridden(self):
 
 ### scene.py
 
-| Entity Class       | Source            | Notes              |
-| ------------------ | ----------------- | ------------------ |
-| `Loxonelightscene` | LightControllerV2 | Moods as HA scenes |
+| Entity Class        | Source            | Notes              |
+| ------------------- | ----------------- | ------------------ |
+| `LoxoneLightScene`  | LightControllerV2 | Moods as HA scenes |
 
-- Uses `hass.data["light"].get_entity()` — depends on internal HA structure
-- Does not extend `LoxoneEntity` — no event subscription
+- Uses `hass.data["light"].get_entity()` — depends on internal HA structure (same pattern as light platform discovery)
+- Implements `device_info` linking the scene to the light controller device (and `via_device` to the Miniserver serial when known)
+- `async_activate` fires `SENDDOMAIN` with `"miniserver": entry_id` so commands route to the correct integration entry in multi-Miniserver setups
+- Does not extend `LoxoneEntity` — scenes only send commands; they do not need WS state subscriptions
 - Inconsistent defaults: options default `False`, config flow default `True`
 
 ### text.py
@@ -367,28 +368,22 @@ def get_or_create_device(loxone_id, name):
 
 This is separate from HA's actual device registry and can lead to stale entries, memory leaks (never cleaned), and confusion about which registry is authoritative.
 
-### Event Bus Broadcast
+### Per-UUID dispatcher routing (inbound state)
 
-Every `loxone_event` is broadcast to all entities. Each entity checks if its UUID is in the event data:
+WebSocket messages are parsed into a dict keyed by UUID. The coordinator’s `_message_callback` sends **one signal per changed UUID**:
 
-```python
-# In every entity's event_handler:
-if self.uuidAction in event.data:
-    ...
-for uuid in self.states:
-    if self.states[uuid] in event.data:
-        ...
-```
+- Signal name: `loxone_{config_entry.entry_id}_uuid_{uuid}`
+- Payload: the full message dict (same as before per handler)
 
-With 100+ entities and frequent state updates, this means thousands of unnecessary dict lookups per update cycle. A dispatch-by-UUID approach (e.g., `async_dispatcher_send` per UUID) would be far more efficient.
+`LoxoneEntity.async_added_to_hass` connects `async_dispatcher_connect` for each UUID the entity cares about (`uuidAction` plus values in `states`). The dispatcher callback schedules `event_handler(message)`, so only subscribers for that UUID run.
+
+A separate `monitor_signal` (`loxone_{entry_id}_monitor`) receives the full message for components that need it (e.g. WebSocket event forwarding).
+
+Device triggers still use the HA event bus (`EVENT_LOXONE_STATE_CHANGE`) with a per-UUID lookup into the device registry — that path is separate from entity updates.
 
 ### Copy-Paste Docstrings
 
-Several files have docstrings from other projects:
-
-- `binary_sensor.py`: "Support for Fritzbox binary sensors"
-- `fan.py`: "Interfaces with Alarm.com alarm control panels"
-- `alarm_control_panel.py`: "Interfaces with Alarm.com alarm control panels"
+Module docstrings in `binary_sensor.py`, `fan.py`, and `alarm_control_panel.py` are now Loxone-specific; the old cross-project copy-paste lines are **no longer present** in the codebase.
 
 ### Deprecated HA APIs
 

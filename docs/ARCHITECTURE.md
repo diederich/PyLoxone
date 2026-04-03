@@ -14,7 +14,7 @@
 | HA minimum       | 2025.2.4                                      |
 | Installation     | HACS or manual copy of `custom_components/`   |
 | IoT class        | `local_push`                                  |
-| Runtime deps     | `websockets>=14`, `pycryptodome`, `httpx`     |
+| Runtime deps     | `websockets>=14`, `pycryptodome`, `async-upnp-client` |
 
 ## High-Level Architecture
 
@@ -39,8 +39,8 @@
 │  ┌───────────────────────────┴───────────────────────────────────┐     │
 │  │                     coordinator.py                             │     │
 │  │  LoxoneCoordinator (DataUpdateCoordinator)                    │     │
-│  │  - Connection lifecycle + in-process reconnect                │     │
-│  │  - MiniServer construction                                    │     │
+│  │  - Connection lifecycle, reconnect, structure poll, repairs    │     │
+│  │  - MiniServer construction; dispatcher_prefix, monitor_signal   │     │
 │  └───────────────────────────┬───────────────────────────────────┘     │
 │                              │                                         │
 │  ┌───────────────────────────┴───────────────────────────────────┐     │
@@ -89,6 +89,7 @@ PyLoxone/
 │       ├── const.py                 # Integration constants
 │       ├── helpers.py               # Shared utilities (device registry, mappings)
 │       ├── diagnostics.py           # Config entry diagnostics
+│       ├── repairs.py               # Fixable repair flows (auth failure)
 │       ├── system_health.py         # System health panel
 │       ├── services.yaml            # Service definitions
 │       ├── manifest.json            # Integration manifest
@@ -113,10 +114,13 @@ PyLoxone/
 │       │
 │       ├── frontend/               # Custom panel (Lit/TypeScript sidebar app)
 │       │   ├── src/                # TypeScript source
-│       │   │   ├── loxone-panel.ts # Panel entry point (tabs: Devices, Areas, Bridges)
+│       │   │   ├── loxone-panel.ts # Panel entry (tabs: Devices, Areas, Bridges, Monitor, Console, Status)
 │       │   │   ├── devices-view.ts # Loxone controls <-> HA entities table
 │       │   │   ├── areas-view.ts   # Room-to-area mapping + sync
 │       │   │   ├── bridges-view.ts # Bridge CRUD
+│       │   │   ├── monitor-view.ts # Live WS message monitor
+│       │   │   ├── console-view.ts # Command console (send_command)
+│       │   │   ├── status-view.ts  # Connection / Miniserver status
 │       │   │   ├── api.ts          # WebSocket/service API helpers
 │       │   │   └── types.ts        # TypeScript interfaces
 │       │   ├── test/               # Vitest tests
@@ -173,6 +177,14 @@ PyLoxone/
    (entities stay registered, toggle available via last_update_success)
 ```
 
+### Coordinator (`coordinator.py`)
+
+The coordinator manages the Miniserver connection lifecycle, reconnect with exponential backoff, structure change polling, and repair issue management. It provides `dispatcher_prefix` and `monitor_signal` properties for multi-Miniserver namespacing.
+
+### Runtime event routing (dispatcher, not broadcast)
+
+State updates are not fan-out to every entity. The coordinator dispatches **per-UUID** Home Assistant signals of the form `loxone_{entry_id}_uuid_{uuid}` (prefix from `dispatcher_prefix` + control UUID). Subscribers receive only their UUID’s messages — **O(1)** routing per event, not **O(n)** across all entities. The `entry_id` segment keeps multiple Miniservers isolated.
+
 ### Runtime Event Flow
 
 ```
@@ -184,9 +196,9 @@ LoxoneConnection._listen()
     │  Parses header + payload via websocket_protocol
     ▼
 coordinator._message_callback()        [coordinator.py]
-    │  Per-UUID dispatch: async_dispatcher_send(hass, "loxone_uuid_{uuid}", message)
+    │  Per-UUID dispatch: async_dispatcher_send(hass, "loxone_{entry_id}_uuid_{uuid}", message)
     ▼
-async_dispatcher → "loxone_uuid_{uuid}"
+async_dispatcher → "loxone_{entry_id}_uuid_{uuid}"
     │  O(1) routing — only entities subscribed to that UUID wake up
     ▼
 LoxoneEntity._dispatch_handler()       [__init__.py base class]
@@ -245,6 +257,10 @@ Loxone Miniserver
 | AudioZoneV2          | `media_player`       | `LoxoneAudioZoneV2`             |
 | Slider               | `number`             | `LoxoneNumber`                  |
 
+## Scene platform (`scene.py`)
+
+LightControllerV2 moods are exposed as `LoxoneLightScene` (Home Assistant `Scene` — not a `LoxoneEntity` subclass). Scenes define `device_info` and pass `entry_id` as `miniserver` in `SENDDOMAIN` payloads so commands target the correct config entry on multi-Miniserver setups.
+
 ## Authentication & Encryption
 
 The integration uses Loxone's token-based authentication over WebSocket:
@@ -258,7 +274,11 @@ The integration uses Loxone's token-based authentication over WebSocket:
 
 ## Configuration
 
-The integration uses HA's config flow (no YAML entity config). Key options:
+The integration uses HA's config flow (no YAML entity config).
+
+Validates credentials via HTTP before entry creation. Also supports `async_step_reauth` (triggered on auth failure), `async_step_reconfigure` (change connection settings from integration menu), and `async_step_dhcp` (auto-discovery via MAC prefix 504F94).
+
+Key options:
 
 | Option                             | Default | Purpose                                   |
 |------------------------------------|---------|-------------------------------------------|
