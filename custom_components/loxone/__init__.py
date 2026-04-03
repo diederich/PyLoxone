@@ -220,6 +220,49 @@ async def _async_sync_device_names(
     _LOGGER.info("sync_device_names: updated %d device(s)", updated)
 
 
+@callback
+def _async_remove_stale_devices(
+    hass: HomeAssistant,
+    config_entry: LoxoneConfigEntry,
+    coordinator: LoxoneCoordinator,
+) -> None:
+    """Remove devices whose UUIDs are no longer present in the structure file."""
+    structure = coordinator.api.structure_file or {}
+    controls = structure.get("controls", {})
+
+    active_uuids: set[str] = set()
+    for uuid, ctrl in controls.items():
+        active_uuids.add(uuid)
+        active_uuids.add(ctrl.get("uuidAction", ""))
+        for sc in ctrl.get("subControls", {}).values():
+            active_uuids.add(sc.get("uuidAction", ""))
+    active_uuids.discard("")
+
+    if coordinator.miniserver and coordinator.miniserver.serial:
+        active_uuids.add(coordinator.miniserver.serial)
+
+    dr_registry = dr.async_get(hass)
+    for device in list(dr_registry.devices.values()):
+        if config_entry.entry_id not in device.config_entries:
+            continue
+        identifiers_for_domain = {
+            identifier
+            for domain, identifier in device.identifiers
+            if domain == DOMAIN
+        }
+        if not identifiers_for_domain:
+            continue
+        if identifiers_for_domain & active_uuids:
+            continue
+
+        _LOGGER.info(
+            "Removing stale device %s (%s) — no longer in Loxone structure",
+            device.name,
+            identifiers_for_domain,
+        )
+        dr_registry.async_remove_device(device.id)
+
+
 def _async_register_services(hass: HomeAssistant):
     """Register domain-level Loxone services.
 
@@ -233,12 +276,16 @@ def _async_register_services(hass: HomeAssistant):
         coordinator = _get_coordinator(hass)
         if coordinator is None:
             raise HomeAssistantError(
-                "Loxone Miniserver is not connected — cannot send command"
+                translation_domain=DOMAIN,
+                translation_key="miniserver_not_connected",
             )
         if coordinator.connection_state != ConnectionState.CONNECTED:
             raise HomeAssistantError(
-                f"Loxone Miniserver is {coordinator.connection_state.value}"
-                " — cannot send command"
+                translation_domain=DOMAIN,
+                translation_key="miniserver_unavailable",
+                translation_placeholders={
+                    "state": coordinator.connection_state.value,
+                },
             )
         value = call.data.get(ATTR_VALUE, DEFAULT)
         if call.data.get(ATTR_DEVICE) is None:
@@ -255,12 +302,16 @@ def _async_register_services(hass: HomeAssistant):
         coordinator = _get_coordinator(hass)
         if coordinator is None:
             raise HomeAssistantError(
-                "Loxone Miniserver is not connected — cannot send secured command"
+                translation_domain=DOMAIN,
+                translation_key="miniserver_not_connected",
             )
         if coordinator.connection_state != ConnectionState.CONNECTED:
             raise HomeAssistantError(
-                f"Loxone Miniserver is {coordinator.connection_state.value}"
-                " — cannot send secured command"
+                translation_domain=DOMAIN,
+                translation_key="miniserver_unavailable",
+                translation_placeholders={
+                    "state": coordinator.connection_state.value,
+                },
             )
         value = call.data.get(ATTR_VALUE, DEFAULT)
         code = call.data.get(ATTR_CODE, DEFAULT)
@@ -683,6 +734,8 @@ async def async_setup_entry(
         create_areas = False
     else:
         create_areas = config_entry.options.get(CONF_CREATE_AREAS, True)
+
+    _async_remove_stale_devices(hass, config_entry, coordinator)
 
     try:
         await _async_sync_device_names(hass, coordinator=coordinator)
