@@ -45,8 +45,6 @@ from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
                                       LoxoneServiceUnAvailableError,
                                       LoxoneUnauthorisedError)
 
-REQUIREMENTS = ["websockets", "pycryptodome", "numpy"]
-
 _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = vol.Schema(
@@ -366,15 +364,6 @@ async def async_set_options(hass, config_entry):
     hass.config_entries.async_update_entry(
         config_entry, data=config_entry.data, options=options
     )
-
-
-async def async_config_entry_updated(hass, entry) -> None:
-    """Handle signals of config entry being updated.
-
-    This is a static method because a class method (bound method), can not be used with weak references.
-    Causes for this is either discovery updating host address or config entry options changing.
-    """
-    pass
 
 
 async def create_group_for_loxone_entities(hass, entities, name, object_id):

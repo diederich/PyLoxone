@@ -24,21 +24,12 @@ The root cause is twofold:
 
 ## High-Priority Improvements
 
-### IMP-006: Remove remaining dead code
-
-| Item                         | Location                                                 |
-| ---------------------------- | -------------------------------------------------------- |
-| `REQUIREMENTS` list          | `__init__.py` — obsolete, manifest.json is authoritative |
-| `__color_mode_reported`      | `lights/colorpickers.py`                                 |
-| `_sequence_uuid`             | `lights/colorpickers.py`                                 |
-| `async_config_entry_updated` | `__init__.py` — empty function                           |
-
 ### IMP-007: Fix sync/async inconsistencies
+
+`hass.bus.fire()` is used throughout entity service methods (turn_on, turn_off, etc.) which may run in threads. Switching to `async_fire()` requires careful per-method analysis — sync methods must use thread-safe versions. `hass.loop.call_later()` in scene.py should be `async_call_later()`.
 
 | Current (sync)               | Replace with (async)                          | Files                          |
 | ---------------------------- | --------------------------------------------- | ------------------------------ |
-| `hass.bus.fire()`            | `hass.bus.async_fire()`                       | switch.py, button.py           |
-| `schedule_update_ha_state()` | `async_schedule_update_ha_state()`            | cover.py, number.py, button.py |
 | `hass.loop.call_later()`     | `async_call_later()` or `async_create_task()` | scene.py                       |
 
 ---
@@ -84,13 +75,6 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 | #       | Issue                                                        | File                                             |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| LOW-001 | Copy-paste docstrings ("Fritzbox", "Alarm.com")              | binary_sensor.py, alarm_control_panel.py         |
-| LOW-002 | Typo `reponse` in `read_user_salt_response`                  | pyloxone_api/loxone_token.py:31                  |
-| LOW-003 | Typo `shade_postion_as_text`                                 | cover.py                                         |
-| LOW-004 | Typo `subcontol`                                             | switch.py                                        |
-| LOW-006 | Duplicate `key="power"` in `SENSOR_TYPES`                    | sensor.py                                        |
-| LOW-007 | `ToggleEntity` imported but unused                           | lights/switch.py                                 |
-| LOW-008 | `cast` imported but unused                                   | config_flow.py                                   |
 | LOW-009 | Deprecated `DeviceInfo` import path                          | lights/dimmer.py, lights/lightcontroller.py      |
 | LOW-010 | Inconsistent command casing `"on"`/`"off"` vs `"On"`/`"Off"` | lights/switch.py vs lights/dimmer.py             |
 

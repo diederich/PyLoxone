@@ -127,7 +127,6 @@ class TunableWhiteLight(LoxoneEntity, LightEntity):
 
 
 class RGBColorPicker(LoxoneEntity, LightEntity):
-    __color_mode_reported = True
     _attr_max_color_temp_kelvin = 6500
     _attr_min_color_temp_kelvin = 2000
 
@@ -143,7 +142,6 @@ class RGBColorPicker(LoxoneEntity, LightEntity):
         self._attr_unique_id = self.uuidAction
         self._attr_color_mode = ColorMode.UNKNOWN
         self._color_uuid = kwargs.get("states", {}).get("color", None)
-        self._sequence_uuid = kwargs.get("states", {}).get("sequence", None)
 
         self._async_add_devices = kwargs["async_add_devices"]
         self._light_controller_id = kwargs.get("lightcontroller_id", None)

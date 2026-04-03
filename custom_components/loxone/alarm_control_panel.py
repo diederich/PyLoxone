@@ -1,4 +1,4 @@
-"""Interfaces with Alarm.com alarm control panels."""
+"""Loxone alarm control panel entities."""
 
 import logging
 import re

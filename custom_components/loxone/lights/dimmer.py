@@ -3,7 +3,7 @@ from functools import cached_property
 from homeassistant.components.light import (ATTR_BRIGHTNESS, ColorMode,
                                             LightEntity)
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.device_registry import DeviceInfo
 
 from .. import LoxoneEntity
 from ..const import DOMAIN, SENDDOMAIN

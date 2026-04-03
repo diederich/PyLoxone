@@ -505,7 +505,7 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
         return self.auto
 
     @property
-    def shade_postion_as_text(self):
+    def shade_position_as_text(self):
         """Returns shade postionn as text"""
         if self.current_cover_tilt_position == 100 and self.current_cover_position < 10:
             return "shading on"
@@ -522,7 +522,7 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
             **self._attr_extra_state_attributes,
             "device_type": self.type,
             "current_position": self.current_cover_position,
-            "current_shade_mode": self.shade_postion_as_text,
+            "current_shade_mode": self.shade_position_as_text,
             "current_position_loxone_style": round(self._position_loxone, 0),
         }
 

@@ -47,14 +47,14 @@ async def async_setup_entry(
         elif switch_entity["type"] == "Intercom":
             if "subControls" in switch_entity:
                 for sub_name in switch_entity["subControls"]:
-                    subcontol = switch_entity["subControls"][sub_name]
+                    subcontrol = switch_entity["subControls"][sub_name]
 
-                    _ = subcontol
+                    _ = subcontrol
                     _ = add_room_and_cat_to_value_values(loxconfig, _)
                     _.update(
                         {
                             "name": "{} - {}".format(
-                                switch_entity["name"], subcontol["name"]
+                                switch_entity["name"], subcontrol["name"]
                             )
                         }
                     )
@@ -116,7 +116,7 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
             should_update = True
 
         if should_update:
-            self.async_schedule_update_ha_state()
+            self.schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
@@ -178,7 +178,7 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
         if self.uuidAction in event or self.states["active"] in event:
             if self.states["active"] in event:
                 self._state = event[self.states["active"]]
-            self.async_schedule_update_ha_state()
+            self.schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
