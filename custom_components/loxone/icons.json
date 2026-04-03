@@ -1,0 +1,45 @@
+{
+  "entity": {
+    "sensor": {
+      "meter_actual": {
+        "default": "mdi:flash"
+      },
+      "meter_total": {
+        "default": "mdi:counter"
+      },
+      "meter_total_returned": {
+        "default": "mdi:transmission-tower-export"
+      },
+      "meter_storage": {
+        "default": "mdi:battery-outline"
+      },
+      "project_name": {
+        "default": "mdi:file-cog-outline"
+      },
+      "location": {
+        "default": "mdi:map-marker"
+      },
+      "connected_user": {
+        "default": "mdi:account"
+      },
+      "uuid_sensor": {
+        "default": "mdi:identifier"
+      },
+      "connection_state": {
+        "default": "mdi:lan-connect"
+      },
+      "reconnect_count": {
+        "default": "mdi:refresh"
+      }
+    }
+  },
+  "services": {
+    "event_websocket_command": "mdi:console-network",
+    "event_secured_websocket_command": "mdi:console-network",
+    "sync_areas": "mdi:home-map-marker",
+    "reload": "mdi:refresh",
+    "enable_sun_automation": "mdi:white-balance-sunny",
+    "disable_sun_automation": "mdi:weather-night",
+    "quick_shade": "mdi:blinds"
+  }
+}
