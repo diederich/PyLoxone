@@ -12,6 +12,7 @@ type TabId = "devices" | "areas" | "bridges" | "status";
 export class LoxonePanel extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @state() private _activeTab: TabId = "devices";
+  @state() private _refreshKey = 0;
 
   static styles = css`
     :host {
@@ -23,10 +24,30 @@ export class LoxonePanel extends LitElement {
       min-height: 100vh;
       box-sizing: border-box;
     }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
     h1 {
       font-size: 24px;
       font-weight: 400;
-      margin: 0 0 16px;
+      margin: 0;
+    }
+    .refresh-btn {
+      padding: 6px 14px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      transition: opacity 0.2s;
+    }
+    .refresh-btn:hover {
+      opacity: 0.75;
     }
     .tabs {
       display: flex;
@@ -52,23 +73,22 @@ export class LoxonePanel extends LitElement {
       color: var(--primary-color, #03a9f4);
       border-bottom-color: var(--primary-color, #03a9f4);
     }
-    .placeholder {
-      color: var(--secondary-text-color, #727272);
-      font-size: 14px;
-      padding: 24px;
-      background: var(--card-background-color, #fff);
-      border-radius: 12px;
-      box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.1));
-    }
   `;
 
   private _setTab(tab: TabId): void {
     this._activeTab = tab;
   }
 
+  private _refresh(): void {
+    this._refreshKey++;
+  }
+
   protected render() {
     return html`
-      <h1>Loxone</h1>
+      <div class="header">
+        <h1>Loxone</h1>
+        <button class="refresh-btn" @click=${this._refresh}>↻ Refresh</button>
+      </div>
       <div class="tabs">
         ${(["devices", "areas", "bridges", "status"] as TabId[]).map(
           (tab) => html`
@@ -86,15 +106,16 @@ export class LoxonePanel extends LitElement {
   }
 
   private _renderTab() {
+    const k = this._refreshKey;
     switch (this._activeTab) {
       case "devices":
-        return html`<devices-view .hass=${this.hass}></devices-view>`;
+        return html`<devices-view .hass=${this.hass} .refreshKey=${k}></devices-view>`;
       case "areas":
-        return html`<areas-view .hass=${this.hass}></areas-view>`;
+        return html`<areas-view .hass=${this.hass} .refreshKey=${k}></areas-view>`;
       case "bridges":
-        return html`<bridges-view .hass=${this.hass}></bridges-view>`;
+        return html`<bridges-view .hass=${this.hass} .refreshKey=${k}></bridges-view>`;
       case "status":
-        return html`<status-view .hass=${this.hass}></status-view>`;
+        return html`<status-view .hass=${this.hass} .refreshKey=${k}></status-view>`;
     }
   }
 }

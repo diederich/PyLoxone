@@ -6,6 +6,7 @@ import { fetchAreas, syncAreas, syncDeviceNames } from "./api";
 @customElement("areas-view")
 export class AreasView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ type: Number }) refreshKey = 0;
   @state() private _rooms: LoxoneRoom[] = [];
   @state() private _haAreas: HaArea[] = [];
   @state() private _loading = true;
@@ -106,6 +107,12 @@ export class AreasView extends LitElement {
   connectedCallback(): void {
     super.connectedCallback();
     this._load();
+  }
+
+  updated(changed: Map<string, unknown>): void {
+    if (changed.has("refreshKey") && changed.get("refreshKey") !== undefined) {
+      this._load();
+    }
   }
 
   private async _load(): Promise<void> {

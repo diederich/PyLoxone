@@ -6,6 +6,7 @@ import { fetchStatus } from "./api";
 @customElement("status-view")
 export class StatusView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ type: Number }) refreshKey = 0;
   @state() private _status: GetStatusResult | null = null;
   @state() private _loading = true;
   @state() private _error = "";
@@ -131,26 +132,18 @@ export class StatusView extends LitElement {
     .error {
       color: var(--error-color, #db4437);
     }
-    .refresh-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      background: var(--primary-color, #03a9f4);
-      color: #fff;
-      transition: opacity 0.2s;
-      margin-bottom: 16px;
-    }
-    .refresh-btn:hover {
-      opacity: 0.85;
-    }
+    
   `;
 
   connectedCallback(): void {
     super.connectedCallback();
     this._load();
+  }
+
+  updated(changed: Map<string, unknown>): void {
+    if (changed.has("refreshKey") && changed.get("refreshKey") !== undefined) {
+      this._load();
+    }
   }
 
   private async _load(): Promise<void> {
@@ -187,8 +180,6 @@ export class StatusView extends LitElement {
     const orphanCount = s.entities_without_state.length;
 
     return html`
-      <button class="refresh-btn" @click=${this._load}>↻ Refresh</button>
-
       <div class="grid">
         <div class="card">
           <h3 class="card-title">Connection</h3>

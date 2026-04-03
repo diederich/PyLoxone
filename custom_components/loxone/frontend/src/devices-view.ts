@@ -9,13 +9,13 @@ type SortDir = "asc" | "desc";
 @customElement("devices-view")
 export class DevicesView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
+  @property({ type: Number }) refreshKey = 0;
   @state() private _devices: LoxoneDevice[] = [];
   @state() private _filter = "";
   @state() private _loading = true;
   @state() private _error = "";
   @state() private _sortKey: SortKey = "room";
   @state() private _sortDir: SortDir = "asc";
-  @state() private _refreshing = false;
 
   static styles = css`
     :host {
@@ -38,32 +38,7 @@ export class DevicesView extends LitElement {
       background: var(--card-background-color, #fff);
       color: var(--primary-text-color, #212121);
     }
-    .refresh-btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-      background: var(--primary-color, #03a9f4);
-      color: #fff;
-      transition: opacity 0.2s;
-      white-space: nowrap;
-    }
-    .refresh-btn:hover {
-      opacity: 0.85;
-    }
-    .refresh-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    .refresh-btn .spin {
-      display: inline-block;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
+    
     table {
       width: 100%;
       border-collapse: collapse;
@@ -171,6 +146,12 @@ export class DevicesView extends LitElement {
     this._loadDevices();
   }
 
+  updated(changed: Map<string, unknown>): void {
+    if (changed.has("refreshKey") && changed.get("refreshKey") !== undefined) {
+      this._loadDevices();
+    }
+  }
+
   async _loadDevices(): Promise<void> {
     this._loading = true;
     this._error = "";
@@ -241,19 +222,6 @@ export class DevicesView extends LitElement {
     >`;
   }
 
-  private async _refresh(): Promise<void> {
-    this._refreshing = true;
-    this._error = "";
-    try {
-      const result = await fetchDevices(this.hass);
-      this._devices = result.devices;
-    } catch (err: unknown) {
-      this._error = err instanceof Error ? err.message : String(err);
-    } finally {
-      this._refreshing = false;
-    }
-  }
-
   private async _toggleEntity(
     entityId: string,
     currentlyDisabled: boolean,
@@ -302,15 +270,7 @@ export class DevicesView extends LitElement {
             this._filter = (e.target as HTMLInputElement).value;
           }}
         />
-        <button
-          class="refresh-btn"
-          ?disabled=${this._refreshing}
-          @click=${this._refresh}
-        >
-          ${this._refreshing
-            ? html`<span class="spin">↻</span> Refreshing…`
-            : "↻ Refresh"}
-        </button>
+        
       </div>
       <p class="summary">
         <span class="count">${this._devices.length}</span> controls,
