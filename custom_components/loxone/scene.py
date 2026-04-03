@@ -32,7 +32,7 @@ async def async_setup_entry(
     create_scene = config_entry.options.get(CONF_SCENE_GEN, False)
 
     if not create_scene:
-        return True
+        return
 
     coordinator: LoxoneCoordinator = config_entry.runtime_data
     entry_id = config_entry.entry_id
@@ -82,8 +82,6 @@ async def async_setup_entry(
             _LOGGER.warning("No scenes generated")
 
     hass.loop.call_later(delay_scene, lambda: hass.async_create_task(gen_scenes()))
-
-    return True
 
 
 class LoxoneLightScene(Scene):
