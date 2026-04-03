@@ -59,7 +59,8 @@
           "generate_scenes": "Generate scenes",
           "generate_lightcontroller_subcontrols": "Generate subcontrols for LightcontrollerV2",
           "generate_scenes_delay": "Delay for the scene generation if enabled",
-          "create_areas_on_setup": "Create HA areas from Loxone rooms"
+          "create_areas_on_setup": "Create HA areas from Loxone rooms",
+          "structure_poll_interval": "Structure change check interval (0 = disabled)"
         }
       },
       "bridge_menu": {

@@ -1,13 +1,16 @@
 import asyncio
 import enum
 import logging
+from datetime import timedelta
 
+import aiohttp
 import websockets
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
                                  CONF_USERNAME)
-from homeassistant.core import HomeAssistant
+from homeassistant.core import CALLBACK_TYPE, HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
+from homeassistant.helpers.event import async_track_time_interval
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 import homeassistant.helpers.issue_registry as ir
@@ -19,7 +22,7 @@ from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
                                       LoxoneOutOfServiceException,
                                       LoxoneTokenError)
 
-from .const import DOMAIN
+from .const import CONF_STRUCTURE_POLL_INTERVAL, DEFAULT_STRUCTURE_POLL_INTERVAL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,6 +62,8 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         self.listeners = []
         self._listening_task: asyncio.Task | None = None
         self._reconnect_task: asyncio.Task | None = None
+        self._structure_poll_unsub: CALLBACK_TYPE | None = None
+        self._structure_last_modified: str | None = None
         self._shutting_down = False
         self.connection_state = ConnectionState.DISCONNECTED
 
@@ -98,6 +103,9 @@ class LoxoneCoordinator(DataUpdateCoordinator):
             self.hass, self.api.structure_file, self.config_entry
         )
         await self.miniserver.async_update_device_registry()
+        self._structure_last_modified = self.api.structure_file.get(
+            "lastModified"
+        )
         self.connection_state = ConnectionState.CONNECTED
         self.last_update_success = True
 
@@ -266,11 +274,71 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         await self.api.send_secured__websocket_command(uuid, value, code)
 
     async def async_start_listening(self) -> None:
-        """Start the WebSocket listening task."""
+        """Start the WebSocket listening task and structure poll."""
         self._listening_task = asyncio.create_task(
             self.api.start_listening(callback=self._message_callback)
         )
         self._listening_task.add_done_callback(self._handle_task_result)
+        self._start_structure_poll()
+
+    def _start_structure_poll(self) -> None:
+        """Start periodic structure file change detection."""
+        if self._structure_poll_unsub is not None:
+            return
+        interval = self.config_entry.options.get(
+            CONF_STRUCTURE_POLL_INTERVAL, DEFAULT_STRUCTURE_POLL_INTERVAL
+        )
+        if interval <= 0:
+            _LOGGER.debug("Structure polling disabled (interval=%s)", interval)
+            return
+        self._structure_poll_unsub = async_track_time_interval(
+            self.hass,
+            self._async_poll_structure,
+            timedelta(seconds=interval),
+        )
+
+    async def _async_poll_structure(self, _now=None) -> None:
+        """Called periodically to check for structure changes."""
+        if self._shutting_down or self.connection_state != ConnectionState.CONNECTED:
+            return
+        try:
+            await self._check_structure_change()
+        except Exception:
+            _LOGGER.debug("Structure poll failed", exc_info=True)
+
+    async def _check_structure_change(self) -> None:
+        """Fetch the structure file's lastModified and reload if changed."""
+        session = async_get_clientsession(self.hass)
+        url = f"http://{self._host}:{self._port}/data/LoxAPP3.json"
+        try:
+            async with asyncio.timeout(15):
+                resp = await session.get(
+                    url,
+                    auth=aiohttp.BasicAuth(self._username, self._password),
+                )
+                if resp.status != 200:
+                    _LOGGER.debug("Structure poll got HTTP %s", resp.status)
+                    return
+                data = await resp.json(content_type=None)
+        except Exception as err:
+            _LOGGER.debug("Structure poll fetch failed: %s", err)
+            return
+
+        new_modified = data.get("lastModified")
+        if (
+            new_modified
+            and self._structure_last_modified
+            and new_modified != self._structure_last_modified
+        ):
+            _LOGGER.info(
+                "Miniserver structure changed (%s → %s), reloading integration",
+                self._structure_last_modified,
+                new_modified,
+            )
+            self._structure_last_modified = new_modified
+            await self.hass.config_entries.async_reload(
+                self.config_entry.entry_id
+            )
 
     async def async_save_token(self) -> None:
         """Persist the current token to the config entry."""
@@ -286,8 +354,12 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         )
 
     async def async_cleanup(self):
-        """Cancel listening/reconnect tasks, remove listeners, close connection."""
+        """Cancel listening/reconnect/poll tasks, remove listeners, close connection."""
         self._shutting_down = True
+
+        if self._structure_poll_unsub is not None:
+            self._structure_poll_unsub()
+            self._structure_poll_unsub = None
 
         if self._reconnect_task and not self._reconnect_task.done():
             self._reconnect_task.cancel()

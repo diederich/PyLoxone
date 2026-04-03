@@ -59,7 +59,8 @@
           "generate_scenes": "Szenen generieren",
           "generate_lightcontroller_subcontrols": "Subcontrols für LightcontrollerV2 erzeugen",
           "generate_scenes_delay": "Verzögerung beim Erstellen der Szenen (wenn aktiviert)",
-          "create_areas_on_setup": "HA-Bereiche aus Loxone-Räumen erstellen"
+          "create_areas_on_setup": "HA-Bereiche aus Loxone-Räumen erstellen",
+          "structure_poll_interval": "Prüfintervall für Strukturänderungen (0 = deaktiviert)"
         }
       },
       "bridge_menu": {

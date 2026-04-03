@@ -39,9 +39,11 @@ from .const import (
     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
     CONF_SCENE_GEN,
     CONF_SCENE_GEN_DELAY,
+    CONF_STRUCTURE_POLL_INTERVAL,
     DEFAULT_DELAY_SCENE,
     DEFAULT_IP,
     DEFAULT_PORT,
+    DEFAULT_STRUCTURE_POLL_INTERVAL,
     DOMAIN,
 )
 
@@ -326,6 +328,14 @@ SETTINGS_SCHEMA = vol.Schema(
         ),
         vol.Required(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN): BooleanSelector(),
         vol.Required(CONF_CREATE_AREAS): BooleanSelector(),
+        vol.Optional(
+            CONF_STRUCTURE_POLL_INTERVAL,
+            default=DEFAULT_STRUCTURE_POLL_INTERVAL,
+        ): NumberSelector(
+            NumberSelectorConfig(
+                mode=NumberSelectorMode.BOX, min=0, max=3600, unit_of_measurement="s"
+            )
+        ),
     }
 )
 
@@ -376,6 +386,10 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
             if CONF_PORT in user_input:
                 user_input[CONF_PORT] = int(user_input[CONF_PORT])
+            if CONF_STRUCTURE_POLL_INTERVAL in user_input:
+                user_input[CONF_STRUCTURE_POLL_INTERVAL] = int(
+                    user_input[CONF_STRUCTURE_POLL_INTERVAL]
+                )
             if CONF_SCENE_GEN_DELAY in user_input:
                 user_input[CONF_SCENE_GEN_DELAY] = int(
                     user_input[CONF_SCENE_GEN_DELAY]

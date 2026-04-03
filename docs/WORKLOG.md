@@ -4,6 +4,30 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 5b: Structure hash polling
+
+### Decisions
+
+- Detect Miniserver structure changes by periodically fetching `LoxAPP3.json` and comparing the `lastModified` timestamp. On change, trigger `async_reload` for a clean entity re-setup.
+- Used HA's `async_track_time_interval` instead of a raw asyncio loop — idiomatic, properly tracked, doesn't block `async_block_till_done()` in tests.
+- Poll interval is configurable via the options flow (default 300s / 5 minutes, 0 = disabled). Stored as `structure_poll_interval`.
+- Errors during polling are silently logged at DEBUG — the integration stays healthy even when the check fails.
+
+### Changes
+
+- **`coordinator.py`:** Added `_start_structure_poll` using `async_track_time_interval`, `_async_poll_structure` callback, and `_check_structure_change` that fetches the structure file via HTTP and compares `lastModified`. Unsubscribes on cleanup. Stores `_structure_last_modified` on initial connect.
+- **`const.py`:** Added `CONF_STRUCTURE_POLL_INTERVAL` and `DEFAULT_STRUCTURE_POLL_INTERVAL`.
+- **`config_flow.py`:** Added structure poll interval to the settings schema with NumberSelector (0–3600s, box mode).
+- **`translations/en.json`, `translations/de.json`:** Added label for `structure_poll_interval`.
+- **`tests/test_structure_poll.py`:** New — 4 tests covering change detection, no-change, HTTP error resilience, and skip-when-disconnected.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 358 passed, 3 warnings.
+- Deploy and verify new option appears in settings. Modify a control in Loxone Config and observe auto-reload within 5 minutes.
+
+---
+
 ## 2026-04-03 — Phase 5: Redacted diagnostics + repair issues
 
 ### Decisions

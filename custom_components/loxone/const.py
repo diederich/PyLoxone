@@ -54,6 +54,8 @@ CONF_SCENE_GEN = "generate_scenes"
 CONF_SCENE_GEN_DELAY = "generate_scenes_delay"
 CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN = "generate_lightcontroller_subcontrols"
 CONF_CREATE_AREAS = "create_areas_on_setup"
+CONF_STRUCTURE_POLL_INTERVAL = "structure_poll_interval"
+DEFAULT_STRUCTURE_POLL_INTERVAL = 300
 DEFAULT_FORCE_UPDATE = False
 
 SUPPORT_SUN_AUTOMATION = 1024
