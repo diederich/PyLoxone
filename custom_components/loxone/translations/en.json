@@ -100,6 +100,10 @@
     "persistent_disconnect": {
       "title": "Cannot reach Loxone Miniserver",
       "description": "Multiple reconnection attempts to **{host}** have failed. Check that the Miniserver is powered on, reachable on the network, and not in maintenance mode. The integration will keep retrying in the background."
+    },
+    "meter_unit_mismatch": {
+      "title": "Meter unit mismatch: {name}",
+      "description": "The **{name}** meter is configured as type **{meter_type}** in Loxone Config, but its **{state_key}** format string resolved to device class **{detected_class}**. This may cause incorrect readings in the Energy dashboard. Check the format string in Loxone Config to ensure it matches the meter type."
     }
   },
   "services": {

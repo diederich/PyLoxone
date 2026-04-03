@@ -354,3 +354,51 @@ async def test_meter_fallback_classification_from_type(
     assert total is not None
     assert total.attributes.get("device_class") == SensorDeviceClass.ENERGY
     assert total.attributes.get("state_class") == SensorStateClass.TOTAL_INCREASING
+
+
+async def test_meter_unit_mismatch_creates_repair(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """A repair issue is created when the format-string unit contradicts the meter type."""
+    from homeassistant.helpers import issue_registry as ir
+
+    fixture = json.loads((FIXTURE_DIR / "structure_sensors.json").read_text())
+    # Energy meter with a temperature format → device_class will resolve to
+    # TEMPERATURE, which conflicts with the declared meter type "energy".
+    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"][
+        "totalFormat"
+    ] = "%.1f °C"
+    mock_loxone_connection.structure_file = fixture
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    issues = ir.async_get(hass)
+    issue = issues.async_get_issue(
+        DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total"
+    )
+    assert issue is not None
+    assert issue.severity == ir.IssueSeverity.WARNING
+    assert issue.translation_key == "meter_unit_mismatch"
+
+
+async def test_meter_matching_unit_no_repair(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """No repair issue when format-string unit matches the meter type."""
+    from homeassistant.helpers import issue_registry as ir
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    issues = ir.async_get(hass)
+    issue = issues.async_get_issue(
+        DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total"
+    )
+    assert issue is None

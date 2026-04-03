@@ -29,6 +29,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+import homeassistant.helpers.issue_registry as ir
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.util import dt as dt_util
 
@@ -176,6 +177,13 @@ _METER_CLASSIFICATION: dict[
         "total": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
         "totalNeg": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
     },
+}
+
+# Expected device classes per meter type — used to detect format/type mismatches.
+_METER_EXPECTED_CLASSES: dict[str, set[SensorDeviceClass]] = {
+    "energy": {SensorDeviceClass.ENERGY, SensorDeviceClass.POWER},
+    "water": {SensorDeviceClass.WATER, SensorDeviceClass.VOLUME_FLOW_RATE},
+    "gas": {SensorDeviceClass.GAS},
 }
 
 
@@ -354,7 +362,40 @@ async def async_setup_entry(
                     "config_entry": config_entry,
                     "coordinator": coordinator,
                 }
-                entities.append(LoxoneMeterSensor(**subsensor))
+                meter_entity = LoxoneMeterSensor(**subsensor)
+                entities.append(meter_entity)
+
+                # Warn if the unit resolved from the format string contradicts
+                # the meter's declared type (e.g. "energy" meter formatted as "L").
+                if meter_type in _METER_EXPECTED_CLASSES:
+                    resolved_cls = meter_entity.device_class
+                    expected = _METER_EXPECTED_CLASSES[meter_type]
+                    if resolved_cls and resolved_cls not in expected:
+                        _LOGGER.warning(
+                            "Meter %s (%s/%s): device_class %s from format "
+                            "string conflicts with meter type '%s' "
+                            "(expected %s). Check Loxone Config.",
+                            sensor["name"],
+                            state_key,
+                            sensor["uuidAction"],
+                            resolved_cls,
+                            meter_type,
+                            expected,
+                        )
+                        ir.async_create_issue(
+                            hass,
+                            DOMAIN,
+                            f"meter_unit_mismatch_{sensor['uuidAction']}_{state_key}",
+                            is_fixable=False,
+                            severity=ir.IssueSeverity.WARNING,
+                            translation_key="meter_unit_mismatch",
+                            translation_placeholders={
+                                "name": sensor["name"],
+                                "state_key": suffix,
+                                "meter_type": meter_type,
+                                "detected_class": str(resolved_cls),
+                            },
+                        )
 
     if miniserver:
         @callback
