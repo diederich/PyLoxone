@@ -476,8 +476,9 @@ class LoxoneConnection:
         callback: Callable[[Any], Awaitable[None] | None] | None = None,
     ) -> None:
         if not self.connection:
-            _LOGGER.debug("No existing connection found. Opening a new connection.")
-            self.connection = await self.open()
+            raise RuntimeError(
+                "No existing connection — call open(session) before start_listening()"
+            )
         else:
             _LOGGER.debug("Using existing connection.")
 

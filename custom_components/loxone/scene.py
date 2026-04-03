@@ -88,6 +88,8 @@ async def async_setup_entry(
 class LoxoneLightScene(Scene):
     """Representation of a Loxone light scene."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, name, mood_id, uuid, light_controller_id, entry_id, miniserver_serial=None):
         self._attr_name = name
         self.mood_id = mood_id
