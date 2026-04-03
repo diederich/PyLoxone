@@ -4,6 +4,33 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 3: Complete has_entity_name migration
+
+### Decisions
+
+- Migrated all structure-file entity classes to `has_entity_name=True`, separating device name from entity name.
+- Legacy YAML entities (`LoxoneCustomSensor`, `LoxoneCustomBinarySensor`) intentionally excluded — they're a deprecated configuration path with no device to separate from.
+- Light entities under a LightControllerV2 use the channel name as `_attr_name` (suffix) and the controller name as `DeviceInfo.name`. Standalone lights use `_attr_name = None`.
+- Meter subsensors use `name_suffix` kwarg for the entity suffix (e.g. "Actual", "Total") while the device name stays the meter control name.
+- Removed the old `{room} Climate` name override in `LoxoneRoomController` — the room is already conveyed via `suggested_area` in `DeviceInfo`.
+
+### Changes
+
+- **cover.py:** `LoxoneGate`, `LoxoneWindow`, `LoxoneJalousie` — `_attr_has_entity_name = True`, `_attr_name = None`.
+- **climate.py:** `LoxoneRoomController`, `LoxoneRoomControllerV2`, `LoxoneAcControl` — same pattern.
+- **fan.py:** `LoxoneVentilation` — same pattern.
+- **sensor.py:** `LoxoneTextSensor`, `LoxoneSensor` — same pattern. `LoxoneMeterSensor` — `_attr_name` set from `name_suffix` kwarg.
+- **binary_sensor.py:** `LoxoneDigitalSensor` — same pattern. `LoxoneCustomBinarySensor` — removed redundant `_name` field and `name` property override.
+- **lights/lightcontroller.py:** `LoxoneLightControllerV2` — `_attr_name = None`.
+- **lights/switch.py, dimmer.py, colorpickers.py:** Dual-mode: under controller → `_attr_name = channel name`, `DeviceInfo.name = controller name`; standalone → `_attr_name = None`, `DeviceInfo` from base.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 348 passed, 3 warnings.
+- Deploy to HA and verify entity naming in UI.
+
+---
+
 ## 2026-04-03 — Remove _DispatchEvent shim, pass raw dict to event_handler
 
 ### Decisions

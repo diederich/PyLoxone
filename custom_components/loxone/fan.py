@@ -132,9 +132,12 @@ async def async_setup_entry(
 class LoxoneVentilation(LoxoneEntity, FanEntity):
     """Representation of a ventilation Loxone device."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs) -> None:
         """Initialize the fan."""
         super().__init__(**kwargs)
+        self._attr_name = None
 
         self._device_class = None
         self._state = STATE_UNKNOWN

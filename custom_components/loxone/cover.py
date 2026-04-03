@@ -92,8 +92,11 @@ async def async_setup_entry(
 class LoxoneGate(LoxoneEntity, CoverEntity):
     """Loxone Gate"""
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
         self._position_uuid = kwargs["states"]["position"]
         self._state_uuid = kwargs["states"]["active"]
@@ -210,9 +213,12 @@ class LoxoneGate(LoxoneEntity, CoverEntity):
 
 
 class LoxoneWindow(LoxoneEntity, CoverEntity):
-    # pylint: disable=no-self-use
+
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
         self._position = None
         self._closed = True
@@ -306,9 +312,11 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
 class LoxoneJalousie(LoxoneEntity, CoverEntity):
     """Loxone Jalousie"""
 
-    # pylint: disable=no-self-use
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
 
         if "autoInfoText" not in self.states:

@@ -300,7 +300,7 @@ async def async_setup_entry(
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
         device_info = LoxoneMeterSensor.create_DeviceInfo_from_sensor(sensor)
 
-        for state_key, name_suffix, format_key in [
+        for state_key, suffix, format_key in [
             ("actual", "Actual", "actualFormat"),
             ("total", "Total", "totalFormat"),
             ("totalNeg", "Total Neg", "totalFormat"),
@@ -314,7 +314,8 @@ async def async_setup_entry(
                     "type": "analog",
                     "room": sensor.get("room", ""),
                     "cat": sensor.get("cat", ""),
-                    "name": f"{sensor['name']} {name_suffix}",
+                    "name": sensor["name"],
+                    "name_suffix": suffix,
                     "details": {"format": sensor["details"][format_key]},
                     "async_add_devices": async_add_entities,
                     "config_entry": config_entry,
@@ -448,8 +449,11 @@ class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
 class LoxoneTextSensor(LoxoneEntity, SensorEntity):
     """Representation of a Text Sensor."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self._state = STATE_UNKNOWN
 
     async def event_handler(self, e):
@@ -486,8 +490,11 @@ class LoxoneTextSensor(LoxoneEntity, SensorEntity):
 class LoxoneSensor(LoxoneEntity, SensorEntity):
     """Representation of a Loxone Sensor."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self._format = self._get_format(self.details["format"])
         self._attr_should_poll = False
         self._attr_native_unit_of_measurement = self._clean_unit(self.details["format"])
@@ -547,10 +554,13 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
 
 class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
     def __init__(self, **kwargs):
+        name_suffix = kwargs.pop("name_suffix", None)
         super().__init__(**kwargs)
         device_info = kwargs.get("device_info", None)
         if device_info:
             self._attr_device_info = device_info
+        if name_suffix:
+            self._attr_name = name_suffix
 
     @staticmethod
     def create_DeviceInfo_from_sensor(sensor) -> DeviceInfo:

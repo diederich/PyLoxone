@@ -15,12 +15,14 @@ from ..helpers import hass_to_lox, lox2hass_mapped, lox_to_hass
 class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
     """Representation of a Light Controller V2."""
 
+    _attr_has_entity_name = True
     _attr_supported_features = LightEntityFeature.EFFECT
     _attr_color_mode = ColorMode.ONOFF
     _attr_supported_color_modes = {ColorMode.ONOFF}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self._state = STATE_UNKNOWN
         self._active_moods = []
         self._moodlist = []

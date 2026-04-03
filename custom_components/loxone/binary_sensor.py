@@ -112,8 +112,11 @@ async def async_setup_entry(
 class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
     """Representation of a binary Loxone device."""
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self._from_loxone_config = False
 
         if (
@@ -209,7 +212,6 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
 class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self._name = kwargs["name"]
         self._state = STATE_UNKNOWN
         self._on_state = STATE_ON
         self._off_state = STATE_OFF
@@ -242,11 +244,6 @@ class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
             else:
                 self._state = self._off_state
             self.async_schedule_update_ha_state()
-
-    @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._name
 
 
 class LoxoneConnectivitySensor(CoordinatorEntity[LoxoneCoordinator], BinarySensorEntity):

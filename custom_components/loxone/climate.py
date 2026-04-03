@@ -100,12 +100,11 @@ async def async_setup_entry(
 class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
     """Loxone room controller (legacy, non-V2)"""
 
-    def __init__(self, **kwargs):
-        # Add room name to entity name for better identification in HomeKit
-        if "room" in kwargs and kwargs["room"]:
-            kwargs["name"] = f"{kwargs['room']} Climate"
+    _attr_has_entity_name = True
 
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
         self._autoMode = kwargs[CONF_HVAC_AUTO_MODE]
         self._stateAttribUuids = kwargs["states"]
@@ -301,6 +300,7 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
 class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
     """Loxone room controller"""
 
+    _attr_has_entity_name = True
     _attr_supported_features = (
         ClimateEntityFeature.PRESET_MODE
         | ClimateEntityFeature.TARGET_TEMPERATURE
@@ -310,6 +310,7 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
         self._autoMode = kwargs[CONF_HVAC_AUTO_MODE]
         self._stateAttribUuids = kwargs["states"]
@@ -505,9 +506,12 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         | ClimateEntityFeature.TURN_ON
     )
 
+    _attr_has_entity_name = True
+
     def __init__(self, **kwargs):
         _LOGGER.debug(f"Input AcControl: {kwargs}")
         super().__init__(**kwargs)
+        self._attr_name = None
         self.hass = kwargs["hass"]
 
         self._stateAttribUuids = kwargs["states"]

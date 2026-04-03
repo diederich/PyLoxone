@@ -13,12 +13,12 @@ from ..helpers import hass_to_lox, lox2hass_mapped, lox_to_hass
 class LoxoneDimmer(LoxoneEntity, LightEntity):
     """Representation of a Loxone Dimmer."""
 
+    _attr_has_entity_name = True
     _attr_color_mode = ColorMode.BRIGHTNESS
     _attr_supported_color_modes = {ColorMode.BRIGHTNESS}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        """Initialize the dimmer ."""
         self._attr_is_on = STATE_UNKNOWN
         self._attr_unique_id = self.uuidAction
         self._position = 0.0
@@ -33,14 +33,12 @@ class LoxoneDimmer(LoxoneEntity, LightEntity):
         self._light_controller_id = kwargs.get("lightcontroller_id", None)
         self._light_controller_name = kwargs.get("lightcontroller_name", None)
 
-        self._name = self._attr_name
-        if self._light_controller_name:
-            self._attr_name = f"{self._light_controller_name}-{self._attr_name}"
-
         if self._light_controller_id:
             self.type = "LightControllerV2"
+            self._attr_name = self._loxone_name
         else:
             self.type = "Dimmer"
+            self._attr_name = None
 
         state_attributes = {
             "device_type": self.type,
@@ -55,7 +53,7 @@ class LoxoneDimmer(LoxoneEntity, LightEntity):
         if self._light_controller_id:
             info = DeviceInfo(
                 identifiers={(DOMAIN, self._light_controller_id)},
-                name=self._attr_name,
+                name=self._light_controller_name,
                 manufacturer="Loxone",
                 model=self.type,
                 suggested_area=getattr(self, "room", None),

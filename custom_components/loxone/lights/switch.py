@@ -12,6 +12,7 @@ from ..const import DOMAIN, SENDDOMAIN
 class LoxoneLightSwitch(LoxoneEntity, LightEntity):
     """Representation of a light switch."""
 
+    _attr_has_entity_name = True
     _attr_color_mode = ColorMode.ONOFF
     _attr_supported_color_modes = {ColorMode.ONOFF}
 
@@ -23,14 +24,12 @@ class LoxoneLightSwitch(LoxoneEntity, LightEntity):
         self._light_controller_id = kwargs.get("lightcontroller_id", None)
         self._light_controller_name = kwargs.get("lightcontroller_name", None)
 
-        self._name = self._attr_name
-        if self._light_controller_name:
-            self._attr_name = f"{self._light_controller_name}-{self._attr_name}"
-
         if self._light_controller_id:
             self.type = "LightControllerV2"
+            self._attr_name = self._loxone_name
         else:
             self.type = "Light"
+            self._attr_name = None
 
         state_attributes = {
             "device_type": self.type,
@@ -45,7 +44,7 @@ class LoxoneLightSwitch(LoxoneEntity, LightEntity):
         if self._light_controller_id:
             info = DeviceInfo(
                 identifiers={(DOMAIN, self._light_controller_id)},
-                name=self._attr_name,
+                name=self._light_controller_name,
                 manufacturer="Loxone",
                 model=self.type,
                 suggested_area=getattr(self, "room", None),
