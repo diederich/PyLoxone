@@ -181,9 +181,8 @@ export class DevicesView extends LitElement {
   }
 
   private _sortDevices(devices: LoxoneDevice[]): LoxoneDevice[] {
-    const sorted = [...devices];
     const dir = this._sortDir === "asc" ? 1 : -1;
-    sorted.sort((a, b) => {
+    const cmpFn = (a: LoxoneDevice, b: LoxoneDevice): number => {
       let cmp = 0;
       switch (this._sortKey) {
         case "name":
@@ -202,8 +201,38 @@ export class DevicesView extends LitElement {
           break;
       }
       return cmp * dir;
-    });
-    return sorted;
+    };
+
+    const parentUuids = new Set(
+      devices.filter((d) => !d.parent).map((d) => d.uuid),
+    );
+    const childrenByParent = new Map<string, LoxoneDevice[]>();
+    const topLevel: LoxoneDevice[] = [];
+
+    for (const d of devices) {
+      if (d.parent && parentUuids.has(d.parent)) {
+        const siblings = childrenByParent.get(d.parent) || [];
+        siblings.push(d);
+        childrenByParent.set(d.parent, siblings);
+      } else {
+        topLevel.push(d);
+      }
+    }
+
+    topLevel.sort(cmpFn);
+    for (const children of childrenByParent.values()) {
+      children.sort(cmpFn);
+    }
+
+    const result: LoxoneDevice[] = [];
+    for (const d of topLevel) {
+      result.push(d);
+      const children = childrenByParent.get(d.uuid);
+      if (children) {
+        result.push(...children);
+      }
+    }
+    return result;
   }
 
   private _toggleSort(key: SortKey): void {
@@ -243,6 +272,7 @@ export class DevicesView extends LitElement {
     }
 
     const devices = this._filteredDevices;
+    const visibleUuids = new Set(devices.map((d) => d.uuid));
 
     const domainCounts = new Map<string, number>();
     for (const d of this._devices) {
@@ -311,7 +341,7 @@ export class DevicesView extends LitElement {
         <tbody>
           ${devices.map(
             (d) => html`
-              <tr class=${d.parent ? "sub-control" : ""}>
+              <tr class=${d.parent && visibleUuids.has(d.parent) ? "sub-control" : ""}>
                 <td>${d.name}</td>
                 <td><span class="badge">${d.type}</span></td>
                 <td>${d.room || "—"}</td>
