@@ -4,6 +4,31 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Panel: structure diff in status view
+
+### Decisions
+
+- Structure diff is computed in the coordinator before triggering a config entry reload. The diff (added/removed/changed controls) is stored in `hass.data` keyed by entry_id so it survives the reload (which creates a new coordinator instance).
+- On initial connect, a baseline snapshot of controls is stored. The first structure change produces a meaningful diff; before that, "No changes detected" is shown.
+- The diff is displayed in the Status tab of the Loxone panel, below the diagnostics section. Shows added (+), removed (−), and changed (~) controls with names, types, and rooms.
+
+### Changes
+
+- **`coordinator.py`:** Added `STRUCTURE_DIFF_KEY`, `_snapshot_controls()` (called on connect), `_compute_structure_diff()` (called before reload). Diff stored in `hass.data`.
+- **`websocket.py`:** Added `ws_get_structure_diff` handler, registered in `register_panel`.
+- **`types.ts`:** Added `StructureDiffEntry`, `StructureChangedEntry`, `GetStructureDiffResult` interfaces.
+- **`api.ts`:** Added `fetchStructureDiff` function.
+- **`status-view.ts`:** Added `_renderStructureDiff()` method, fetches diff alongside status, renders added/removed/changed controls.
+- **`loxone-panel.js`:** Rebuilt.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 363 passed, 3 warnings.
+- Deploy, open Status tab — verify "No changes detected" on fresh load.
+- Modify a control in Loxone Config, wait for structure poll, verify diff appears.
+
+---
+
 ## 2026-04-03 — Panel: live monitor + command console
 
 ### Decisions

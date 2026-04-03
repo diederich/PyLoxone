@@ -25,6 +25,8 @@ from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
 
 from .const import CONF_STRUCTURE_POLL_INTERVAL, DEFAULT_STRUCTURE_POLL_INTERVAL, DOMAIN
 
+STRUCTURE_DIFF_KEY = f"{DOMAIN}_structure_diff"
+
 _LOGGER = logging.getLogger(__name__)
 
 _RECONNECT_MIN_DELAY = 1.0
@@ -107,6 +109,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         self._structure_last_modified = self.api.structure_file.get(
             "lastModified"
         )
+        self._snapshot_controls()
         self.connection_state = ConnectionState.CONNECTED
         self.last_update_success = True
 
@@ -359,10 +362,89 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 self._structure_last_modified,
                 new_modified,
             )
+            self._compute_structure_diff()
             self._structure_last_modified = new_modified
             await self.hass.config_entries.async_reload(
                 self.config_entry.entry_id
             )
+
+    def _snapshot_controls(self) -> None:
+        """Store a baseline of current controls for future diff comparisons."""
+        structure = self.api.structure_file or {}
+        controls = structure.get("controls", {})
+        rooms = structure.get("rooms", {})
+
+        summary = {}
+        for uuid, ctrl in controls.items():
+            room_uuid = ctrl.get("room", "")
+            room_name = rooms.get(room_uuid, {}).get("name", "") if room_uuid else ""
+            summary[uuid] = {
+                "name": ctrl.get("name", ""),
+                "type": ctrl.get("type", ""),
+                "room": room_name,
+            }
+
+        diffs = self.hass.data.setdefault(STRUCTURE_DIFF_KEY, {})
+        existing = diffs.get(self.config_entry.entry_id)
+        if existing is None:
+            diffs[self.config_entry.entry_id] = {
+                "timestamp": None,
+                "new_controls": summary,
+                "added": {},
+                "removed": {},
+                "changed": {},
+            }
+        else:
+            existing["new_controls"] = summary
+
+    def _compute_structure_diff(self) -> None:
+        """Snapshot current controls and compute diff against previous snapshot.
+
+        Stores the result in ``hass.data[STRUCTURE_DIFF_KEY][entry_id]`` so it
+        survives the config entry reload (which creates a new coordinator).
+        """
+        from homeassistant.util import dt as dt_util
+
+        if self.api is None:
+            return
+
+        old_structure = self.api.structure_file or {}
+        old_controls = old_structure.get("controls", {})
+        old_rooms = old_structure.get("rooms", {})
+
+        old_summary = {}
+        for uuid, ctrl in old_controls.items():
+            room_uuid = ctrl.get("room", "")
+            room_name = old_rooms.get(room_uuid, {}).get("name", "") if room_uuid else ""
+            old_summary[uuid] = {
+                "name": ctrl.get("name", ""),
+                "type": ctrl.get("type", ""),
+                "room": room_name,
+            }
+
+        prev_diffs = self.hass.data.setdefault(STRUCTURE_DIFF_KEY, {})
+        prev = prev_diffs.get(self.config_entry.entry_id)
+        prev_summary = prev.get("new_controls", {}) if prev else {}
+
+        if prev_summary:
+            added = {k: old_summary[k] for k in old_summary if k not in prev_summary}
+            removed = {k: prev_summary[k] for k in prev_summary if k not in old_summary}
+            changed = {}
+            for k in old_summary:
+                if k in prev_summary and old_summary[k] != prev_summary[k]:
+                    changed[k] = {"old": prev_summary[k], "new": old_summary[k]}
+        else:
+            added = {}
+            removed = {}
+            changed = {}
+
+        prev_diffs[self.config_entry.entry_id] = {
+            "timestamp": dt_util.utcnow().isoformat(),
+            "new_controls": old_summary,
+            "added": added,
+            "removed": removed,
+            "changed": changed,
+        }
 
     async def async_save_token(self) -> None:
         """Persist the current token to the config entry."""

@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant, GetStatusResult } from "./types";
-import { fetchStatus } from "./api";
+import type { HomeAssistant, GetStatusResult, GetStructureDiffResult } from "./types";
+import { fetchStatus, fetchStructureDiff } from "./api";
 
 @customElement("status-view")
 export class StatusView extends LitElement {
@@ -9,6 +9,7 @@ export class StatusView extends LitElement {
   @property({ type: Number }) refreshKey = 0;
   @property({ type: String }) miniserverId?: string;
   @state() private _status: GetStatusResult | null = null;
+  @state() private _diff: GetStructureDiffResult | null = null;
   @state() private _loading = true;
   @state() private _error = "";
 
@@ -151,7 +152,12 @@ export class StatusView extends LitElement {
     this._loading = true;
     this._error = "";
     try {
-      this._status = await fetchStatus(this.hass, this.miniserverId);
+      const [status, diff] = await Promise.all([
+        fetchStatus(this.hass, this.miniserverId),
+        fetchStructureDiff(this.hass, this.miniserverId).catch(() => null),
+      ]);
+      this._status = status;
+      this._diff = diff;
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);
     } finally {
@@ -303,6 +309,89 @@ export class StatusView extends LitElement {
             </div>
           </div>
         </div>
+      </div>
+
+      ${this._renderStructureDiff()}
+    `;
+  }
+
+  private _renderStructureDiff() {
+    const d = this._diff;
+    if (!d || !d.has_diff) {
+      return html`
+        <h3 class="diagnostics-title" style="margin-top:24px">Structure Changes</h3>
+        <div class="diag-card">
+          <div class="diag-item">
+            <span class="diag-icon diag-ok">✓</span>
+            <div>
+              <div class="diag-label">No changes detected</div>
+              <div class="diag-detail">
+                Structure has not changed since the integration was loaded
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    const total = d.added.length + d.removed.length + d.changed.length;
+    const ts = d.timestamp
+      ? new Date(d.timestamp).toLocaleString(this.hass.language || "en")
+      : "Unknown";
+
+    return html`
+      <h3 class="diagnostics-title" style="margin-top:24px">
+        Structure Changes
+        <span style="font-weight:400;font-size:12px;color:var(--secondary-text-color)">
+          — ${total} change${total !== 1 ? "s" : ""} at ${ts}
+        </span>
+      </h3>
+      <div class="diag-card">
+        ${d.added.length > 0
+          ? html`
+              <div class="diag-item">
+                <span class="diag-icon" style="color:var(--success-color,#4caf50)">+</span>
+                <div>
+                  <div class="diag-label">Added (${d.added.length})</div>
+                  <div class="diag-detail">
+                    ${d.added.map(
+                      (a) => html`<div>${a.name} <span style="opacity:0.6">(${a.type})</span> — ${a.room || "no room"}</div>`,
+                    )}
+                  </div>
+                </div>
+              </div>
+            `
+          : ""}
+        ${d.removed.length > 0
+          ? html`
+              <div class="diag-item">
+                <span class="diag-icon" style="color:var(--error-color,#db4437)">−</span>
+                <div>
+                  <div class="diag-label">Removed (${d.removed.length})</div>
+                  <div class="diag-detail">
+                    ${d.removed.map(
+                      (r) => html`<div>${r.name} <span style="opacity:0.6">(${r.type})</span> — ${r.room || "no room"}</div>`,
+                    )}
+                  </div>
+                </div>
+              </div>
+            `
+          : ""}
+        ${d.changed.length > 0
+          ? html`
+              <div class="diag-item">
+                <span class="diag-icon" style="color:var(--warning-color,#ff9800)">~</span>
+                <div>
+                  <div class="diag-label">Changed (${d.changed.length})</div>
+                  <div class="diag-detail">
+                    ${d.changed.map(
+                      (c) => html`<div>${c.old.name} → ${c.new.name} <span style="opacity:0.6">(${c.new.type})</span></div>`,
+                    )}
+                  </div>
+                </div>
+              </div>
+            `
+          : ""}
       </div>
     `;
   }

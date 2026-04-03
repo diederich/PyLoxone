@@ -77,6 +77,7 @@ async def register_panel(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_get_status)
     websocket_api.async_register_command(hass, ws_subscribe_events)
     websocket_api.async_register_command(hass, ws_send_command)
+    websocket_api.async_register_command(hass, ws_get_structure_diff)
 
     if DOMAIN not in hass.data.get("frontend_panels", {}):
         from homeassistant.setup import async_setup_component
@@ -673,3 +674,58 @@ async def ws_send_command(
         connection.send_result(msg["id"], {"sent": True, "uuid": msg["uuid"], "command": msg["command"]})
     except Exception as exc:
         connection.send_error(msg["id"], "command_failed", str(exc))
+
+
+# -- loxone/get_structure_diff -----------------------------------------------
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_structure_diff",
+        vol.Optional("miniserver"): str,
+    }
+)
+@callback
+def ws_get_structure_diff(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the last structure diff for the given Miniserver."""
+    from .coordinator import STRUCTURE_DIFF_KEY
+
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
+    if coordinator is None:
+        connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
+        return
+
+    diffs = hass.data.get(STRUCTURE_DIFF_KEY, {})
+    diff = diffs.get(coordinator.config_entry.entry_id)
+
+    if diff is None or diff.get("timestamp") is None:
+        connection.send_result(msg["id"], {
+            "has_diff": False,
+            "timestamp": None,
+            "added": [],
+            "removed": [],
+            "changed": [],
+        })
+        return
+
+    def _to_list(d: dict) -> list:
+        return [{"uuid": k, **v} for k, v in d.items()]
+
+    def _changed_to_list(d: dict) -> list:
+        return [
+            {"uuid": k, "old": v["old"], "new": v["new"]}
+            for k, v in d.items()
+        ]
+
+    connection.send_result(msg["id"], {
+        "has_diff": True,
+        "timestamp": diff["timestamp"],
+        "added": _to_list(diff.get("added", {})),
+        "removed": _to_list(diff.get("removed", {})),
+        "changed": _changed_to_list(diff.get("changed", {})),
+    })

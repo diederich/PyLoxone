@@ -116,6 +116,27 @@ export interface SendCommandResult {
   command: string;
 }
 
+export interface StructureDiffEntry {
+  uuid: string;
+  name: string;
+  type: string;
+  room: string;
+}
+
+export interface StructureChangedEntry {
+  uuid: string;
+  old: { name: string; type: string; room: string };
+  new: { name: string; type: string; room: string };
+}
+
+export interface GetStructureDiffResult {
+  has_diff: boolean;
+  timestamp: string | null;
+  added: StructureDiffEntry[];
+  removed: StructureDiffEntry[];
+  changed: StructureChangedEntry[];
+}
+
 export interface GetStatusResult {
   connection_state: string;
   host: string;

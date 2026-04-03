@@ -4,6 +4,7 @@ import type {
   GetBridgesResult,
   GetDevicesResult,
   GetStatusResult,
+  GetStructureDiffResult,
   HomeAssistant,
   ListEntriesResult,
   RemoveBridgeResult,
@@ -104,6 +105,16 @@ export async function fetchStatus(
 ): Promise<GetStatusResult> {
   return hass.callWS<GetStatusResult>({
     type: "loxone/get_status",
+    ...(miniserverId ? { miniserver: miniserverId } : {}),
+  });
+}
+
+export async function fetchStructureDiff(
+  hass: HomeAssistant,
+  miniserverId?: string,
+): Promise<GetStructureDiffResult> {
+  return hass.callWS<GetStructureDiffResult>({
+    type: "loxone/get_structure_diff",
     ...(miniserverId ? { miniserver: miniserverId } : {}),
   });
 }
