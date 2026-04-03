@@ -260,7 +260,7 @@ class LoxoneMiniserverInfoSensor(LoxoneEntity, SensorEntity):
     ) -> None:
         super().__init__()
         self._serial = miniserver.serial
-        self._attr_name = description.name
+        self._attr_translation_key = description.key
         self._attr_icon = description.icon
         self._attr_unique_id = f"{miniserver.serial}_{description.key}"
         self._attr_native_value = description.value_fn(miniserver)
@@ -333,11 +333,11 @@ async def async_setup_entry(
         device_info = LoxoneMeterSensor.create_DeviceInfo_from_sensor(sensor)
         meter_type = sensor.get("details", {}).get("type", "").lower()
 
-        for state_key, suffix, format_key in [
-            ("actual", "Actual", "actualFormat"),
-            ("total", "Total", "totalFormat"),
-            ("totalNeg", "Total Returned", "totalFormat"),
-            ("storage", "Level", "storageFormat"),
+        for state_key, suffix, translation_key, format_key in [
+            ("actual", "Actual", "meter_actual", "actualFormat"),
+            ("total", "Total", "meter_total", "totalFormat"),
+            ("totalNeg", "Total Returned", "meter_total_returned", "totalFormat"),
+            ("storage", "Level", "meter_storage", "storageFormat"),
         ]:
             if state_key in sensor["states"]:
                 subsensor = {
@@ -349,6 +349,7 @@ async def async_setup_entry(
                     "cat": sensor.get("cat", ""),
                     "name": sensor["name"],
                     "name_suffix": suffix,
+                    "translation_key": translation_key,
                     "details": {"format": sensor["details"][format_key]},
                     "meter_type": meter_type,
                     "meter_state_key": state_key,
@@ -390,6 +391,18 @@ async def async_setup_entry(
                                 "detected_class": str(resolved_cls),
                             },
                         )
+
+    if miniserver and miniserver.serial:
+        entities.append(
+            LoxoneConnectionStateSensor(
+                serial=miniserver.serial, coordinator=coordinator
+            )
+        )
+        entities.append(
+            LoxoneReconnectCountSensor(
+                serial=miniserver.serial, coordinator=coordinator
+            )
+        )
 
     if miniserver:
         @callback
@@ -584,12 +597,15 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
 class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
     def __init__(self, **kwargs):
         name_suffix = kwargs.pop("name_suffix", None)
+        tkey = kwargs.pop("translation_key", None)
         meter_type = kwargs.pop("meter_type", "")
         meter_state_key = kwargs.pop("meter_state_key", "")
         super().__init__(**kwargs)
         device_info = kwargs.get("device_info", None)
         if device_info:
             self._attr_device_info = device_info
+        if tkey:
+            self._attr_translation_key = tkey
         if name_suffix:
             self._attr_name = name_suffix
 
@@ -618,3 +634,58 @@ class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
             manufacturer="Loxone",
             model=model,
         )
+
+
+class LoxoneConnectionStateSensor(LoxoneEntity, SensorEntity):
+    """Diagnostic sensor showing the coordinator's connection state."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_translation_key = "connection_state"
+
+    def __init__(self, *, serial: str, coordinator: LoxoneCoordinator) -> None:
+        super().__init__()
+        self._serial = serial
+        self._coordinator = coordinator
+        self._attr_unique_id = f"{serial}_connection_state"
+
+    @property
+    def native_value(self) -> str:
+        return self._coordinator.connection_state.value
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        return DeviceInfo(identifiers={(DOMAIN, self._serial)})
+
+    async def async_added_to_hass(self) -> None:
+        self._register_coordinator_listener()
+
+
+class LoxoneReconnectCountSensor(LoxoneEntity, SensorEntity):
+    """Diagnostic sensor counting successful reconnections."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_translation_key = "reconnect_count"
+
+    def __init__(self, *, serial: str, coordinator: LoxoneCoordinator) -> None:
+        super().__init__()
+        self._serial = serial
+        self._coordinator = coordinator
+        self._attr_unique_id = f"{serial}_reconnect_count"
+
+    @property
+    def native_value(self) -> int:
+        return self._coordinator.reconnect_count
+
+    @property
+    def device_info(self) -> DeviceInfo | None:
+        return DeviceInfo(identifiers={(DOMAIN, self._serial)})
+
+    async def async_added_to_hass(self) -> None:
+        self._register_coordinator_listener()
