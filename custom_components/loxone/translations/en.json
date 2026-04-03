@@ -1,4 +1,38 @@
 {
+  "entity": {
+    "sensor": {
+      "meter_actual": {
+        "name": "Actual"
+      },
+      "meter_total": {
+        "name": "Total"
+      },
+      "meter_total_returned": {
+        "name": "Total returned"
+      },
+      "meter_storage": {
+        "name": "Level"
+      },
+      "project_name": {
+        "name": "Project name"
+      },
+      "location": {
+        "name": "Location"
+      },
+      "connected_user": {
+        "name": "Connected user"
+      },
+      "uuid_sensor": {
+        "name": "UUID"
+      },
+      "connection_state": {
+        "name": "Connection state"
+      },
+      "reconnect_count": {
+        "name": "Reconnect count"
+      }
+    }
+  },
   "config": {
     "error": {
       "cannot_connect": "Cannot connect to the Miniserver. Check the host, port, and network.",
@@ -22,6 +56,12 @@
           "password": "Password",
           "host": "Miniserver IP",
           "port": "Port"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Loxone Miniserver.",
+          "port": "HTTP port of the Miniserver (default: 8080).",
+          "username": "Username for the Miniserver (must be latin-1 compatible).",
+          "password": "Password for the Miniserver."
         }
       },
       "reauth_confirm": {
@@ -32,6 +72,12 @@
           "password": "Password",
           "host": "Miniserver IP",
           "port": "Port"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Loxone Miniserver.",
+          "port": "HTTP port of the Miniserver (default: 8080).",
+          "username": "Username for the Miniserver (must be latin-1 compatible).",
+          "password": "New password for the Miniserver."
         }
       },
       "user": {
@@ -40,12 +86,22 @@
         "data": {
           "username": "User",
           "port": "Port",
-          "host": "Miniserver Ip",
+          "host": "Miniserver IP",
           "password": "Password",
-          "generate_scenes": "generate scenes",
-          "generate_lightcontroller_subcontrols": "generate subcontrols for lightcontrollerV2",
-          "generate_scenes_delay": "Delay for the scene generation if enabled",
+          "generate_scenes": "Generate scenes",
+          "generate_lightcontroller_subcontrols": "Generate subcontrols for LightControllerV2",
+          "generate_scenes_delay": "Scene generation delay",
           "create_areas_on_setup": "Create HA areas from Loxone rooms"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Loxone Miniserver.",
+          "port": "HTTP port of the Miniserver (default: 8080).",
+          "username": "Username for the Miniserver (must be latin-1 compatible).",
+          "password": "Password for the Miniserver.",
+          "generate_scenes": "Create scene entities from LightControllerV2 moods.",
+          "generate_lightcontroller_subcontrols": "Create individual light entities for each circuit in a LightControllerV2.",
+          "generate_scenes_delay": "Seconds to wait before generating scenes (lights must be set up first).",
+          "create_areas_on_setup": "Automatically create HA areas matching Loxone rooms during initial setup."
         }
       }
     }
@@ -68,10 +124,21 @@
           "host": "Miniserver IP",
           "password": "Password",
           "generate_scenes": "Generate scenes",
-          "generate_lightcontroller_subcontrols": "Generate subcontrols for LightcontrollerV2",
-          "generate_scenes_delay": "Delay for the scene generation if enabled",
+          "generate_lightcontroller_subcontrols": "Generate subcontrols for LightControllerV2",
+          "generate_scenes_delay": "Scene generation delay",
           "create_areas_on_setup": "Create HA areas from Loxone rooms",
           "structure_poll_interval": "Structure change check interval (0 = disabled)"
+        },
+        "data_description": {
+          "host": "IP address or hostname of the Loxone Miniserver.",
+          "port": "HTTP port of the Miniserver (default: 8080).",
+          "username": "Username for the Miniserver (must be latin-1 compatible).",
+          "password": "Password for the Miniserver.",
+          "generate_scenes": "Create scene entities from LightControllerV2 moods.",
+          "generate_lightcontroller_subcontrols": "Create individual light entities for each circuit in a LightControllerV2.",
+          "generate_scenes_delay": "Seconds to wait before generating scenes (lights must be set up first).",
+          "create_areas_on_setup": "Automatically create HA areas matching Loxone rooms.",
+          "structure_poll_interval": "How often (in seconds) to check for structure changes. Set to 0 to disable polling."
         }
       },
       "bridge_menu": {
@@ -123,6 +190,14 @@
     "meter_unit_mismatch": {
       "title": "Meter unit mismatch: {name}",
       "description": "The **{name}** meter is configured as type **{meter_type}** in Loxone Config, but its **{state_key}** format string resolved to device class **{detected_class}**. This may cause incorrect readings in the Energy dashboard. Check the format string in Loxone Config to ensure it matches the meter type."
+    }
+  },
+  "exceptions": {
+    "miniserver_not_connected": {
+      "message": "Loxone Miniserver is not connected — cannot send command."
+    },
+    "miniserver_unavailable": {
+      "message": "Loxone Miniserver is {state} — cannot send command."
     }
   },
   "services": {

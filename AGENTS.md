@@ -39,7 +39,7 @@ Create `HA_TOKEN` in HA: Profile → Security → Long-Lived Access Tokens.
 To deploy, run `scripts/deploy` from the repo root (or from anywhere — it auto-resolves the repo root):
 
 - **`scripts/deploy`** — Syncs files and restarts Home Assistant Core (~30-60s). **This is the default** because Python source changes require a full restart to take effect.
-- **`scripts/deploy --reload`** — Syncs files and reloads the integration via the HA REST API (~2s). Requires `HA_TOKEN`. **Only use this when you haven't changed any `.py` files** (e.g. YAML-only tweaks, `services.yaml`, `strings.json`). A reload does NOT re-import Python modules.
+- **`scripts/deploy --reload`** — Syncs files and reloads the integration via the HA REST API (~2s). Requires `HA_TOKEN`. **Only use this when you haven't changed any `.py` files** (e.g. YAML-only tweaks, `services.yaml`, translation files). A reload does NOT re-import Python modules.
 
 ## Testing
 
