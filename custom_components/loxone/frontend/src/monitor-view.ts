@@ -87,15 +87,15 @@ export class MonitorView extends LitElement {
       z-index: 1;
     }
     th {
-      background: var(--table-header-background-color, var(--card-background-color, #f5f5f5));
+      background: var(--primary-color, #03a9f4);
       padding: 10px 12px;
       text-align: left;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--secondary-text-color, #727272);
-      border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      color: #fff;
+      border-bottom: none;
     }
     td {
       padding: 6px 12px;
@@ -178,8 +178,7 @@ export class MonitorView extends LitElement {
             }
             return;
           }
-          this._events = [...this._events, ...data.events].slice(-MAX_EVENTS);
-          this._scrollToBottom();
+          this._events = [...data.events, ...this._events].slice(0, MAX_EVENTS);
         },
         {
           type: "loxone/subscribe_events",
@@ -204,9 +203,8 @@ export class MonitorView extends LitElement {
   private _togglePause(): void {
     this._paused = !this._paused;
     if (!this._paused && this._pendingEvents.length > 0) {
-      this._events = [...this._events, ...this._pendingEvents].slice(-MAX_EVENTS);
+      this._events = [...this._pendingEvents, ...this._events].slice(0, MAX_EVENTS);
       this._pendingEvents = [];
-      this._scrollToBottom();
     }
   }
 
@@ -217,13 +215,6 @@ export class MonitorView extends LitElement {
 
   private _onFilterInput(e: Event): void {
     this._filter = (e.target as HTMLInputElement).value.toLowerCase();
-  }
-
-  private _scrollToBottom(): void {
-    requestAnimationFrame(() => {
-      const box = this.shadowRoot?.querySelector(".scroll-box");
-      if (box) box.scrollTop = box.scrollHeight;
-    });
   }
 
   private _formatTime(iso: string): string {

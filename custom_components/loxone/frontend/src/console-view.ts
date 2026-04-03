@@ -5,6 +5,7 @@ import { fetchDevices, sendCommand } from "./api";
 
 interface HistoryEntry {
   uuid: string;
+  name?: string;
   command: string;
   result: string;
   ok: boolean;
@@ -24,6 +25,7 @@ export class ConsoleView extends LitElement {
   @state() private _history: HistoryEntry[] = [];
   @state() private _devices: LoxoneDevice[] = [];
   @state() private _suggestions: LoxoneDevice[] = [];
+  @state() private _selectedDevice: LoxoneDevice | null = null;
 
   static styles = css`
     :host {
@@ -131,12 +133,13 @@ export class ConsoleView extends LitElement {
     .history-table th {
       padding: 8px 12px;
       text-align: left;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 12px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: var(--secondary-text-color, #727272);
-      border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      background: var(--primary-color, #03a9f4);
+      color: #fff;
+      border-bottom: none;
     }
     .history-table td {
       padding: 6px 12px;
@@ -156,6 +159,37 @@ export class ConsoleView extends LitElement {
       font-size: 12px;
       color: var(--secondary-text-color, #727272);
       margin-top: 8px;
+    }
+    .selected-label {
+      font-size: 13px;
+      color: var(--primary-text-color, #212121);
+      margin-top: 4px;
+    }
+    .selected-label .sel-uuid {
+      font-size: 11px;
+      color: var(--secondary-text-color, #727272);
+      font-family: var(--ha-font-family-code, "Roboto Mono", monospace);
+    }
+    .command-hints {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+    .command-chip {
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-family: var(--ha-font-family-code, "Roboto Mono", monospace);
+      background: var(--secondary-background-color, #e8e8e8);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer;
+      border: none;
+      transition: background 0.15s;
+    }
+    .command-chip:hover {
+      background: var(--primary-color, #03a9f4);
+      color: #fff;
     }
   `;
 
@@ -199,6 +233,7 @@ export class ConsoleView extends LitElement {
 
   private _onUuidInput(e: Event): void {
     this._uuid = (e.target as HTMLInputElement).value;
+    this._selectedDevice = null;
     const q = this._uuid.toLowerCase();
     if (q.length >= 2) {
       this._suggestions = this._devices
@@ -216,7 +251,44 @@ export class ConsoleView extends LitElement {
 
   private _selectSuggestion(device: LoxoneDevice): void {
     this._uuid = device.uuid;
+    this._selectedDevice = device;
     this._suggestions = [];
+  }
+
+  private _getCommandHints(): string[] {
+    if (!this._selectedDevice) return [];
+    const t = this._selectedDevice.type;
+    switch (t) {
+      case "Switch":
+        return ["On", "Off", "pulse"];
+      case "Dimmer":
+      case "EIBDimmer":
+        return ["On", "Off", "0", "50", "100"];
+      case "Slider":
+        return ["0", "50", "100"];
+      case "Jalousie":
+        return ["up", "down", "fullUp", "fullDown", "shade", "stop"];
+      case "Gate":
+        return ["open", "close", "stop"];
+      case "LightController":
+      case "LightControllerV2":
+        return ["on", "off", "plus", "minus", "changeTo/1"];
+      case "IRoomController":
+      case "IRoomControllerV2":
+        return ["setComfortTemperature/21", "setEcoOffset/2", "operatingMode/0"];
+      case "Alarm":
+        return ["on", "off", "delayedOn"];
+      case "ColorPickerV2":
+        return ["hsv(0,100,100)", "temp(2700,100)"];
+      case "TextInput":
+        return [];
+      default:
+        return ["On", "Off", "pulse"];
+    }
+  }
+
+  private _applyHint(hint: string): void {
+    this._command = hint;
   }
 
   private _onCommandInput(e: Event): void {
@@ -242,17 +314,20 @@ export class ConsoleView extends LitElement {
       second: "2-digit",
     });
 
+    const deviceName = this._selectedDevice?.name;
+    const sendUuid = this._selectedDevice?.uuid || this._uuid;
+
     try {
-      const result = await sendCommand(this.hass, this._uuid, this._command, this.miniserverId);
+      const result = await sendCommand(this.hass, sendUuid, this._command, this.miniserverId);
       this._history = [
         ...this._history,
-        { uuid: this._uuid, command: this._command, result: "OK", ok: true, timestamp: ts },
+        { uuid: sendUuid, name: deviceName, command: this._command, result: "OK", ok: true, timestamp: ts },
       ].slice(-MAX_HISTORY);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this._history = [
         ...this._history,
-        { uuid: this._uuid, command: this._command, result: msg, ok: false, timestamp: ts },
+        { uuid: sendUuid, name: deviceName, command: this._command, result: msg, ok: false, timestamp: ts },
       ].slice(-MAX_HISTORY);
     } finally {
       this._sending = false;
@@ -275,11 +350,17 @@ export class ConsoleView extends LitElement {
             <input
               type="text"
               placeholder="Type UUID or control name…"
-              .value=${this._uuid}
+              .value=${this._selectedDevice ? this._selectedDevice.name : this._uuid}
               @input=${this._onUuidInput}
+              @focus=${() => { if (this._selectedDevice) { this._uuid = ""; this._selectedDevice = null; } }}
               @keydown=${this._onKeyDown}
               @blur=${() => setTimeout(() => (this._suggestions = []), 200)}
             />
+            ${this._selectedDevice
+              ? html`<div class="selected-label">
+                  <span class="sel-uuid">${this._selectedDevice.uuid}</span>
+                </div>`
+              : ""}
             ${this._suggestions.length > 0
               ? html`
                   <div class="suggestions">
@@ -299,11 +380,18 @@ export class ConsoleView extends LitElement {
             <label>Command</label>
             <input
               type="text"
-              placeholder="On, Off, pulse, 50, …"
+              placeholder=${this._selectedDevice ? `e.g. ${this._getCommandHints()[0] || "value"}` : "On, Off, pulse, 50, …"}
               .value=${this._command}
               @input=${this._onCommandInput}
               @keydown=${this._onKeyDown}
             />
+            ${this._getCommandHints().length > 0
+              ? html`<div class="command-hints">
+                  ${this._getCommandHints().map(
+                    (h) => html`<button class="command-chip" @click=${() => this._applyHint(h)}>${h}</button>`,
+                  )}
+                </div>`
+              : ""}
           </div>
           <button
             class="send"
@@ -336,7 +424,7 @@ export class ConsoleView extends LitElement {
                 <thead>
                   <tr>
                     <th>Time</th>
-                    <th>UUID</th>
+                    <th>Control</th>
                     <th>Command</th>
                     <th>Result</th>
                   </tr>
@@ -346,7 +434,9 @@ export class ConsoleView extends LitElement {
                     (h) => html`
                       <tr>
                         <td>${h.timestamp}</td>
-                        <td>${h.uuid}</td>
+                        <td>${h.name
+                          ? html`${h.name} <span class="sel-uuid">${h.uuid}</span>`
+                          : h.uuid}</td>
                         <td>${h.command}</td>
                         <td class="${h.ok ? "result-ok" : "result-err"}">${h.result}</td>
                       </tr>
