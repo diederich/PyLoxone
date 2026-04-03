@@ -20,7 +20,8 @@ from .pyloxone_api.connection import LoxoneConnection, LoxoneException
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
                                       LoxoneConnectionError,
                                       LoxoneOutOfServiceException,
-                                      LoxoneTokenError)
+                                      LoxoneTokenError,
+                                      LoxoneUnauthorisedError)
 
 from .const import CONF_STRUCTURE_POLL_INTERVAL, DEFAULT_STRUCTURE_POLL_INTERVAL, DOMAIN
 
@@ -139,15 +140,6 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 "Token is no longer valid. Will re-authenticate on reconnect."
             )
             clear_token = True
-            ir.async_create_issue(
-                self.hass,
-                DOMAIN,
-                "token_expired",
-                is_fixable=False,
-                is_persistent=False,
-                severity=ir.IssueSeverity.WARNING,
-                translation_key="token_expired",
-            )
         except LoxoneOutOfServiceException:
             _LOGGER.warning("Miniserver reports out of service. Will reconnect.")
         except LoxoneConnectionError:
@@ -227,6 +219,21 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 return
             except asyncio.CancelledError:
                 raise
+            except LoxoneUnauthorisedError:
+                _LOGGER.error(
+                    "Authentication failed — credentials may have changed"
+                )
+                ir.async_create_issue(
+                    self.hass,
+                    DOMAIN,
+                    "token_expired",
+                    is_fixable=False,
+                    is_persistent=True,
+                    severity=ir.IssueSeverity.ERROR,
+                    translation_key="token_expired",
+                )
+                self.config_entry.async_start_reauth(self.hass)
+                return
             except Exception as err:
                 _attempts += 1
                 delay = min(delay * 2, _RECONNECT_MAX_DELAY)

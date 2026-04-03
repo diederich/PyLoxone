@@ -94,8 +94,8 @@
   },
   "issues": {
     "token_expired": {
-      "title": "Loxone-Authentifizierungstoken abgelaufen",
-      "description": "Der Miniserver hat das gespeicherte Authentifizierungstoken abgelehnt. Die Integration versucht automatisch, sich erneut zu authentifizieren. Falls das Problem weiterhin besteht, gehe zu **Einstellungen → Geräte & Dienste → Loxone** und gib die Zugangsdaten erneut ein."
+      "title": "Loxone-Authentifizierung fehlgeschlagen",
+      "description": "Der Miniserver hat die gespeicherten Zugangsdaten abgelehnt. Das Passwort wurde möglicherweise in Loxone Config geändert. Gehe zu **Einstellungen → Geräte & Dienste → Loxone** und gib die Zugangsdaten erneut ein."
     },
     "persistent_disconnect": {
       "title": "Loxone Miniserver nicht erreichbar",

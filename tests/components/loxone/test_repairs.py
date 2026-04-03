@@ -13,27 +13,62 @@ from custom_components.loxone.coordinator import (
     ConnectionState,
     LoxoneCoordinator,
 )
-from custom_components.loxone.pyloxone_api.exceptions import LoxoneTokenError
+from custom_components.loxone.pyloxone_api.exceptions import (
+    LoxoneTokenError,
+    LoxoneUnauthorisedError,
+)
 
 
-async def test_token_error_creates_repair_issue(
+async def test_token_error_triggers_reconnect_with_clear_token(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
-    """A token error should create a repair issue."""
+    """A token error should trigger reconnect (no immediate repair issue)."""
     coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     listening_task = asyncio.Future()
     listening_task.set_exception(LoxoneTokenError("token expired"))
 
-    with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock):
+    with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock) as mock_reconnect:
         coordinator._handle_task_result(listening_task)
 
     await hass.async_block_till_done()
 
+    mock_reconnect.assert_called_once_with(clear_token=True)
+    issues = ir.async_get(hass)
+    assert issues.async_get_issue(DOMAIN, "token_expired") is None
+
+
+async def test_auth_failure_creates_repair_and_triggers_reauth(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Auth failure during reconnect should create repair + trigger reauth."""
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
+    coordinator._shutting_down = False
+    coordinator.connection_state = ConnectionState.RECONNECTING
+
+    saved_api = coordinator.api
+    with patch.object(
+        coordinator, "_create_api"
+    ), patch.object(
+        coordinator.config_entry, "async_start_reauth"
+    ) as mock_reauth, patch.object(
+        coordinator, "async_save_token", new_callable=AsyncMock
+    ):
+        mock_api = MagicMock()
+        mock_api.open = AsyncMock(side_effect=LoxoneUnauthorisedError("401"))
+        mock_api.close = AsyncMock()
+        coordinator.api = mock_api
+
+        await coordinator._async_reconnect(clear_token=True)
+
+    # Restore original mock API so teardown's async_cleanup doesn't choke
+    coordinator.api = saved_api
+
     issues = ir.async_get(hass)
     issue = issues.async_get_issue(DOMAIN, "token_expired")
     assert issue is not None
-    assert issue.severity == ir.IssueSeverity.WARNING
+    assert issue.severity == ir.IssueSeverity.ERROR
+    mock_reauth.assert_called_once_with(hass)
 
 
 async def test_successful_reconnect_clears_repair_issues(
@@ -42,8 +77,8 @@ async def test_successful_reconnect_clears_repair_issues(
     """On successful reconnect, repair issues should be cleared."""
     ir.async_create_issue(
         hass, DOMAIN, "token_expired",
-        is_fixable=False, is_persistent=False,
-        severity=ir.IssueSeverity.WARNING,
+        is_fixable=False, is_persistent=True,
+        severity=ir.IssueSeverity.ERROR,
         translation_key="token_expired",
     )
     ir.async_create_issue(

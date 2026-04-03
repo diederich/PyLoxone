@@ -94,8 +94,8 @@
   },
   "issues": {
     "token_expired": {
-      "title": "Loxone authentication token expired",
-      "description": "The Miniserver rejected the stored authentication token. The integration will attempt to re-authenticate automatically. If this persists, go to **Settings → Devices & Services → Loxone** and re-enter your credentials."
+      "title": "Loxone authentication failed",
+      "description": "The Miniserver rejected the stored credentials. This usually means the password was changed in Loxone Config. Go to **Settings → Devices & Services → Loxone** and re-enter your credentials."
     },
     "persistent_disconnect": {
       "title": "Cannot reach Loxone Miniserver",
