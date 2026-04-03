@@ -121,12 +121,18 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         """Signal prefix for this entry's UUID dispatches."""
         return f"loxone_{self.config_entry.entry_id}_uuid_"
 
+    @property
+    def monitor_signal(self) -> str:
+        """Signal for the live monitor subscription."""
+        return f"loxone_{self.config_entry.entry_id}_monitor"
+
     async def _message_callback(self, message):
         """Dispatch state updates per-UUID for O(1) entity routing."""
         _LOGGER.debug(f"{message}")
         prefix = self.dispatcher_prefix
         for uuid in message:
             async_dispatcher_send(self.hass, f"{prefix}{uuid}", message)
+        async_dispatcher_send(self.hass, self.monitor_signal, message)
 
     def _handle_task_result(self, task: asyncio.Task) -> None:
         """Done-callback for the listening task — triggers reconnect on error."""

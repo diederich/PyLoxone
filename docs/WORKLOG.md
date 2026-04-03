@@ -4,6 +4,35 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Panel: live monitor + command console
+
+### Decisions
+
+- Live monitor uses HA's WS subscription pattern (`subscribeMessage`). The coordinator fires a `loxone_{entry_id}_monitor` signal on every message batch, and the `loxone/subscribe_events` handler forwards events to subscribed panel connections with resolved control names and rooms.
+- Command console uses a new `loxone/send_command` WS command (admin-only) that wraps `coordinator.api.send_websocket_command(uuid, command)`. Accepts any command string the Loxone WS API supports (On, Off, pulse, numeric values, etc.).
+- Both views support multi-Miniserver via the `miniserver` param.
+- Console includes UUID autocomplete from known controls (fetched from `loxone/get_devices`) and persistent command history in localStorage.
+- Monitor keeps the last 500 events in a ring buffer with pause/resume and text filtering by name, room, or UUID.
+
+### Changes
+
+- **`coordinator.py`:** Added `monitor_signal` property. `_message_callback` now also fires the monitor signal with the full message batch.
+- **`websocket.py`:** Added `ws_subscribe_events` (subscription handler) and `ws_send_command` (async response). Registered both in `register_panel`.
+- **`types.ts`:** Added `MonitorEvent`, `MonitorEventMessage`, `SendCommandResult` interfaces. Extended `HomeAssistant` type with `connection.subscribeMessage`.
+- **`api.ts`:** Added `sendCommand` function.
+- **`monitor-view.ts`:** New — scrolling event log with pause/resume, filter, auto-scroll, status indicator.
+- **`console-view.ts`:** New — UUID input with autocomplete, command input, send button, persistent history table.
+- **`loxone-panel.ts`:** Added Monitor and Console tabs between Bridges and Status.
+- **`loxone-panel.js`:** Rebuilt.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 363 passed, 3 warnings.
+- Deploy, open Loxone panel, switch to Monitor tab — verify events stream in real-time.
+- Switch to Console tab, type a UUID or control name, send a command, verify history persists.
+
+---
+
 ## 2026-04-03 — Energy dashboard integration for Loxone meters
 
 ### Decisions

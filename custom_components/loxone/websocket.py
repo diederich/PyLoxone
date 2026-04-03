@@ -23,6 +23,7 @@ from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 
 from .const import DOMAIN
 
@@ -74,6 +75,8 @@ async def register_panel(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_add_bridge)
     websocket_api.async_register_command(hass, ws_remove_bridge)
     websocket_api.async_register_command(hass, ws_get_status)
+    websocket_api.async_register_command(hass, ws_subscribe_events)
+    websocket_api.async_register_command(hass, ws_send_command)
 
     if DOMAIN not in hass.data.get("frontend_panels", {}):
         from homeassistant.setup import async_setup_component
@@ -572,3 +575,101 @@ def ws_get_status(
             "bridge_count": bridge_count,
         },
     )
+
+
+# -- loxone/subscribe_events -------------------------------------------------
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/subscribe_events",
+        vol.Optional("miniserver"): str,
+    }
+)
+@callback
+def ws_subscribe_events(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Subscribe to real-time Loxone state-change events.
+
+    Streams every UUID value update as it arrives from the Miniserver.
+    Each event includes the control name and room resolved from the
+    structure file.
+    """
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
+    if coordinator is None:
+        connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
+        return
+
+    structure = coordinator.api.structure_file or {}
+    controls = structure.get("controls", {})
+    rooms = structure.get("rooms", {})
+
+    uuid_to_info: dict[str, tuple[str, str]] = {}
+    for ctrl in controls.values():
+        ctrl_name = ctrl.get("name", "")
+        room_uuid = ctrl.get("room", "")
+        room_name = rooms.get(room_uuid, {}).get("name", "") if room_uuid else ""
+        ctrl_uuid = ctrl.get("uuidAction", "")
+        uuid_to_info[ctrl_uuid] = (ctrl_name, room_name)
+        for state_uuid in ctrl.get("states", {}).values():
+            uuid_to_info[state_uuid] = (ctrl_name, room_name)
+        for sc in ctrl.get("subControls", {}).values():
+            sc_name = sc.get("name", ctrl_name)
+            sc_uuid = sc.get("uuidAction", "")
+            uuid_to_info[sc_uuid] = (sc_name, room_name)
+            for state_uuid in sc.get("states", {}).values():
+                uuid_to_info[state_uuid] = (sc_name, room_name)
+
+    @callback
+    def _forward_event(message: dict) -> None:
+        from homeassistant.util import dt as dt_util
+
+        ts = dt_util.utcnow().isoformat()
+        events = []
+        for uuid, value in message.items():
+            name, room = uuid_to_info.get(uuid, ("", ""))
+            events.append(
+                {"uuid": uuid, "name": name, "room": room, "value": value, "timestamp": ts}
+            )
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"events": events})
+        )
+
+    unsub = async_dispatcher_connect(hass, coordinator.monitor_signal, _forward_event)
+    connection.subscriptions[msg["id"]] = unsub
+    connection.send_result(msg["id"])
+
+
+# -- loxone/send_command -----------------------------------------------------
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/send_command",
+        vol.Required("uuid"): str,
+        vol.Required("command"): str,
+        vol.Optional("miniserver"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_send_command(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Send a raw command to a Loxone control by UUID."""
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
+    if coordinator is None:
+        connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
+        return
+
+    try:
+        await coordinator.api.send_websocket_command(msg["uuid"], msg["command"])
+        connection.send_result(msg["id"], {"sent": True, "uuid": msg["uuid"], "command": msg["command"]})
+    except Exception as exc:
+        connection.send_error(msg["id"], "command_failed", str(exc))

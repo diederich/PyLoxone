@@ -6,8 +6,10 @@ import "./devices-view";
 import "./areas-view";
 import "./bridges-view";
 import "./status-view";
+import "./monitor-view";
+import "./console-view";
 
-type TabId = "devices" | "areas" | "bridges" | "status";
+type TabId = "devices" | "areas" | "bridges" | "monitor" | "console" | "status";
 
 @customElement("loxone-panel")
 export class LoxonePanel extends LitElement {
@@ -152,7 +154,7 @@ export class LoxonePanel extends LitElement {
         <button class="refresh-btn" @click=${this._refresh}>↻ Refresh</button>
       </div>
       <div class="tabs">
-        ${(["devices", "areas", "bridges", "status"] as TabId[]).map(
+        ${(["devices", "areas", "bridges", "monitor", "console", "status"] as TabId[]).map(
           (tab) => html`
             <div
               class="tab ${this._activeTab === tab ? "active" : ""}"
@@ -177,6 +179,10 @@ export class LoxonePanel extends LitElement {
         return html`<areas-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></areas-view>`;
       case "bridges":
         return html`<bridges-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></bridges-view>`;
+      case "monitor":
+        return html`<monitor-view .hass=${this.hass} .miniserverId=${eid}></monitor-view>`;
+      case "console":
+        return html`<console-view .hass=${this.hass} .miniserverId=${eid}></console-view>`;
       case "status":
         return html`<status-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></status-view>`;
     }

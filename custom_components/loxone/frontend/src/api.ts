@@ -7,6 +7,7 @@ import type {
   HomeAssistant,
   ListEntriesResult,
   RemoveBridgeResult,
+  SendCommandResult,
   SetEntityEnabledResult,
 } from "./types";
 
@@ -103,6 +104,20 @@ export async function fetchStatus(
 ): Promise<GetStatusResult> {
   return hass.callWS<GetStatusResult>({
     type: "loxone/get_status",
+    ...(miniserverId ? { miniserver: miniserverId } : {}),
+  });
+}
+
+export async function sendCommand(
+  hass: HomeAssistant,
+  uuid: string,
+  command: string,
+  miniserverId?: string,
+): Promise<SendCommandResult> {
+  return hass.callWS<SendCommandResult>({
+    type: "loxone/send_command",
+    uuid,
+    command,
     ...(miniserverId ? { miniserver: miniserverId } : {}),
   });
 }

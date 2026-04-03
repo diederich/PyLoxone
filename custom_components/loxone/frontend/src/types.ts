@@ -6,6 +6,12 @@ export interface HomeAssistant {
     service: string,
     data?: Record<string, unknown>,
   ): Promise<void>;
+  connection: {
+    subscribeMessage(
+      callback: (msg: unknown) => void,
+      msg: Record<string, unknown>,
+    ): Promise<() => void>;
+  };
   language: string;
   states: Record<string, HassState>;
 }
@@ -90,6 +96,24 @@ export interface AddBridgeResult {
 
 export interface RemoveBridgeResult {
   removed: string;
+}
+
+export interface MonitorEvent {
+  uuid: string;
+  name: string;
+  room: string;
+  value: unknown;
+  timestamp: string;
+}
+
+export interface MonitorEventMessage {
+  events: MonitorEvent[];
+}
+
+export interface SendCommandResult {
+  sent: boolean;
+  uuid: string;
+  command: string;
 }
 
 export interface GetStatusResult {
