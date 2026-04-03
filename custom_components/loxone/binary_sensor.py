@@ -184,8 +184,8 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
                 return "mdi:checkbox-blank-circle-outline"
 
     async def event_handler(self, e):
-        if self._state_uuid in e.data:
-            self._state = e.data[self._state_uuid]
+        if self._state_uuid in e:
+            self._state = e[self._state_uuid]
             if self._state == 1.0:
                 self._state = self._on_state
             else:
@@ -235,8 +235,8 @@ class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
         return STATE_ON if is_on else STATE_OFF
 
     async def event_handler(self, e):
-        if self.uuidAction in e.data:
-            data = e.data[self.uuidAction]
+        if self.uuidAction in e:
+            data = e[self.uuidAction]
             if data == 1.0:
                 self._state = self._on_state
             else:

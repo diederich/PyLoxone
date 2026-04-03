@@ -77,8 +77,8 @@ class LoxoneLightSwitch(LoxoneEntity, LightEntity):
     async def event_handler(self, event):
         request_update = False
         if "active" in self.states:
-            if self.states["active"] in event.data:
-                active = event.data[self.states["active"]]
+            if self.states["active"] in event:
+                active = event[self.states["active"]]
                 new_state = True if active == 1.0 else False
                 if new_state != self._attr_is_on:
                     self._attr_is_on = new_state

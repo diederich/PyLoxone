@@ -102,17 +102,17 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
 
     async def event_handler(self, e):
         should_update = False
-        if self._deactivation_delay in e.data:
-            if e.data[self._deactivation_delay] == 0.0:
+        if self._deactivation_delay in e:
+            if e[self._deactivation_delay] == 0.0:
                 self._state = False
             else:
                 self._state = True
 
-            self._delay_remain = int(e.data[self._deactivation_delay])
+            self._delay_remain = int(e[self._deactivation_delay])
             should_update = True
 
-        if self._deactivation_delay_total in e.data:
-            self._delay_time_total = int(e.data[self._deactivation_delay_total])
+        if self._deactivation_delay_total in e:
+            self._delay_time_total = int(e[self._deactivation_delay_total])
             should_update = True
 
         if should_update:
@@ -175,9 +175,9 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
             self.schedule_update_ha_state()
 
     async def event_handler(self, event):
-        if self.uuidAction in event.data or self.states["active"] in event.data:
-            if self.states["active"] in event.data:
-                self._state = event.data[self.states["active"]]
+        if self.uuidAction in event or self.states["active"] in event:
+            if self.states["active"] in event:
+                self._state = event[self.states["active"]]
             self.async_schedule_update_ha_state()
 
     @property

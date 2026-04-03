@@ -106,8 +106,8 @@ class TunableWhiteLight(LoxoneEntity, LightEntity):
 
     async def event_handler(self, e):
         request_update = False
-        if self._color_uuid in e.data:
-            _color = e.data[self._color_uuid]
+        if self._color_uuid in e:
+            _color = e[self._color_uuid]
 
             if _color.startswith("temp"):
                 _color = _color.replace("temp", "")
@@ -255,8 +255,8 @@ class RGBColorPicker(LoxoneEntity, LightEntity):
 
     async def event_handler(self, e):
         request_update = False
-        if self._color_uuid in e.data:
-            _color = e.data[self._color_uuid]
+        if self._color_uuid in e:
+            _color = e[self._color_uuid]
 
             if _color.startswith("hsv"):
                 _color = _color.replace("hsv", "")

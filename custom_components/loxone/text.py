@@ -66,8 +66,8 @@ class LoxoneText(LoxoneEntity, TextEntity):
         return self._native_value
 
     async def event_handler(self, e):
-        if self.uuidAction in e.data:
-            data = e.data[self.uuidAction]
+        if self.uuidAction in e:
+            data = e[self.uuidAction]
             if isinstance(data, (list, dict)):
                 data = str(data)
                 if len(data) >= 255:

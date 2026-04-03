@@ -34,7 +34,7 @@ from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_DEVICE,
                     ATTR_UUID, ATTR_VALUE, CONF_CREATE_AREAS,
                     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, CONF_SCENE_GEN,
                     CONF_SCENE_GEN_DELAY, DEFAULT, DEFAULT_DELAY_SCENE,
-                    DEFAULT_PORT, DOMAIN, EVENT,
+                    DEFAULT_PORT, DOMAIN,
                     LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
 from .coordinator import ConnectionState, LoxoneCoordinator
 from .miniserver import get_miniserver_from_hass
@@ -716,16 +716,6 @@ async def async_remove_config_entry_device(
     return True
 
 
-class _DispatchEvent:
-    """Lightweight stand-in for HA Event so existing event_handlers work unchanged."""
-
-    __slots__ = ("data", "event_type")
-
-    def __init__(self, data: dict, event_type: str = EVENT):
-        self.data = data
-        self.event_type = event_type
-
-
 class LoxoneEntity(Entity):
     """
     @DynamicAttrs
@@ -736,6 +726,9 @@ class LoxoneEntity(Entity):
     def __init__(self, **kwargs):
         self._loxone_name: str = kwargs.get("name", "")
         if "name" in kwargs:
+            # Only override _attr_name when a name was explicitly passed.
+            # Subclasses with has_entity_name=True set _attr_name = None
+            # (meaning "use the device name"); we must not clobber that.
             self._attr_name = self._loxone_name
 
         for key in kwargs:
@@ -793,10 +786,8 @@ class LoxoneEntity(Entity):
 
     @callback
     def _dispatch_handler(self, message: dict) -> None:
-        """Convert dispatcher signal to legacy event_handler call."""
-        self.hass.async_create_task(
-            self.event_handler(_DispatchEvent(message))
-        )
+        """Forward dispatcher signal to the entity's event handler."""
+        self.hass.async_create_task(self.event_handler(message))
 
     def _register_coordinator_listener(self):
         """Subscribe to coordinator updates so availability changes propagate."""
@@ -813,7 +804,7 @@ class LoxoneEntity(Entity):
             self._prev_available = current
             self.async_write_ha_state()
 
-    async def event_handler(self, e):
+    async def event_handler(self, data: dict) -> None:
         pass
 
     @property

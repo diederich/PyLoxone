@@ -156,19 +156,19 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
     async def event_handler(self, event):
         request_update = False
 
-        if self.uuidAction in event.data:
-            self._state = event.data[self.uuidAction]
+        if self.uuidAction in event:
+            self._state = event[self.uuidAction]
             request_update = True
 
-        if self._master_min_uuid and self._master_min_uuid in event.data:
-            self._master_min = event.data[self._master_min_uuid]
+        if self._master_min_uuid and self._master_min_uuid in event:
+            self._master_min = event[self._master_min_uuid]
             request_update = True
 
-        if self._master_max_uuid and self._master_max_uuid in event.data:
-            self._master_max = event.data[self._master_max_uuid]
+        if self._master_max_uuid and self._master_max_uuid in event:
+            self._master_max = event[self._master_max_uuid]
             request_update = True
 
-        if self._master_position_uuid and self._master_position_uuid in event.data:
+        if self._master_position_uuid and self._master_position_uuid in event:
             if (
                 self._master_min is not None
                 and self._master_max is not None
@@ -176,26 +176,26 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
                 and self._master_max != "unknown"
             ):
                 self._attr_brightness = lox2hass_mapped(
-                    event.data[self._master_position_uuid],
+                    event[self._master_position_uuid],
                     self._master_min,
                     self._master_max,
                 )
             else:
                 self._attr_brightness = lox_to_hass(
-                    event.data[self._master_position_uuid]
+                    event[self._master_position_uuid]
                 )
             request_update = True
 
-        if self.states["activeMoods"] in event.data:
-            self._active_moods = json.loads(event.data[self.states["activeMoods"]])
+        if self.states["activeMoods"] in event:
+            self._active_moods = json.loads(event[self.states["activeMoods"]])
             request_update = True
 
-        if self.states["moodList"] in event.data:
-            self._moodlist = json.loads(event.data[self.states["moodList"]])
+        if self.states["moodList"] in event:
+            self._moodlist = json.loads(event[self.states["moodList"]])
             request_update = True
 
-        if self.states["additionalMoods"] in event.data:
-            self._additional_moodlist = json.loads(event.data[self.states["additionalMoods"]])
+        if self.states["additionalMoods"] in event:
+            self._additional_moodlist = json.loads(event[self.states["additionalMoods"]])
             request_update = True
 
         if request_update:

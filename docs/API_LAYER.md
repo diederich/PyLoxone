@@ -288,15 +288,16 @@ LoxoneException (base)
 | **Low** | Typo `reponse` in `read_user_salt_response` | `loxone_token.py:31` |
 | **Medium** | `send_websocket_command` doesn't check `is_connected` before enqueueing — commands pile up during disconnects | `connection.py:~1099` |
 
-### Missing Tests
+### Test Coverage
 
-In-repo tests (`pyloxone_api/tests/`) are essentially non-functional:
+Tests live in `tests/components/loxone/`:
 
-- `test_run_alone.py` — loads env vars, does nothing
-- `test_discover.py` — requires live network, no mocking
+| Module | Tests | File |
+|--------|-------|------|
+| `crypto.py` | 21 | `test_crypto.py` |
+| `structure.py` | 18 | `test_structure.py` |
 
-The main test suite (`tests/components/loxone/`) now covers `crypto.py` (21 tests)
-and `structure.py` (18 tests). Still untested:
+Still untested:
 - Connection lifecycle
 - Authentication and token management
 - Message parsing (all types)

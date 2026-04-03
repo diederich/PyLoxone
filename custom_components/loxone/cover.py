@@ -179,21 +179,21 @@ class LoxoneGate(LoxoneEntity, CoverEntity):
             return
 
     async def event_handler(self, event):
-        if self.states["position"] in event.data or self._state_uuid in event.data:
-            if self.states["position"] in event.data:
-                self._position = float(event.data[self.states["position"]]) * 100.0
+        if self.states["position"] in event or self._state_uuid in event:
+            if self.states["position"] in event:
+                self._position = float(event[self.states["position"]]) * 100.0
                 if self._position == 0:
                     self._closed = True
                 else:
                     self._closed = False
 
-            if self._state_uuid in event.data:
+            if self._state_uuid in event:
                 self._is_closing = False
                 self._is_opening = False
 
-                if event.data[self._state_uuid] == -1:
+                if event[self._state_uuid] == -1:
                     self._is_closing = True
-                elif event.data[self._state_uuid] == 1:
+                elif event[self._state_uuid] == 1:
                     self._is_opening = True
             self.schedule_update_ha_state()
 
@@ -221,16 +221,16 @@ class LoxoneWindow(LoxoneEntity, CoverEntity):
         self.type = "Window"
 
     async def event_handler(self, e):
-        if self.states["position"] in e.data or self.states["direction"] in e.data:
-            if self.states["position"] in e.data:
-                self._position = float(e.data[self.states["position"]]) * 100.0
+        if self.states["position"] in e or self.states["direction"] in e:
+            if self.states["position"] in e:
+                self._position = float(e[self.states["position"]]) * 100.0
                 if self._position == 0:
                     self._closed = True
                 else:
                     self._closed = False
 
-            if self.states["direction"] in e.data:
-                self._direction = e.data[self.states["direction"]]
+            if self.states["direction"] in e:
+                self._direction = e[self.states["direction"]]
 
             self.schedule_update_ha_state()
 
@@ -377,16 +377,16 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
 
     async def event_handler(self, e):
         if (
-            self.states["position"] in e.data
-            or self.states["shadePosition"] in e.data
-            or self.states["up"] in e.data
-            or self.states["down"] in e.data
-            or self.states["autoInfoText"] in e.data
-            or self.states["autoState"] in e.data
-            or (self._is_automatic and self.states["targetPosition"] in e.data)
+            self.states["position"] in e
+            or self.states["shadePosition"] in e
+            or self.states["up"] in e
+            or self.states["down"] in e
+            or self.states["autoInfoText"] in e
+            or self.states["autoState"] in e
+            or (self._is_automatic and self.states["targetPosition"] in e)
         ):
-            if self.states["position"] in e.data:
-                self._position_loxone = float(e.data[self.states["position"]]) * 100.0
+            if self.states["position"] in e:
+                self._position_loxone = float(e[self.states["position"]]) * 100.0
                 self._position = map_range(self._position_loxone, 0, 100, 100, 0)
 
                 if self._position == 0:
@@ -394,32 +394,32 @@ class LoxoneJalousie(LoxoneEntity, CoverEntity):
                 else:
                     self._closed = False
 
-            if self.states["shadePosition"] in e.data:
+            if self.states["shadePosition"] in e:
                 self._tilt_position_loxone = (
-                    float(e.data[self.states["shadePosition"]]) * 100.0
+                    float(e[self.states["shadePosition"]]) * 100.0
                 )
                 self._tilt_position = map_range(
                     self._tilt_position_loxone, 0, 100, 100, 0
                 )
-            if self._is_automatic and self.states["targetPosition"] in e.data:
+            if self._is_automatic and self.states["targetPosition"] in e:
                 target_position_loxone = (
-                    float(e.data[self.states["targetPosition"]]) * 100.0
+                    float(e[self.states["targetPosition"]]) * 100.0
                 )
                 self._target_position = map_range(
                     target_position_loxone, 0, 100, 100, 0
                 )
 
-            if self.states["up"] in e.data:
-                self._is_opening = e.data[self.states["up"]]
+            if self.states["up"] in e:
+                self._is_opening = e[self.states["up"]]
 
-            if self.states["down"] in e.data:
-                self._is_closing = e.data[self.states["down"]]
+            if self.states["down"] in e:
+                self._is_closing = e[self.states["down"]]
 
-            if self.states["autoInfoText"] in e.data:
-                self._auto_text = e.data[self.states["autoInfoText"]]
+            if self.states["autoInfoText"] in e:
+                self._auto_text = e[self.states["autoInfoText"]]
 
-            if self.states["autoState"] in e.data:
-                self._auto_state = e.data[self.states["autoState"]]
+            if self.states["autoState"] in e:
+                self._auto_state = e[self.states["autoState"]]
 
             self.schedule_update_ha_state()
 

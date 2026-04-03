@@ -4,6 +4,25 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Remove _DispatchEvent shim, pass raw dict to event_handler
+
+### Decisions
+
+- The `_DispatchEvent` shim was introduced in Phase 1 so all 26 existing `event_handler(self, e)` methods could work unchanged with `e.data` while migrating from the event bus to dispatchers. Now that the migration is stable and tested, the shim is unnecessary indirection — every handler should just accept the raw `dict` directly.
+
+### Changes
+
+- **`__init__.py`:** Deleted `_DispatchEvent` class. `_dispatch_handler` now calls `event_handler(message)` directly. Base `event_handler` signature updated to `event_handler(self, data: dict) -> None`. Removed unused `EVENT` import.
+- **All 26 `event_handler` implementations** across 14 files: replaced `e.data[...]` / `event.data[...]` with `e[...]` / `event[...]`. Files: `sensor.py`, `binary_sensor.py`, `climate.py`, `fan.py`, `cover.py`, `switch.py`, `alarm_control_panel.py`, `media_player.py`, `button.py`, `number.py`, `text.py`, `lights/lightcontroller.py`, `lights/colorpickers.py`, `lights/switch.py`, `lights/dimmer.py`.
+- **`docs/ARCHITECTURE.md`:** Updated event-flow diagram to reflect raw dict forwarding.
+- Removed stale commented-out `_LOGGER.debug` lines referencing `event.data` in climate and fan handlers.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 348 passed, 3 warnings (harmless mock coroutine noise).
+
+---
+
 ## 2026-04-03 — Phase 2+3a: API decomposition, typed model, has_entity_name migration
 
 ### Decisions

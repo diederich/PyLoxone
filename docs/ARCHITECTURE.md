@@ -190,7 +190,7 @@ async_dispatcher → "loxone_uuid_{uuid}"
     │  O(1) routing — only entities subscribed to that UUID wake up
     ▼
 LoxoneEntity._dispatch_handler()       [__init__.py base class]
-    │  Wraps message in _DispatchEvent, calls entity's event_handler
+    │  Forwards raw dict to entity's event_handler(data)
     ▼
 LoxoneEntity.event_handler()           [per-entity subclass]
     │  Updates internal state

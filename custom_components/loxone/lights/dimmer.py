@@ -95,19 +95,19 @@ class LoxoneDimmer(LoxoneEntity, LightEntity):
 
     async def event_handler(self, e):
         request_update = False
-        if self._min_uuid in e.data:
-            self._min = e.data[self._min_uuid]
+        if self._min_uuid in e:
+            self._min = e[self._min_uuid]
             request_update = True
 
-        if self._max_uuid in e.data:
-            self._max = e.data[self._max_uuid]
+        if self._max_uuid in e:
+            self._max = e[self._max_uuid]
             request_update = True
 
-        if self._step_uuid in e.data:
-            self._step = e.data[self._step_uuid]
+        if self._step_uuid in e:
+            self._step = e[self._step_uuid]
             request_update = True
 
-        if self._position_uuid in e.data:
+        if self._position_uuid in e:
             if (
                 self._min is not None
                 and self._max is not None
@@ -115,10 +115,10 @@ class LoxoneDimmer(LoxoneEntity, LightEntity):
                 and self._max != "unknown"
             ):
                 self._attr_brightness = lox2hass_mapped(
-                    e.data[self._position_uuid], self._min, self._max
+                    e[self._position_uuid], self._min, self._max
                 )
             else:
-                self._attr_brightness = lox_to_hass(e.data[self._position_uuid])
+                self._attr_brightness = lox_to_hass(e[self._position_uuid])
             request_update = True
 
         self._attr_is_on = (

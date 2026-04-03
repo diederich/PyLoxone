@@ -169,11 +169,10 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         )
 
     async def event_handler(self, event):
-        # _LOGGER.debug(f"Fan Event data: {event.data}")
         update = False
 
-        for key in set(self._stateAttribUuids.values()) & event.data.keys():
-            self._stateAttribValues[key] = event.data[key]
+        for key in set(self._stateAttribUuids.values()) & event.keys():
+            self._stateAttribValues[key] = event[key]
             update = True
 
         if update:

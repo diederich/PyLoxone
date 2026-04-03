@@ -90,13 +90,13 @@ class LoxoneAudioZoneV2(LoxoneEntity, MediaPlayerEntity):
     async def event_handler(self, event):
         should_update = False
 
-        if self.states["volume"] in event.data:
-            self._volume = float(event.data[self.states["volume"]]) / 100
+        if self.states["volume"] in event:
+            self._volume = float(event[self.states["volume"]]) / 100
             should_update = True
 
-        if self.states["playState"] in event.data:
+        if self.states["playState"] in event:
             self._state = play_state_to_media_player_state(
-                event.data[self.states["playState"]]
+                event[self.states["playState"]]
             )
             should_update = True
 

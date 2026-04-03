@@ -350,8 +350,8 @@ class LoxoneCustomSensor(LoxoneEntity, SensorEntity):
         return self.uuidAction + self._attr_name
 
     async def event_handler(self, e):
-        if self.uuidAction in e.data:
-            data = e.data[self.uuidAction]
+        if self.uuidAction in e:
+            data = e[self.uuidAction]
             if isinstance(data, (list, dict)):
                 data = str(data)
                 if len(data) >= 255:
@@ -403,7 +403,7 @@ class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
         return None
 
     async def event_handler(self, e):
-        if "keep_alive" in e.data and e.data["keep_alive"] == "received":
+        if "keep_alive" in e and e["keep_alive"] == "received":
             now = dt_util.utcnow()
             if self._attr_native_value is not None:
                 time_since_last = (now - self._attr_native_value).total_seconds()
@@ -453,8 +453,8 @@ class LoxoneTextSensor(LoxoneEntity, SensorEntity):
         self._state = STATE_UNKNOWN
 
     async def event_handler(self, e):
-        if self.states["text"] in e.data:
-            self._state = str(e.data[self.states["text"]])
+        if self.states["text"] in e:
+            self._state = str(e[self.states["text"]])
             self.async_schedule_update_ha_state()
 
     @property
@@ -532,8 +532,8 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
             return value
 
     async def event_handler(self, e):
-        if self.uuidAction in e.data:
-            self._attr_native_value = e.data[self.uuidAction]
+        if self.uuidAction in e:
+            self._attr_native_value = e[self.uuidAction]
             self.async_schedule_update_ha_state()
 
     @property

@@ -91,32 +91,32 @@ class LoxoneAlarm(LoxoneEntity, AlarmControlPanelEntity):
 
     async def event_handler(self, e):
         request_update = False
-        if self.states["armed"] in e.data:
-            self._state = e.data[self.states["armed"]]
+        if self.states["armed"] in e:
+            self._state = e[self.states["armed"]]
             request_update = True
 
-        if self.states["disabledMove"] in e.data:
-            self._disabled_move = e.data[self.states["disabledMove"]]
+        if self.states["disabledMove"] in e:
+            self._disabled_move = e[self.states["disabledMove"]]
             request_update = True
 
-        if "armedAt" in self.states and self.states["armedAt"] in e.data:
-            self._armed_at = e.data[self.states["armedAt"]]
+        if "armedAt" in self.states and self.states["armedAt"] in e:
+            self._armed_at = e[self.states["armedAt"]]
             request_update = True
 
-        if "nextLevelAt" in self.states and self.states["nextLevelAt"] in e.data:
-            self._next_level_at = e.data[self.states["nextLevelAt"]]
+        if "nextLevelAt" in self.states and self.states["nextLevelAt"] in e:
+            self._next_level_at = e[self.states["nextLevelAt"]]
             request_update = True
 
-        if self.states["armedDelay"] in e.data:
-            self._armed_delay = e.data[self.states["armedDelay"]]
+        if self.states["armedDelay"] in e:
+            self._armed_delay = e[self.states["armedDelay"]]
             request_update = True
 
-        if self.states["armedDelayTotal"] in e.data:
-            self._armed_delay_total_delay = e.data[self.states["armedDelayTotal"]]
+        if self.states["armedDelayTotal"] in e:
+            self._armed_delay_total_delay = e[self.states["armedDelayTotal"]]
             request_update = True
 
-        if self.states["level"] in e.data:
-            self._level = e.data[self.states["level"]]
+        if self.states["level"] in e:
+            self._level = e[self.states["level"]]
             request_update = True
 
         if request_update:
