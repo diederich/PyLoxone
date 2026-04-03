@@ -372,7 +372,9 @@ async def ws_add_bridge(
                 break
 
     from .bridge import DeviceBridge
+    from .bridge_mappers import get_mapper
 
+    entity_domain = entity_id.split(".")[0]
     bridge = DeviceBridge(
         entity_id=entity_id,
         loxone_uuid=loxone_uuid,
@@ -380,6 +382,12 @@ async def ws_add_bridge(
         loxone_name=loxone_name,
         loxone_states=loxone_states,
     )
+
+    try:
+        get_mapper(bridge, entity_domain)
+    except ValueError as exc:
+        connection.send_error(msg["id"], "unsupported_bridge", str(exc))
+        return
 
     try:
         bridge_runtime._activate(bridge)

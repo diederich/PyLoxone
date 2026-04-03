@@ -51,12 +51,6 @@ The root cause is twofold:
 
 `Platform.TEXT` is missing from `LOXONE_PLATFORMS`. The `text.py` platform file exists but is never loaded. `LoxoneTextSensor` in `sensor.py` already handles TextInput, so this is dead code with a working alternative. Decide whether to wire up `text.py` (and remove the sensor overlap) or delete it.
 
-### MED-001a: `system_health.py` — Dead code with broken attributes
-
-**File:** `system_health.py`
-
-Not wired up: `manifest.json` doesn't declare `"system_health"` as a dependency, so HA never loads this module. If it were loaded, it would crash — references `v.serial`, `v.project_name`, `v.local_url`, `v.software_version` on the coordinator, but those live on `v.miniserver`. The `for k, v in … return` pattern also silently ignores multi-entry configs. Either wire it up properly or delete it.
-
 ### MED-002: Standalone `ColorPickerV2` never discovered
 
 **File:** `light.py`

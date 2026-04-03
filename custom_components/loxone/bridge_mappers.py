@@ -322,10 +322,108 @@ class AnalogExposeMapper(BridgeMapper):
 
 
 # ---------------------------------------------------------------------------
+# Number / input_number -> Slider VI (bidirectional float)
+# ---------------------------------------------------------------------------
+
+class NumberMapper(BridgeMapper):
+    """Maps HA number/input_number <-> Loxone Slider VI (bidirectional).
+
+    Sends the raw float value both ways — no scaling. Both HA number and
+    Loxone Slider operate in arbitrary ranges.
+    """
+
+    @property
+    def expose_supported(self) -> bool:
+        return True
+
+    @property
+    def subscribe_supported(self) -> bool:
+        return bool(self.bridge.loxone_states.get("value"))
+
+    @property
+    def subscribe_uuids(self) -> set[str]:
+        value_uuid = self.bridge.loxone_states.get("value")
+        return {value_uuid} if value_uuid else set()
+
+    def ha_state_to_command(self, state: State) -> tuple[str, Any] | None:
+        try:
+            return (self.bridge.loxone_uuid, float(state.state))
+        except (ValueError, TypeError):
+            _LOGGER.warning(
+                "Cannot convert '%s' to float for number bridge", state.state
+            )
+            return None
+
+    async def loxone_value_to_ha(
+        self, hass: HomeAssistant, uuid: str, value: Any
+    ) -> None:
+        entity_id = self.bridge.entity_id
+        domain = entity_id.split(".")[0]
+        try:
+            fval = float(value)
+        except (ValueError, TypeError):
+            _LOGGER.warning(
+                "Cannot convert Loxone value '%s' to float for number bridge",
+                value,
+            )
+            return
+        await hass.services.async_call(
+            domain, "set_value", {"entity_id": entity_id, "value": fval}
+        )
+
+    @property
+    def description(self) -> str:
+        return "Number bridge: analog value, bidirectional"
+
+
+# ---------------------------------------------------------------------------
+# input_boolean -> Switch VI (bidirectional on/off)
+# ---------------------------------------------------------------------------
+
+class InputBooleanMapper(BridgeMapper):
+    """Maps HA input_boolean <-> Loxone Switch VI (bidirectional)."""
+
+    @property
+    def expose_supported(self) -> bool:
+        return True
+
+    @property
+    def subscribe_supported(self) -> bool:
+        return bool(self.bridge.loxone_states.get("active"))
+
+    @property
+    def subscribe_uuids(self) -> set[str]:
+        active_uuid = self.bridge.loxone_states.get("active")
+        return {active_uuid} if active_uuid else set()
+
+    def ha_state_to_command(self, state: State) -> tuple[str, Any] | None:
+        on = state.state == STATE_ON
+        return (self.bridge.loxone_uuid, 1 if on else 0)
+
+    async def loxone_value_to_ha(
+        self, hass: HomeAssistant, uuid: str, value: Any
+    ) -> None:
+        entity_id = self.bridge.entity_id
+        svc = "turn_on" if _loxone_to_bool(value) else "turn_off"
+        await hass.services.async_call(
+            "input_boolean", svc, {"entity_id": entity_id}
+        )
+
+    @property
+    def description(self) -> str:
+        return "Input boolean bridge: on/off, bidirectional"
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
 _LIGHT_CIRCUIT_TYPES = {"Dimmer", "EIBDimmer", "Switch", "ColorPickerV2"}
+
+_SUPPORTED_DOMAINS = frozenset({
+    "light", "switch", "binary_sensor", "sensor",
+    "number", "input_number", "input_boolean",
+})
 
 
 def get_mapper(bridge: DeviceBridge, entity_domain: str) -> BridgeMapper:
@@ -348,6 +446,12 @@ def get_mapper(bridge: DeviceBridge, entity_domain: str) -> BridgeMapper:
 
     if entity_domain == "switch":
         return SwitchMapper(bridge)
+
+    if entity_domain in ("number", "input_number"):
+        return NumberMapper(bridge)
+
+    if entity_domain == "input_boolean":
+        return InputBooleanMapper(bridge)
 
     raise ValueError(
         f"No mapper for entity domain '{entity_domain}' with "

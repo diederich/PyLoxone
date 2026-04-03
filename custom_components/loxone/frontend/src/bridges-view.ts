@@ -8,17 +8,9 @@ const BRIDGEABLE_DOMAINS = [
   "binary_sensor",
   "switch",
   "light",
-  "climate",
-  "cover",
-  "fan",
   "number",
   "input_boolean",
   "input_number",
-  "input_select",
-  "media_player",
-  "lock",
-  "button",
-  "select",
 ];
 
 interface HaEntityOption {

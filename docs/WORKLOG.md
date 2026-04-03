@@ -4,6 +4,32 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 6: Bridge improvements + system health
+
+### Decisions
+
+- Added `NumberMapper` (number/input_number ↔ Slider VI, bidirectional) and `InputBooleanMapper` (input_boolean ↔ Switch VI, bidirectional) to bridge mappers.
+- Added mapper validation at add-time in WebSocket `add_bridge` handler — returns `unsupported_bridge` error with a clear message before attempting activation.
+- Trimmed frontend `BRIDGEABLE_DOMAINS` to match backend mapper support (removed climate, cover, fan, media_player, lock, button, select, input_select which have no mappers).
+- Wired up `system_health.py` by adding `"system_health"` to `manifest.json` dependencies. Enhanced to show connection state.
+- IMP-007 (sync/async bus.fire) deferred — entity service methods run in threads, so `hass.bus.fire` (thread-safe) is correct. Needs per-method analysis, not blanket replace.
+
+### Changes
+
+- **`bridge_mappers.py`:** Added `NumberMapper` and `InputBooleanMapper`. Added `_SUPPORTED_DOMAINS` frozenset. Extended `get_mapper` factory.
+- **`websocket.py`:** Pre-validates mapper compatibility in `ws_add_bridge` before activation.
+- **`bridges-view.ts` + `loxone-panel.js`:** Reduced `BRIDGEABLE_DOMAINS` to supported set. Rebuilt panel JS.
+- **`system_health.py`:** Enhanced to show connection state. Fixed to work when miniserver is None.
+- **`manifest.json`:** Added `"system_health"` dependency.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 358 passed, 3 warnings.
+- Deploy and test: add a number/input_boolean bridge in the panel.
+- Verify System Health page shows Loxone info.
+
+---
+
 ## 2026-04-03 — Phase 5b: Structure hash polling
 
 ### Decisions
