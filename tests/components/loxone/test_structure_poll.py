@@ -35,11 +35,16 @@ def _mock_session(response_data: dict, status: int = 200) -> MagicMock:
     return mock_session
 
 
+def _ll_response(value: str) -> dict:
+    """Build a Loxone LL-style response for LoxAPPversion3."""
+    return {"LL": {"control": "dev/sps/LoxAPPversion3", "value": value, "code": "200"}}
+
+
 async def test_structure_poll_detects_change(
     hass: HomeAssistant, coordinator: LoxoneCoordinator
 ) -> None:
     """When lastModified changes, the integration should reload."""
-    session = _mock_session({"lastModified": "2026-04-03 12:00:00"})
+    session = _mock_session(_ll_response("2026-04-03 12:00:00"))
 
     with patch(
         "custom_components.loxone.coordinator.async_get_clientsession",
@@ -57,7 +62,7 @@ async def test_structure_poll_no_change(
     hass: HomeAssistant, coordinator: LoxoneCoordinator
 ) -> None:
     """When lastModified is unchanged, no reload should happen."""
-    session = _mock_session({"lastModified": "2026-01-01 00:00:00"})
+    session = _mock_session(_ll_response("2026-01-01 00:00:00"))
 
     with patch(
         "custom_components.loxone.coordinator.async_get_clientsession",

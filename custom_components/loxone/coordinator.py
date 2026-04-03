@@ -307,11 +307,11 @@ class LoxoneCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Structure poll failed", exc_info=True)
 
     async def _check_structure_change(self) -> None:
-        """Fetch the structure file's lastModified and reload if changed."""
+        """Query LoxAPPversion3 (lightweight) and reload if lastModified changed."""
         session = async_get_clientsession(self.hass)
-        url = f"http://{self._host}:{self._port}/data/LoxAPP3.json"
+        url = f"http://{self._host}:{self._port}/jdev/sps/LoxAPPversion3"
         try:
-            async with asyncio.timeout(15):
+            async with asyncio.timeout(10):
                 resp = await session.get(
                     url,
                     auth=aiohttp.BasicAuth(self._username, self._password),
@@ -324,7 +324,13 @@ class LoxoneCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Structure poll fetch failed: %s", err)
             return
 
-        new_modified = data.get("lastModified")
+        # Response: {"LL": {"control": "...", "value": "<lastModified>", "code": "200"}}
+        new_modified = None
+        ll = data.get("LL") if isinstance(data, dict) else None
+        if isinstance(ll, dict):
+            new_modified = ll.get("value")
+        if not new_modified:
+            new_modified = data.get("lastModified")
         if (
             new_modified
             and self._structure_last_modified

@@ -34,7 +34,7 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ### Decisions
 
-- Detect Miniserver structure changes by periodically fetching `LoxAPP3.json` and comparing the `lastModified` timestamp. On change, trigger `async_reload` for a clean entity re-setup.
+- Detect Miniserver structure changes by polling the lightweight `jdev/sps/LoxAPPversion3` endpoint and comparing the `lastModified` value. On change, trigger `async_reload` for a clean entity re-setup. There is no WebSocket push event for structure changes — polling is the documented Loxone approach (per the "Communicating with the Miniserver" PDF).
 - Used HA's `async_track_time_interval` instead of a raw asyncio loop — idiomatic, properly tracked, doesn't block `async_block_till_done()` in tests.
 - Poll interval is configurable via the options flow (default 300s / 5 minutes, 0 = disabled). Stored as `structure_poll_interval`.
 - Errors during polling are silently logged at DEBUG — the integration stays healthy even when the check fails.
