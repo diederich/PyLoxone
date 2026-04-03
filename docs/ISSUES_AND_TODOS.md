@@ -104,6 +104,8 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_media_player.py`            | AudioZoneV2 entity creation, device class, supported features, playState events (playing/paused/idle), play/pause/next/prev/volume commands                          |
 | `test_bridge.py`                  | DeviceBridge serialization, `_values_equal` helper, `get_mapper` factory, all BridgeMapper implementations (Dimmer, ColorPicker, LightSwitch, Switch, BinarySensor, Analog), BridgeRuntime lifecycle, entity suppression |
 | `test_sync_areas.py`             | Device-level area assignment, entity override cleanup, create_areas flag, re-sync after area deletion, wrong-area device move, idempotency (BUG-015/BUG-016 regression) |
+| `test_repairs.py`                | Token error triggers reconnect, auth failure creates repair + reauth, successful reconnect clears repair issues (namespaced by entry_id)                                |
+| `test_structure_poll.py`         | Structure change detection, no-change noop, HTTP error resilience, skip-when-disconnected                                                                                |
 
 Infrastructure:
 
@@ -514,13 +516,6 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 ### ARCH-006: Add config entry migration tests
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
-
-### ARCH-007: Multi-Miniserver support
-
-Comments say "Only one Miniserver" but `hass.data[DOMAIN]` is keyed by `entry_id`, suggesting multi-instance was partially considered. Several helpers (e.g., `get_miniserver_from_hass`, diagnostics) assume a single instance. Either:
-
-- Fully support multiple Miniservers
-- Explicitly block multiple config entries
 
 ---
 

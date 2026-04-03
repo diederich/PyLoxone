@@ -15,8 +15,8 @@ from voluptuous import Any, Optional
 from . import LoxoneEntity
 from .binary_sensor import LoxoneDigitalSensor
 from .const import SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 from .sensor import LoxoneSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -40,8 +40,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for fan in get_all(loxconfig, "Ventilation"):
@@ -51,6 +51,7 @@ async def async_setup_entry(
                 "type": "ventilation",
                 "async_add_devices": async_add_entities,
                 "config_entry": config_entry,
+                "coordinator": coordinator,
             }
         )
 
@@ -65,6 +66,7 @@ async def async_setup_entry(
                 "device_class": "presence",
                 "async_add_devices": async_add_entities,
                 "config_entry": config_entry,
+                "coordinator": coordinator,
             }
             entities.append(LoxoneDigitalSensor(**presence))
         if fan["details"]["hasIndoorHumidity"] and "humidityIndoor" in fan["states"]:
@@ -79,6 +81,7 @@ async def async_setup_entry(
                 "device_class": "humidity",
                 "async_add_devices": async_add_entities,
                 "config_entry": config_entry,
+                "coordinator": coordinator,
             }
             entities.append(LoxoneSensor(**humidity))
         if fan["details"]["hasAirQuality"] and "airQualityIndoor" in fan["states"]:
@@ -93,6 +96,7 @@ async def async_setup_entry(
                 "device_class": "carbon_dioxide",
                 "async_add_devices": async_add_entities,
                 "config_entry": config_entry,
+                "coordinator": coordinator,
             }
             entities.append(LoxoneSensor(**air_quality))
         # if "temperatureIndoor" in fan["states"]:
@@ -121,6 +125,7 @@ async def async_setup_entry(
                 "device_class": "temperature",
                 "async_add_devices": async_add_entities,
                 "config_entry": config_entry,
+                "coordinator": coordinator,
             }
             entities.append(LoxoneSensor(**temperature))
 

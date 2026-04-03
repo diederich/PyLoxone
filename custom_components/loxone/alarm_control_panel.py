@@ -17,8 +17,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import DOMAIN, SECUREDSENDDOMAIN, SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 DEFAULT_NAME = "Loxone Alarm"
 DEFAULT_FORCE_UPDATE = False
@@ -43,12 +43,12 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Loxone Alarms."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
     for loxone_alarm in get_all(loxconfig, "Alarm"):
         loxone_alarm = add_room_and_cat_to_value_values(loxconfig, loxone_alarm)
-        loxone_alarm.update({"code": None})
+        loxone_alarm.update({"code": None, "coordinator": coordinator})
         new_alarm = LoxoneAlarm(**loxone_alarm)
         entities.append(new_alarm)
 

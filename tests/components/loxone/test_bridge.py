@@ -520,6 +520,7 @@ class TestBridgeRuntime:
         )
         entry.add_to_hass(hass)
 
+        mock_coordinator.dispatcher_prefix = f"loxone_{entry.entry_id}_uuid_"
         runtime = BridgeRuntime(hass, mock_coordinator, entry)
         await runtime.async_setup()
 

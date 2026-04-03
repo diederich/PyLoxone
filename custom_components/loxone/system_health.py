@@ -20,10 +20,18 @@ def async_register(
 
 async def system_health_info(hass: HomeAssistant) -> dict[str, Any]:
     """Get info for the info page."""
-    for entry in hass.config_entries.async_entries(DOMAIN):
-        coordinator = getattr(entry, "runtime_data", None)
-        if coordinator is None:
-            continue
+    entries = hass.config_entries.async_entries(DOMAIN)
+    coordinators = [
+        (entry, getattr(entry, "runtime_data", None))
+        for entry in entries
+    ]
+    coordinators = [(e, c) for e, c in coordinators if c is not None]
+
+    if not coordinators:
+        return {}
+
+    if len(coordinators) == 1:
+        entry, coordinator = coordinators[0]
         host = entry.options.get("host", "")
         port = entry.options.get("port", 8080)
         info: dict[str, Any] = {
@@ -36,4 +44,14 @@ async def system_health_info(hass: HomeAssistant) -> dict[str, Any]:
             info["Project Name"] = ms.project_name
             info["Software Version"] = ms.software_version
         return info
-    return {}
+
+    info = {"Miniservers": len(coordinators)}
+    for i, (entry, coordinator) in enumerate(coordinators, 1):
+        label = entry.title or f"Miniserver {i}"
+        host = entry.options.get("host", "")
+        port = entry.options.get("port", 8080)
+        info[f"{label} State"] = coordinator.connection_state.value
+        info[f"{label} URL"] = f"http://{host}:{port}"
+        if coordinator.miniserver is not None:
+            info[f"{label} Serial"] = coordinator.miniserver.serial
+    return info

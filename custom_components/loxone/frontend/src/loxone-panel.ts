@@ -1,6 +1,7 @@
-import { LitElement, html, css } from "lit";
+import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant } from "./types";
+import type { HomeAssistant, LoxoneEntry } from "./types";
+import { fetchEntries } from "./api";
 import "./devices-view";
 import "./areas-view";
 import "./bridges-view";
@@ -13,6 +14,8 @@ export class LoxonePanel extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @state() private _activeTab: TabId = "devices";
   @state() private _refreshKey = 0;
+  @state() private _entries: LoxoneEntry[] = [];
+  @state() private _selectedMiniserver: string | undefined;
 
   static styles = css`
     :host {
@@ -29,11 +32,27 @@ export class LoxonePanel extends LitElement {
       align-items: center;
       justify-content: space-between;
       margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 16px;
     }
     h1 {
       font-size: 24px;
       font-weight: 400;
       margin: 0;
+    }
+    .entry-select {
+      padding: 6px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer;
     }
     .refresh-btn {
       padding: 6px 14px;
@@ -75,6 +94,23 @@ export class LoxonePanel extends LitElement {
     }
   `;
 
+  connectedCallback(): void {
+    super.connectedCallback();
+    this._loadEntries();
+  }
+
+  private async _loadEntries(): Promise<void> {
+    try {
+      const result = await fetchEntries(this.hass);
+      this._entries = result.entries;
+      if (!this._selectedMiniserver && this._entries.length > 0) {
+        this._selectedMiniserver = this._entries[0].miniserver;
+      }
+    } catch {
+      // Single-entry fallback: leave _selectedEntryId undefined
+    }
+  }
+
   private _setTab(tab: TabId): void {
     this._activeTab = tab;
   }
@@ -83,10 +119,36 @@ export class LoxonePanel extends LitElement {
     this._refreshKey++;
   }
 
+  private _onEntryChange(e: Event): void {
+    const select = e.target as HTMLSelectElement;
+    this._selectedMiniserver = select.value;
+    this._refreshKey++;
+  }
+
   protected render() {
+    const showSelector = this._entries.length > 1;
     return html`
       <div class="header">
-        <h1>Loxone</h1>
+        <div class="header-left">
+          <h1>Loxone</h1>
+          ${showSelector
+            ? html`
+                <select
+                  class="entry-select"
+                  .value=${this._selectedMiniserver ?? ""}
+                  @change=${this._onEntryChange}
+                >
+                  ${this._entries.map(
+                    (e) => html`
+                      <option value=${e.miniserver}>
+                        ${e.name || e.title || e.host}
+                      </option>
+                    `,
+                  )}
+                </select>
+              `
+            : nothing}
+        </div>
         <button class="refresh-btn" @click=${this._refresh}>↻ Refresh</button>
       </div>
       <div class="tabs">
@@ -107,15 +169,16 @@ export class LoxonePanel extends LitElement {
 
   private _renderTab() {
     const k = this._refreshKey;
+    const eid = this._selectedMiniserver;
     switch (this._activeTab) {
       case "devices":
-        return html`<devices-view .hass=${this.hass} .refreshKey=${k}></devices-view>`;
+        return html`<devices-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></devices-view>`;
       case "areas":
-        return html`<areas-view .hass=${this.hass} .refreshKey=${k}></areas-view>`;
+        return html`<areas-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></areas-view>`;
       case "bridges":
-        return html`<bridges-view .hass=${this.hass} .refreshKey=${k}></bridges-view>`;
+        return html`<bridges-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></bridges-view>`;
       case "status":
-        return html`<status-view .hass=${this.hass} .refreshKey=${k}></status-view>`;
+        return html`<status-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></status-view>`;
     }
   }
 }

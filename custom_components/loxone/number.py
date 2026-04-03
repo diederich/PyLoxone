@@ -15,8 +15,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,12 +29,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for number_entity in get_all(loxconfig, ["Slider"]):
         number_entity = add_room_and_cat_to_value_values(loxconfig, number_entity)
+        number_entity["coordinator"] = coordinator
         new_number = LoxoneNumber(**number_entity)
         entities.append(new_number)
 
@@ -93,4 +94,4 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
         self.hass.bus.async_fire(
             SENDDOMAIN, dict(uuid=self.uuidAction, value="{}".format(value))
         )
-        self.async_schedule_update_ha_state()
+        self.schedule_update_ha_state()

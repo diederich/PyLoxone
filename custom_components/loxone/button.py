@@ -17,8 +17,8 @@ from homeassistant.util import dt as dt_util
 
 from . import LoxoneEntity
 from .const import DOMAIN, SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,12 +31,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for button_entity in get_all(loxconfig, ["Pushbutton"]):
         button_entity = add_room_and_cat_to_value_values(loxconfig, button_entity)
+        button_entity["coordinator"] = coordinator
         entities.append(LoxoneButton(**button_entity))
 
     async_add_entities(entities)
@@ -77,7 +78,7 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
                     self.__set_state(dt_util.utcnow().isoformat())
                     request_update = True
         if request_update:
-            self.async_schedule_update_ha_state()
+            self.schedule_update_ha_state()
 
     @cached_property
     def unique_id(self) -> str:

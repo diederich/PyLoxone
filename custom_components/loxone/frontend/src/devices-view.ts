@@ -10,6 +10,7 @@ type SortDir = "asc" | "desc";
 export class DevicesView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Number }) refreshKey = 0;
+  @property({ type: String }) miniserverId?: string;
   @state() private _devices: LoxoneDevice[] = [];
   @state() private _filter = "";
   @state() private _loading = true;
@@ -156,7 +157,7 @@ export class DevicesView extends LitElement {
     this._loading = true;
     this._error = "";
     try {
-      const result = await fetchDevices(this.hass);
+      const result = await fetchDevices(this.hass, this.miniserverId);
       this._devices = result.devices;
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);

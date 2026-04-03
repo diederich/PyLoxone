@@ -30,6 +30,7 @@ interface LoxoneOption {
 export class BridgesView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Number }) refreshKey = 0;
+  @property({ type: String }) miniserverId?: string;
   @state() private _bridges: BridgeInfo[] = [];
   @state() private _devices: LoxoneDevice[] = [];
   @state() private _loading = true;
@@ -238,8 +239,8 @@ export class BridgesView extends LitElement {
     this._error = "";
     try {
       const [bridgeResult, deviceResult] = await Promise.all([
-        fetchBridges(this.hass),
-        fetchDevices(this.hass),
+        fetchBridges(this.hass, this.miniserverId),
+        fetchDevices(this.hass, this.miniserverId),
       ]);
       this._bridges = bridgeResult.bridges;
       this._devices = deviceResult.devices;
@@ -378,7 +379,7 @@ export class BridgesView extends LitElement {
     this._error = "";
     this._message = "";
     try {
-      await addBridge(this.hass, this._newEntityId, this._newLoxoneUuid);
+      await addBridge(this.hass, this._newEntityId, this._newLoxoneUuid, this.miniserverId);
       this._message = `Bridge added: ${this._newEntityId}`;
       this._newEntityId = "";
       this._newLoxoneUuid = "";
@@ -394,7 +395,7 @@ export class BridgesView extends LitElement {
     this._error = "";
     this._message = "";
     try {
-      await removeBridge(this.hass, entityId);
+      await removeBridge(this.hass, entityId, this.miniserverId);
       this._message = `Bridge removed: ${entityId}`;
       await this._load();
     } catch (err: unknown) {

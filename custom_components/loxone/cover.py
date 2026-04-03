@@ -23,8 +23,8 @@ from . import LoxoneEntity
 from .const import (SENDDOMAIN, SERVICE_DISABLE_SUN_AUTOMATION,
                     SERVICE_ENABLE_SUN_AUTOMATION, SERVICE_QUICK_SHADE,
                     SUPPORT_QUICK_SHADE, SUPPORT_SUN_AUTOMATION)
+from .coordinator import LoxoneCoordinator
 from .helpers import (add_room_and_cat_to_value_values, get_all, map_range)
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -39,8 +39,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set Loxone covers."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for cover in get_all(loxconfig, ["Jalousie", "Gate", "Window"]):
@@ -48,6 +48,7 @@ async def async_setup_entry(
         cover.update(
             {
                 "hass": hass,
+                "coordinator": coordinator,
             }
         )
         if cover["type"] == "Gate":
@@ -60,15 +61,14 @@ async def async_setup_entry(
             new_jalousie = LoxoneJalousie(**cover)
             entities.append(new_jalousie)
 
-    @callback
-    def async_add_covers(_):
-        async_add_entities(_)
-
-    miniserver.listeners.append(
-        async_dispatcher_connect(
-            hass, miniserver.async_signal_new_device(NEW_COVERS), async_add_entities
+    if coordinator.miniserver:
+        coordinator.miniserver.listeners.append(
+            async_dispatcher_connect(
+                hass,
+                coordinator.miniserver.async_signal_new_device(NEW_COVERS),
+                async_add_entities,
+            )
         )
-    )
     async_add_entities(entities)
 
     platform = entity_platform.async_get_current_platform()

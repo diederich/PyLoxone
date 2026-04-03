@@ -14,8 +14,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import DEFAULT_AUDIO_ZONE_V2_PLAY_STATE, SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -41,8 +41,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Load Loxone Audio zones based on a config entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for audioZone in get_all(loxconfig, "AudioZoneV2"):
@@ -50,6 +50,7 @@ async def async_setup_entry(
         audioZone.update(
             {
                 "hass": hass,
+                "coordinator": coordinator,
             }
         )
         entities.append(LoxoneAudioZoneV2(**audioZone))

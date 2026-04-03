@@ -15,8 +15,8 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from . import LoxoneEntity
 from .const import SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -29,12 +29,13 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for switch_entity in get_all(loxconfig, ["Switch", "TimedSwitch", "Intercom"]):
         switch_entity = add_room_and_cat_to_value_values(loxconfig, switch_entity)
+        switch_entity["coordinator"] = coordinator
 
         if switch_entity["type"] in ["Switch"]:
             new_switch = LoxoneSwitch(**switch_entity)
@@ -55,7 +56,8 @@ async def async_setup_entry(
                         {
                             "name": "{} - {}".format(
                                 switch_entity["name"], subcontrol["name"]
-                            )
+                            ),
+                            "coordinator": coordinator,
                         }
                     )
 

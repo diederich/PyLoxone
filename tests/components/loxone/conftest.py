@@ -29,10 +29,19 @@ from custom_components.loxone.const import (
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
 
-def fire_loxone_event(hass: "HomeAssistant", data: dict) -> None:
-    """Simulate a Miniserver state update via per-UUID dispatcher signals."""
+def fire_loxone_event(hass: "HomeAssistant", data: dict, entry_id: str | None = None) -> None:
+    """Simulate a Miniserver state update via per-UUID dispatcher signals.
+
+    If *entry_id* is not supplied, it is resolved from the first loaded
+    Loxone config entry (works for the common single-entry test setup).
+    """
+    if entry_id is None:
+        for entry in hass.config_entries.async_entries(DOMAIN):
+            entry_id = entry.entry_id
+            break
+    prefix = f"loxone_{entry_id}_uuid_" if entry_id else "loxone_uuid_"
     for uuid in data:
-        async_dispatcher_send(hass, f"loxone_uuid_{uuid}", data)
+        async_dispatcher_send(hass, f"{prefix}{uuid}", data)
 
 MOCK_OPTIONS = {
     CONF_HOST: "192.168.1.100",

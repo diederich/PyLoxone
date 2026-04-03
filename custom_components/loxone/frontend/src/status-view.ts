@@ -7,6 +7,7 @@ import { fetchStatus } from "./api";
 export class StatusView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Number }) refreshKey = 0;
+  @property({ type: String }) miniserverId?: string;
   @state() private _status: GetStatusResult | null = null;
   @state() private _loading = true;
   @state() private _error = "";
@@ -150,7 +151,7 @@ export class StatusView extends LitElement {
     this._loading = true;
     this._error = "";
     try {
-      this._status = await fetchStatus(this.hass);
+      this._status = await fetchStatus(this.hass, this.miniserverId);
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);
     } finally {

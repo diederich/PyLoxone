@@ -33,8 +33,9 @@ from homeassistant.util import dt as dt_util
 
 from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN, THROTTLE_KEEP_ALIVE_TIME
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import MiniServer, get_miniserver_from_hass
+from .miniserver import MiniServer
 
 NEW_SENSOR = "sensors"
 
@@ -273,26 +274,29 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
-    serial = miniserver.serial
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    miniserver = coordinator.miniserver
+    loxconfig = coordinator.api.structure_file
+    serial = miniserver.serial if miniserver else None
 
-    loxconfig = miniserver.lox_config.json
-    entities: list[Any] = [LoxoneKeepAliveSensor(serial=serial)]
+    entities: list[Any] = [LoxoneKeepAliveSensor(serial=serial, coordinator=coordinator)]
 
     if "softwareVersion" in loxconfig:
-        entities.append(LoxoneVersionSensor(loxconfig["softwareVersion"], serial=serial))
+        entities.append(LoxoneVersionSensor(loxconfig["softwareVersion"], serial=serial, coordinator=coordinator))
 
-    for desc in MINISERVER_SENSOR_DESCRIPTIONS:
-        if desc.value_fn(miniserver) is not None:
-            entities.append(LoxoneMiniserverInfoSensor(desc, miniserver))
+    if miniserver:
+        for desc in MINISERVER_SENSOR_DESCRIPTIONS:
+            if desc.value_fn(miniserver) is not None:
+                entities.append(LoxoneMiniserverInfoSensor(desc, miniserver))
 
     for sensor in get_all(loxconfig, "InfoOnlyAnalog"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        sensor.update({"type": "analog"})
+        sensor.update({"type": "analog", "coordinator": coordinator})
         entities.append(LoxoneSensor(**sensor))
 
     for sensor in get_all(loxconfig, "TextInput"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
+        sensor["coordinator"] = coordinator
         entities.append(LoxoneTextSensor(**sensor))
 
     for sensor in get_all(loxconfig, "Meter"):
@@ -319,18 +323,20 @@ async def async_setup_entry(
                     "details": {"format": sensor["details"][format_key]},
                     "async_add_devices": async_add_entities,
                     "config_entry": config_entry,
+                    "coordinator": coordinator,
                 }
                 entities.append(LoxoneMeterSensor(**subsensor))
 
-    @callback
-    def async_add_sensors(_):
-        async_add_entities(_, True)
+    if miniserver:
+        @callback
+        def async_add_sensors(_):
+            async_add_entities(_, True)
 
-    miniserver.listeners.append(
-        async_dispatcher_connect(
-            hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_sensors
+        miniserver.listeners.append(
+            async_dispatcher_connect(
+                hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_sensors
+            )
         )
-    )
 
     async_add_entities(entities, update_before_add=True)
 

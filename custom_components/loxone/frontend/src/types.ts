@@ -10,6 +10,18 @@ export interface HomeAssistant {
   states: Record<string, HassState>;
 }
 
+export interface LoxoneEntry {
+  miniserver: string;
+  title: string;
+  host: string;
+  serial: string | null;
+  name: string | null;
+}
+
+export interface ListEntriesResult {
+  entries: LoxoneEntry[];
+}
+
 export interface HassState {
   entity_id: string;
   state: string;

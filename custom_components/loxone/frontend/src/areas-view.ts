@@ -7,6 +7,7 @@ import { fetchAreas, syncAreas, syncDeviceNames } from "./api";
 export class AreasView extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
   @property({ type: Number }) refreshKey = 0;
+  @property({ type: String }) miniserverId?: string;
   @state() private _rooms: LoxoneRoom[] = [];
   @state() private _haAreas: HaArea[] = [];
   @state() private _loading = true;
@@ -119,7 +120,7 @@ export class AreasView extends LitElement {
     this._loading = true;
     this._error = "";
     try {
-      const result = await fetchAreas(this.hass);
+      const result = await fetchAreas(this.hass, this.miniserverId);
       this._rooms = result.rooms;
       this._haAreas = result.ha_areas;
     } catch (err: unknown) {

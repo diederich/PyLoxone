@@ -5,12 +5,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 from .lights.colorpickers import LumiTech, RGBColorPicker, TunableWhiteLight
 from .lights.dimmer import EIBDimmer, LoxoneDimmer
 from .lights.lightcontroller import LoxoneLightControllerV2
 from .lights.switch import LoxoneLightSwitch
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -46,11 +46,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Loxone Light Controller."""
-    miniserver = get_miniserver_from_hass(hass)
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
     generate_subcontrols = config_entry.options.get(
         "generate_lightcontroller_subcontrols", False
     )
-    loxconfig = miniserver.lox_config.json
+    loxconfig = coordinator.api.structure_file
     entities = []
     dimmers_without_light_controller = get_all(loxconfig, ["Dimmer", "EIBDimmer"])
 
@@ -63,6 +63,7 @@ async def async_setup_entry(
         light_controller.update(
             {
                 "async_add_devices": async_add_entities,
+                "coordinator": coordinator,
             }
         )
         new_light_controller = LoxoneLightControllerV2(**light_controller)
@@ -79,6 +80,7 @@ async def async_setup_entry(
                         "lightcontroller_id": light_controller.get("uuidAction", None),
                         "lightcontroller_name": light_controller.get("name", None),
                         "async_add_devices": async_add_entities,
+                        "coordinator": coordinator,
                     }
                 )
 
@@ -104,6 +106,7 @@ async def async_setup_entry(
             dimmer.update(
                 {
                     "async_add_devices": async_add_entities,
+                    "coordinator": coordinator,
                 }
             )
 

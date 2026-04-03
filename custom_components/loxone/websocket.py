@@ -41,9 +41,17 @@ def _panel_js_hash() -> str:
         return "0"
 
 
-def _get_coordinator(hass: HomeAssistant):
-    """Return the first available LoxoneCoordinator, or None."""
+def _get_coordinator(hass: HomeAssistant, miniserver: str | None = None):
+    """Return the LoxoneCoordinator for the given Miniserver, or the first available.
+
+    *miniserver* can be an HA entry_id or a Miniserver serial number.
+    """
     for entry in hass.config_entries.async_entries(DOMAIN):
+        if miniserver is not None and entry.entry_id != miniserver:
+            coord = getattr(entry, "runtime_data", None)
+            ms = getattr(coord, "miniserver", None) if coord else None
+            if not ms or ms.serial != miniserver:
+                continue
         coordinator = getattr(entry, "runtime_data", None)
         if coordinator is not None:
             return coordinator
@@ -58,6 +66,7 @@ async def register_panel(hass: HomeAssistant) -> None:
     WS commands are idempotent (safe to call multiple times); the panel
     guard uses ``hass.data["frontend_panels"]`` to prevent double-registration.
     """
+    websocket_api.async_register_command(hass, ws_list_entries)
     websocket_api.async_register_command(hass, ws_get_devices)
     websocket_api.async_register_command(hass, ws_set_entity_enabled)
     websocket_api.async_register_command(hass, ws_get_areas)
@@ -89,11 +98,46 @@ async def register_panel(hass: HomeAssistant) -> None:
         _LOGGER.info("Loxone custom panel registered")
 
 
+# -- loxone/list_entries ------------------------------------------------------
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command({vol.Required("type"): "loxone/list_entries"})
+@callback
+def ws_list_entries(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return available Loxone config entries (one per Miniserver)."""
+    entries: list[dict[str, Any]] = []
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = getattr(entry, "runtime_data", None)
+        if coordinator is None:
+            continue
+        ms = coordinator.miniserver
+        entries.append(
+            {
+                "miniserver": entry.entry_id,
+                "title": entry.title,
+                "host": entry.options.get("host", ""),
+                "serial": ms.serial if ms else None,
+                "name": ms.name if ms else None,
+            }
+        )
+    connection.send_result(msg["id"], {"entries": entries})
+
+
 # -- loxone/get_devices -------------------------------------------------------
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "loxone/get_devices"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_devices",
+        vol.Optional("miniserver"): str,
+    }
+)
 @callback
 def ws_get_devices(
     hass: HomeAssistant,
@@ -101,7 +145,7 @@ def ws_get_devices(
     msg: dict[str, Any],
 ) -> None:
     """Return Loxone controls with their matched HA entities."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
@@ -224,7 +268,12 @@ def ws_set_entity_enabled(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "loxone/get_areas"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_areas",
+        vol.Optional("miniserver"): str,
+    }
+)
 @callback
 def ws_get_areas(
     hass: HomeAssistant,
@@ -232,7 +281,7 @@ def ws_get_areas(
     msg: dict[str, Any],
 ) -> None:
     """Return Loxone rooms, HA areas, and device-to-area mappings."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
@@ -286,7 +335,12 @@ def ws_get_areas(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "loxone/get_bridges"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_bridges",
+        vol.Optional("miniserver"): str,
+    }
+)
 @callback
 def ws_get_bridges(
     hass: HomeAssistant,
@@ -294,7 +348,7 @@ def ws_get_bridges(
     msg: dict[str, Any],
 ) -> None:
     """Return the current list of device bridges."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
@@ -322,6 +376,7 @@ def ws_get_bridges(
         vol.Required("type"): "loxone/add_bridge",
         vol.Required("entity_id"): str,
         vol.Required("loxone_uuid"): str,
+        vol.Optional("miniserver"): str,
     }
 )
 @websocket_api.async_response
@@ -331,7 +386,7 @@ async def ws_add_bridge(
     msg: dict[str, Any],
 ) -> None:
     """Add a new device bridge (HA entity <-> Loxone control)."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
@@ -412,6 +467,7 @@ async def ws_add_bridge(
     {
         vol.Required("type"): "loxone/remove_bridge",
         vol.Required("entity_id"): str,
+        vol.Optional("miniserver"): str,
     }
 )
 @websocket_api.async_response
@@ -421,7 +477,7 @@ async def ws_remove_bridge(
     msg: dict[str, Any],
 ) -> None:
     """Remove a device bridge by HA entity ID."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
@@ -458,7 +514,12 @@ async def ws_remove_bridge(
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command({vol.Required("type"): "loxone/get_status"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_status",
+        vol.Optional("miniserver"): str,
+    }
+)
 @callback
 def ws_get_status(
     hass: HomeAssistant,
@@ -466,7 +527,7 @@ def ws_get_status(
     msg: dict[str, Any],
 ) -> None:
     """Return Miniserver connection status and metadata."""
-    coordinator = _get_coordinator(hass)
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return

@@ -37,7 +37,6 @@ from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_DEVICE,
                     DEFAULT_PORT, DOMAIN,
                     LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
 from .coordinator import ConnectionState, LoxoneCoordinator
-from .miniserver import get_miniserver_from_hass
 
 type LoxoneConfigEntry = ConfigEntry[LoxoneCoordinator]
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
@@ -80,7 +79,11 @@ def _get_coordinator(hass: HomeAssistant) -> LoxoneCoordinator | None:
     return None
 
 
-async def _async_sync_areas(hass: HomeAssistant, data=None):
+async def _async_sync_areas(
+    hass: HomeAssistant,
+    data=None,
+    coordinator: LoxoneCoordinator | None = None,
+):
     """Sync HA areas with Loxone room attributes on devices."""
     data = data or {}
     create_areas = data.get(ATTR_AREA_CREATE, False)
@@ -157,9 +160,9 @@ async def _async_sync_areas(hass: HomeAssistant, data=None):
 
     rooms_created = 0
     if create_areas:
-        coordinator = _get_coordinator(hass)
-        if coordinator:
-            structure = coordinator.api.structure_file or {}
+        _coord = coordinator or _get_coordinator(hass)
+        if _coord:
+            structure = _coord.api.structure_file or {}
             for room in structure.get("rooms", {}).values():
                 room_name = room.get("name", "")
                 if room_name and ar_registry.async_get_area_by_name(room_name) is None:
@@ -185,10 +188,17 @@ async def _async_sync_areas(hass: HomeAssistant, data=None):
                       create_areas, no_area)
 
 
-async def _async_sync_device_names(hass: HomeAssistant):
+async def _async_sync_device_names(
+    hass: HomeAssistant,
+    coordinator: LoxoneCoordinator | None = None,
+):
     """Sync HA device names from the current Loxone structure file."""
-    miniserver = get_miniserver_from_hass(hass)
-    structure = miniserver.lox_config.json
+    if coordinator is None:
+        coordinator = _get_coordinator(hass)
+    if coordinator is None or coordinator.miniserver is None:
+        _LOGGER.warning("sync_device_names: no coordinator available")
+        return
+    structure = coordinator.miniserver.lox_config.json
     controls = structure.get("controls", {})
 
     uuid_to_name = {
@@ -472,8 +482,9 @@ async def async_setup_entry(hass, config_entry):
         await asyncio.wait(yaml_tasks)
 
     async def loxone_discovered(event):
-        miniserver = get_miniserver_from_hass(hass)
-        if miniserver.miniserver_type < 2 and "component" in event.data:
+        if coordinator.miniserver is None:
+            return
+        if coordinator.miniserver.miniserver_type < 2 and "component" in event.data:
             if event.data["component"] == DOMAIN:
                 try:
                     _LOGGER.info("loxone discovered")
@@ -605,10 +616,20 @@ async def async_setup_entry(hass, config_entry):
                         err,
                     )
 
+    my_entry_id = config_entry.entry_id
+
     async def loxone_send(event):
         """Listen for change Events from Loxone Components"""
         try:
-            if event.event_type == SENDDOMAIN and isinstance(event.data, dict):
+            if not isinstance(event.data, dict):
+                return
+
+            # Multi-entry scoping: only process events for our Miniserver
+            evt_entry = event.data.get("miniserver")
+            if evt_entry is not None and evt_entry != my_entry_id:
+                return
+
+            if event.event_type == SENDDOMAIN:
                 value = event.data.get(ATTR_VALUE, DEFAULT)
                 device_uuid = event.data.get(ATTR_UUID, DEFAULT)
                 if value is None:
@@ -620,7 +641,7 @@ async def async_setup_entry(hass, config_entry):
                     coordinator.async_send_command(device_uuid, value)
                 )
 
-            elif event.event_type == SECUREDSENDDOMAIN and isinstance(event.data, dict):
+            elif event.event_type == SECUREDSENDDOMAIN:
                 value = event.data.get(ATTR_VALUE, DEFAULT)
                 device_uuid = event.data.get(ATTR_UUID, DEFAULT)
                 code = event.data.get(ATTR_CODE, DEFAULT)
@@ -662,8 +683,8 @@ async def async_setup_entry(hass, config_entry):
         create_areas = config_entry.options.get(CONF_CREATE_AREAS, True)
 
     try:
-        await _async_sync_device_names(hass)
-        await _async_sync_areas(hass, {ATTR_AREA_CREATE: create_areas})
+        await _async_sync_device_names(hass, coordinator=coordinator)
+        await _async_sync_areas(hass, {ATTR_AREA_CREATE: create_areas}, coordinator=coordinator)
         if not initial_sync_done:
             hass.config_entries.async_update_entry(
                 config_entry,
@@ -710,9 +731,11 @@ class LoxoneEntity(Entity):
     @DynamicAttrs
     """
 
-    _SKIP_KWARGS = frozenset({"device_info"})
+    _SKIP_KWARGS = frozenset({"device_info", "coordinator"})
 
     def __init__(self, **kwargs):
+        self._coordinator: LoxoneCoordinator | None = kwargs.get("coordinator")
+
         self._loxone_name: str = kwargs.get("name", "")
         if "name" in kwargs:
             # Only override _attr_name when a name was explicitly passed.
@@ -745,9 +768,15 @@ class LoxoneEntity(Entity):
         if "cat" in kwargs and kwargs["cat"]:
             self._attr_extra_state_attributes["category"] = kwargs["cat"]
 
+    def _resolve_coordinator(self) -> LoxoneCoordinator | None:
+        """Return this entity's coordinator, falling back to global lookup."""
+        if self._coordinator is not None:
+            return self._coordinator
+        return _get_coordinator(self.hass)
+
     @property
     def available(self) -> bool:
-        coordinator = _get_coordinator(self.hass)
+        coordinator = self._resolve_coordinator()
         if coordinator is None:
             return True
         return coordinator.last_update_success
@@ -766,12 +795,20 @@ class LoxoneEntity(Entity):
     async def async_added_to_hass(self):
         """Subscribe to per-UUID dispatchers and coordinator availability."""
         self._register_coordinator_listener()
+        prefix = self._dispatcher_prefix()
         for uuid in self._get_state_uuids():
             self.async_on_remove(
                 async_dispatcher_connect(
-                    self.hass, f"loxone_uuid_{uuid}", self._dispatch_handler
+                    self.hass, f"{prefix}{uuid}", self._dispatch_handler
                 )
             )
+
+    def _dispatcher_prefix(self) -> str:
+        """Signal prefix scoped to this entity's config entry."""
+        coordinator = self._resolve_coordinator()
+        if coordinator and coordinator.config_entry:
+            return f"loxone_{coordinator.config_entry.entry_id}_uuid_"
+        return "loxone_uuid_"
 
     @callback
     def _dispatch_handler(self, message: dict) -> None:
@@ -780,7 +817,7 @@ class LoxoneEntity(Entity):
 
     def _register_coordinator_listener(self):
         """Subscribe to coordinator updates so availability changes propagate."""
-        coordinator = _get_coordinator(self.hass)
+        coordinator = self._resolve_coordinator()
         if coordinator:
             self.async_on_remove(
                 coordinator.async_add_listener(self._handle_coordinator_update)
@@ -810,12 +847,11 @@ class LoxoneEntity(Entity):
             model=getattr(self, "type", None),
             suggested_area=getattr(self, "room", None),
         )
-        try:
-            serial = get_miniserver_from_hass(self.hass).serial
+        coordinator = self._resolve_coordinator()
+        if coordinator and coordinator.miniserver:
+            serial = coordinator.miniserver.serial
             if serial:
                 info["via_device"] = (DOMAIN, serial)
-        except (KeyError, AttributeError):
-            pass
         return info
 
     @staticmethod

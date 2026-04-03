@@ -116,13 +116,17 @@ class LoxoneCoordinator(DataUpdateCoordinator):
 
     # -- Connection lifecycle --------------------------------------------------
 
+    @property
+    def dispatcher_prefix(self) -> str:
+        """Signal prefix for this entry's UUID dispatches."""
+        return f"loxone_{self.config_entry.entry_id}_uuid_"
+
     async def _message_callback(self, message):
         """Dispatch state updates per-UUID for O(1) entity routing."""
         _LOGGER.debug(f"{message}")
+        prefix = self.dispatcher_prefix
         for uuid in message:
-            async_dispatcher_send(
-                self.hass, f"loxone_uuid_{uuid}", message
-            )
+            async_dispatcher_send(self.hass, f"{prefix}{uuid}", message)
 
     def _handle_task_result(self, task: asyncio.Task) -> None:
         """Done-callback for the listening task — triggers reconnect on error."""
@@ -213,8 +217,9 @@ class LoxoneCoordinator(DataUpdateCoordinator):
 
                 self.connection_state = ConnectionState.CONNECTED
                 self.async_set_updated_data({"connected": True})
-                ir.async_delete_issue(self.hass, DOMAIN, "token_expired")
-                ir.async_delete_issue(self.hass, DOMAIN, "persistent_disconnect")
+                _eid = self.config_entry.entry_id
+                ir.async_delete_issue(self.hass, DOMAIN, f"token_expired_{_eid}")
+                ir.async_delete_issue(self.hass, DOMAIN, f"persistent_disconnect_{_eid}")
                 _LOGGER.info("Reconnected to Miniserver at %s", self._host)
                 return
             except asyncio.CancelledError:
@@ -226,7 +231,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 ir.async_create_issue(
                     self.hass,
                     DOMAIN,
-                    "token_expired",
+                    f"token_expired_{self.config_entry.entry_id}",
                     is_fixable=False,
                     is_persistent=True,
                     severity=ir.IssueSeverity.ERROR,
@@ -245,7 +250,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                     ir.async_create_issue(
                         self.hass,
                         DOMAIN,
-                        "persistent_disconnect",
+                        f"persistent_disconnect_{self.config_entry.entry_id}",
                         is_fixable=False,
                         is_persistent=False,
                         severity=ir.IssueSeverity.ERROR,

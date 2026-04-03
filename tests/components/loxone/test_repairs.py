@@ -35,7 +35,8 @@ async def test_token_error_triggers_reconnect_with_clear_token(
 
     mock_reconnect.assert_called_once_with(clear_token=True)
     issues = ir.async_get(hass)
-    assert issues.async_get_issue(DOMAIN, "token_expired") is None
+    eid = init_integration.entry_id
+    assert issues.async_get_issue(DOMAIN, f"token_expired_{eid}") is None
 
 
 async def test_auth_failure_creates_repair_and_triggers_reauth(
@@ -45,6 +46,7 @@ async def test_auth_failure_creates_repair_and_triggers_reauth(
     coordinator: LoxoneCoordinator = init_integration.runtime_data
     coordinator._shutting_down = False
     coordinator.connection_state = ConnectionState.RECONNECTING
+    eid = init_integration.entry_id
 
     saved_api = coordinator.api
     with patch.object(
@@ -65,7 +67,7 @@ async def test_auth_failure_creates_repair_and_triggers_reauth(
     coordinator.api = saved_api
 
     issues = ir.async_get(hass)
-    issue = issues.async_get_issue(DOMAIN, "token_expired")
+    issue = issues.async_get_issue(DOMAIN, f"token_expired_{eid}")
     assert issue is not None
     assert issue.severity == ir.IssueSeverity.ERROR
     mock_reauth.assert_called_once_with(hass)
@@ -75,14 +77,15 @@ async def test_successful_reconnect_clears_repair_issues(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """On successful reconnect, repair issues should be cleared."""
+    eid = init_integration.entry_id
     ir.async_create_issue(
-        hass, DOMAIN, "token_expired",
+        hass, DOMAIN, f"token_expired_{eid}",
         is_fixable=False, is_persistent=True,
         severity=ir.IssueSeverity.ERROR,
         translation_key="token_expired",
     )
     ir.async_create_issue(
-        hass, DOMAIN, "persistent_disconnect",
+        hass, DOMAIN, f"persistent_disconnect_{eid}",
         is_fixable=False, is_persistent=False,
         severity=ir.IssueSeverity.ERROR,
         translation_key="persistent_disconnect",
@@ -90,8 +93,8 @@ async def test_successful_reconnect_clears_repair_issues(
     )
 
     issues = ir.async_get(hass)
-    assert issues.async_get_issue(DOMAIN, "token_expired") is not None
-    assert issues.async_get_issue(DOMAIN, "persistent_disconnect") is not None
+    assert issues.async_get_issue(DOMAIN, f"token_expired_{eid}") is not None
+    assert issues.async_get_issue(DOMAIN, f"persistent_disconnect_{eid}") is not None
 
     coordinator: LoxoneCoordinator = init_integration.runtime_data
 
@@ -117,5 +120,5 @@ async def test_successful_reconnect_clears_repair_issues(
 
         await coordinator._async_reconnect()
 
-    assert issues.async_get_issue(DOMAIN, "token_expired") is None
-    assert issues.async_get_issue(DOMAIN, "persistent_disconnect") is None
+    assert issues.async_get_issue(DOMAIN, f"token_expired_{eid}") is None
+    assert issues.async_get_issue(DOMAIN, f"persistent_disconnect_{eid}") is None

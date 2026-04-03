@@ -21,8 +21,8 @@ from voluptuous import All, Optional, Range
 
 from . import LoxoneEntity
 from .const import CONF_HVAC_AUTO_MODE, SENDDOMAIN
+from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,8 +61,8 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up LoxoneRoomControllerV2."""
-    miniserver = get_miniserver_from_hass(hass)
-    loxconfig = miniserver.lox_config.json
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for climate in get_all(loxconfig, "IRoomControllerV2"):
@@ -71,6 +71,7 @@ async def async_setup_entry(
             {
                 "hass": hass,
                 CONF_HVAC_AUTO_MODE: 0,
+                "coordinator": coordinator,
             }
         )
         entities.append(LoxoneRoomControllerV2(**climate))
@@ -81,6 +82,7 @@ async def async_setup_entry(
             {
                 "hass": hass,
                 CONF_HVAC_AUTO_MODE: 0,
+                "coordinator": coordinator,
             }
         )
         entities.append(LoxoneRoomController(**climate))
@@ -90,6 +92,7 @@ async def async_setup_entry(
         accontrol.update(
             {
                 "hass": hass,
+                "coordinator": coordinator,
             }
         )
         entities.append(LoxoneAcControl(**accontrol))

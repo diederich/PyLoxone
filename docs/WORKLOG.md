@@ -4,6 +4,40 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 7: Multi-Miniserver hardening + panel
+
+### Decisions
+
+- Every entity now stores a direct reference to its `LoxoneCoordinator` (passed via `coordinator=coordinator` kwarg), eliminating all use of the global `get_miniserver_from_hass` helper. Platform `async_setup_entry` functions retrieve the coordinator from `config_entry.runtime_data`.
+- Dispatcher signals are namespaced by entry_id: `loxone_{entry_id}_uuid_{uuid}`. Prevents cross-talk when multiple Miniservers are configured.
+- Repair issue IDs are namespaced: `token_expired_{entry_id}`, `persistent_disconnect_{entry_id}`. Each Miniserver's issues are tracked independently.
+- `_get_coordinator()` in websocket.py now accepts an optional `entry_id` parameter to select among multiple entries. Defaults to the first entry when not specified.
+- All WebSocket API handlers (`ws_get_devices`, `ws_get_areas`, `ws_get_bridges`, `ws_get_status`, etc.) accept an optional `entry_id` field.
+- New `loxone/list_entries` WS command returns all configured Loxone entries (entry_id, title, host, serial, name).
+- Frontend panel shows an entry selector dropdown when multiple Miniservers are configured. All API calls pass the selected `entry_id`.
+- System health aggregates info from all configured entries when multiple are present.
+- `_async_sync_device_names` and `_async_sync_areas` accept an optional `coordinator` parameter for per-entry context.
+- `loxone_send` bus listener filters by `entry_id` to prevent cross-Miniserver command execution.
+
+### Changes
+
+- **`__init__.py`:** Removed `get_miniserver_from_hass`. `LoxoneEntity` stores `_coordinator`, uses `_resolve_coordinator()` fallback. `_dispatcher_prefix()` returns entry-scoped signal prefix. `loxone_send` handler filters by `entry_id`. Sync functions accept optional coordinator.
+- **`coordinator.py`:** Added `dispatcher_prefix` property. Namespaced repair issue IDs in `_async_reconnect`.
+- **Platform files (all 12):** Replaced `get_miniserver_from_hass` → `config_entry.runtime_data`. Pass `coordinator=coordinator` to every entity constructor.
+- **`bridge.py`:** Uses `self.coordinator.dispatcher_prefix` for dispatcher subscriptions.
+- **`websocket.py`:** All handlers accept `entry_id`. Added `ws_list_entries`. `_get_coordinator` resolves by `entry_id`.
+- **`system_health.py`:** Iterates all entries; shows per-Miniserver details when multiple are configured.
+- **Frontend (`api.ts`, `types.ts`, `loxone-panel.ts`, all views):** Added `fetchEntries`, entry selector UI, `entryId` property on all views, `entry_id` in all API calls.
+- **Tests:** `conftest.py:fire_loxone_event` accepts `entry_id`, uses namespaced signals. `test_repairs.py` asserts namespaced issue IDs. `test_bridge.py` sets `mock_coordinator.dispatcher_prefix` to match entry.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 359 passed, 3 warnings.
+- Deploy and verify single-Miniserver setup works unchanged.
+- If available, configure a second Miniserver and verify panel selector, independent state updates, and separate repair issues.
+
+---
+
 ## 2026-04-03 — Phase 6: Bridge improvements + system health
 
 ### Decisions

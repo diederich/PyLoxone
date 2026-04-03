@@ -27,7 +27,6 @@ from . import LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
-from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 NEW_SENSOR = "sensors"
@@ -70,42 +69,43 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""
-    miniserver = get_miniserver_from_hass(hass)
     coordinator: LoxoneCoordinator = config_entry.runtime_data
-    loxconfig = miniserver.lox_config.json
+    miniserver = coordinator.miniserver
+    loxconfig = coordinator.api.structure_file
     entities = []
 
     for sensor in get_all(loxconfig, "InfoOnlyDigital"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        sensor.update({"type": "digital"})
+        sensor.update({"type": "digital", "coordinator": coordinator})
         entities.append(LoxoneDigitalSensor(**sensor))
 
     for sensor in get_all(loxconfig, "PresenceDetector"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        sensor.update({"type": "presence"})
+        sensor.update({"type": "presence", "coordinator": coordinator})
         entities.append(LoxoneDigitalSensor(**sensor))
 
     for sensor in get_all(loxconfig, "SmokeAlarm"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        sensor.update({"type": "smoke"})
+        sensor.update({"type": "smoke", "coordinator": coordinator})
         entities.append(LoxoneDigitalSensor(**sensor))
 
-    if miniserver.serial:
+    if miniserver and miniserver.serial:
         entities.append(
             LoxoneConnectivitySensor(coordinator, miniserver.serial)
         )
 
-    @callback
-    def async_add_binary_sensors(_):
-        async_add_entities(_, True)
+    if miniserver:
+        @callback
+        def async_add_binary_sensors(_):
+            async_add_entities(_, True)
 
-    miniserver.listeners.append(
-        async_dispatcher_connect(
-            hass,
-            miniserver.async_signal_new_device("sensors"),
-            async_add_binary_sensors,
+        miniserver.listeners.append(
+            async_dispatcher_connect(
+                hass,
+                miniserver.async_signal_new_device("sensors"),
+                async_add_binary_sensors,
+            )
         )
-    )
     async_add_entities(entities)
 
 

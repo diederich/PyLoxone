@@ -258,9 +258,10 @@ class BridgeRuntime:
 
         if mapper.subscribe_supported and mapper.subscribe_uuids:
             listener = self._make_lox_listener(ab)
+            prefix = self.coordinator.dispatcher_prefix
             cancel_fns = [
                 async_dispatcher_connect(
-                    self.hass, f"loxone_uuid_{uuid}", listener
+                    self.hass, f"{prefix}{uuid}", listener
                 )
                 for uuid in mapper.subscribe_uuids
             ]
