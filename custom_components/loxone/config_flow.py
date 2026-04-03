@@ -231,11 +231,21 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
     async def async_step_dhcp(
         self, discovery_info: DhcpServiceInfo
     ) -> Any:
-        """Handle DHCP discovery of a Loxone Miniserver."""
+        """Handle DHCP discovery of a Loxone Miniserver.
+
+        A single Miniserver may be discovered multiple times with different
+        MAC addresses (e.g. dual-NIC hardware, Audio Server sharing the same
+        IP). The unique-ID check catches exact MAC matches; the IP-based
+        loop below catches different MACs that resolve to the same host.
+        """
         mac = discovery_info.macaddress.upper()
         serial = mac.replace(":", "").replace("-", "")
         await self.async_set_unique_id(serial)
         self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.ip})
+
+        for entry in self._async_current_entries():
+            if entry.options.get(CONF_HOST) == discovery_info.ip:
+                return self.async_abort(reason="already_configured")
 
         self.context["title_placeholders"] = {"host": discovery_info.ip}
         self._discovered_host = discovery_info.ip

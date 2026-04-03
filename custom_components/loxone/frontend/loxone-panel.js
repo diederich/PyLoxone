@@ -1,20 +1,36 @@
-var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t,s)=>{for(var o=s>1?void 0:s?Bt(e,t):e,i=r.length-1,n;i>=0;i--)(n=r[i])&&(o=(s?n(e,t,o):n(o))||o);return s&&o&&jt(e,t,o),o};var W=globalThis,J=W.ShadowRoot&&(W.ShadyCSS===void 0||W.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,tt=Symbol(),ut=new WeakMap,O=class{constructor(e,t,s){if(this._$cssResult$=!0,s!==tt)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(J&&e===void 0){let s=t!==void 0&&t.length===1;s&&(e=ut.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),s&&ut.set(t,e))}return e}toString(){return this.cssText}},mt=r=>new O(typeof r=="string"?r:r+"",void 0,tt),y=(r,...e)=>{let t=r.length===1?r[0]:e.reduce((s,o,i)=>s+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(o)+r[i+1],r[0]);return new O(t,r,tt)},ft=(r,e)=>{if(J)r.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let s=document.createElement("style"),o=W.litNonce;o!==void 0&&s.setAttribute("nonce",o),s.textContent=t.cssText,r.appendChild(s)}},et=J?r=>r:r=>r instanceof CSSStyleSheet?(e=>{let t="";for(let s of e.cssRules)t+=s.cssText;return mt(t)})(r):r;var{is:Ft,defineProperty:qt,getOwnPropertyDescriptor:Gt,getOwnPropertyNames:Wt,getOwnPropertySymbols:Jt,getPrototypeOf:Yt}=Object,Y=globalThis,vt=Y.trustedTypes,Xt=vt?vt.emptyScript:"",Zt=Y.reactiveElementPolyfillSupport,U=(r,e)=>r,N={toAttribute(r,e){switch(e){case Boolean:r=r?Xt:null;break;case Object:case Array:r=r==null?r:JSON.stringify(r)}return r},fromAttribute(r,e){let t=r;switch(e){case Boolean:t=r!==null;break;case Number:t=r===null?null:Number(r);break;case Object:case Array:try{t=JSON.parse(r)}catch{t=null}}return t}},X=(r,e)=>!Ft(r,e),gt={attribute:!0,type:String,converter:N,reflect:!1,useDefault:!1,hasChanged:X};Symbol.metadata??=Symbol("metadata"),Y.litPropertyMetadata??=new WeakMap;var C=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=gt){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let s=Symbol(),o=this.getPropertyDescriptor(e,s,t);o!==void 0&&qt(this.prototype,e,o)}}static getPropertyDescriptor(e,t,s){let{get:o,set:i}=Gt(this.prototype,e)??{get(){return this[t]},set(n){this[t]=n}};return{get:o,set(n){let c=o?.call(this);i?.call(this,n),this.requestUpdate(e,c,s)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??gt}static _$Ei(){if(this.hasOwnProperty(U("elementProperties")))return;let e=Yt(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(U("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(U("properties"))){let t=this.properties,s=[...Wt(t),...Jt(t)];for(let o of s)this.createProperty(o,t[o])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[s,o]of t)this.elementProperties.set(s,o)}this._$Eh=new Map;for(let[t,s]of this.elementProperties){let o=this._$Eu(t,s);o!==void 0&&this._$Eh.set(o,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let s=new Set(e.flat(1/0).reverse());for(let o of s)t.unshift(et(o))}else e!==void 0&&t.push(et(e));return t}static _$Eu(e,t){let s=t.attribute;return s===!1?void 0:typeof s=="string"?s:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let s of t.keys())this.hasOwnProperty(s)&&(e.set(s,this[s]),delete this[s]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return ft(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,s){this._$AK(e,s)}_$ET(e,t){let s=this.constructor.elementProperties.get(e),o=this.constructor._$Eu(e,s);if(o!==void 0&&s.reflect===!0){let i=(s.converter?.toAttribute!==void 0?s.converter:N).toAttribute(t,s.type);this._$Em=e,i==null?this.removeAttribute(o):this.setAttribute(o,i),this._$Em=null}}_$AK(e,t){let s=this.constructor,o=s._$Eh.get(e);if(o!==void 0&&this._$Em!==o){let i=s.getPropertyOptions(o),n=typeof i.converter=="function"?{fromAttribute:i.converter}:i.converter?.fromAttribute!==void 0?i.converter:N;this._$Em=o;let c=n.fromAttribute(t,i.type);this[o]=c??this._$Ej?.get(o)??c,this._$Em=null}}requestUpdate(e,t,s,o=!1,i){if(e!==void 0){let n=this.constructor;if(o===!1&&(i=this[e]),s??=n.getPropertyOptions(e),!((s.hasChanged??X)(i,t)||s.useDefault&&s.reflect&&i===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,s))))return;this.C(e,t,s)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:s,reflect:o,wrapped:i},n){s&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??t??this[e]),i!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||s||(t=void 0),this._$AL.set(e,t)),o===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[o,i]of this._$Ep)this[o]=i;this._$Ep=void 0}let s=this.constructor.elementProperties;if(s.size>0)for(let[o,i]of s){let{wrapped:n}=i,c=this[o];n!==!0||this._$AL.has(o)||c===void 0||this.C(o,void 0,i,c)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(s=>s.hostUpdate?.()),this.update(t)):this._$EM()}catch(s){throw e=!1,this._$EM(),s}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(e){}firstUpdated(e){}};C.elementStyles=[],C.shadowRootOptions={mode:"open"},C[U("elementProperties")]=new Map,C[U("finalized")]=new Map,Zt?.({ReactiveElement:C}),(Y.reactiveElementVersions??=[]).push("2.1.2");var dt=globalThis,_t=r=>r,Z=dt.trustedTypes,yt=Z?Z.createPolicy("lit-html",{createHTML:r=>r}):void 0,St="$lit$",D=`lit$${Math.random().toFixed(9).slice(2)}$`,At="?"+D,Qt=`<${At}>`,T=document,j=()=>T.createComment(""),B=r=>r===null||typeof r!="object"&&typeof r!="function",lt=Array.isArray,Vt=r=>lt(r)||typeof r?.[Symbol.iterator]=="function",st=`[ 	
-\f\r]`,K=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,bt=/-->/g,xt=/>/g,H=RegExp(`>|${st}(?:([^\\s"'>=/]+)(${st}*=${st}*(?:[^ 	
-\f\r"'\`<>=]|("|')|))|$)`,"g"),$t=/'/g,wt=/"/g,kt=/^(?:script|style|textarea|title)$/i,ct=r=>(e,...t)=>({_$litType$:r,strings:e,values:t}),a=ct(1),pe=ct(2),he=ct(3),z=Symbol.for("lit-noChange"),v=Symbol.for("lit-nothing"),Et=new WeakMap,R=T.createTreeWalker(T,129);function Ct(r,e){if(!lt(r)||!r.hasOwnProperty("raw"))throw Error("invalid template strings array");return yt!==void 0?yt.createHTML(e):e}var te=(r,e)=>{let t=r.length-1,s=[],o,i=e===2?"<svg>":e===3?"<math>":"",n=K;for(let c=0;c<t;c++){let l=r[c],p,m,u=-1,k=0;for(;k<l.length&&(n.lastIndex=k,m=n.exec(l),m!==null);)k=n.lastIndex,n===K?m[1]==="!--"?n=bt:m[1]!==void 0?n=xt:m[2]!==void 0?(kt.test(m[2])&&(o=RegExp("</"+m[2],"g")),n=H):m[3]!==void 0&&(n=H):n===H?m[0]===">"?(n=o??K,u=-1):m[1]===void 0?u=-2:(u=n.lastIndex-m[2].length,p=m[1],n=m[3]===void 0?H:m[3]==='"'?wt:$t):n===wt||n===$t?n=H:n===bt||n===xt?n=K:(n=H,o=void 0);let L=n===H&&r[c+1].startsWith("/>")?" ":"";i+=n===K?l+Qt:u>=0?(s.push(p),l.slice(0,u)+St+l.slice(u)+D+L):l+D+(u===-2?c:L)}return[Ct(r,i+(r[t]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),s]},F=class r{constructor({strings:e,_$litType$:t},s){let o;this.parts=[];let i=0,n=0,c=e.length-1,l=this.parts,[p,m]=te(e,t);if(this.el=r.createElement(p,s),R.currentNode=this.el.content,t===2||t===3){let u=this.el.content.firstChild;u.replaceWith(...u.childNodes)}for(;(o=R.nextNode())!==null&&l.length<c;){if(o.nodeType===1){if(o.hasAttributes())for(let u of o.getAttributeNames())if(u.endsWith(St)){let k=m[n++],L=o.getAttribute(u).split(D),G=/([.?@])?(.*)/.exec(k);l.push({type:1,index:i,name:G[2],strings:L,ctor:G[1]==="."?rt:G[1]==="?"?it:G[1]==="@"?nt:P}),o.removeAttribute(u)}else u.startsWith(D)&&(l.push({type:6,index:i}),o.removeAttribute(u));if(kt.test(o.tagName)){let u=o.textContent.split(D),k=u.length-1;if(k>0){o.textContent=Z?Z.emptyScript:"";for(let L=0;L<k;L++)o.append(u[L],j()),R.nextNode(),l.push({type:2,index:++i});o.append(u[k],j())}}}else if(o.nodeType===8)if(o.data===At)l.push({type:2,index:i});else{let u=-1;for(;(u=o.data.indexOf(D,u+1))!==-1;)l.push({type:7,index:i}),u+=D.length-1}i++}}static createElement(e,t){let s=T.createElement("template");return s.innerHTML=e,s}};function M(r,e,t=r,s){if(e===z)return e;let o=s!==void 0?t._$Co?.[s]:t._$Cl,i=B(e)?void 0:e._$litDirective$;return o?.constructor!==i&&(o?._$AO?.(!1),i===void 0?o=void 0:(o=new i(r),o._$AT(r,t,s)),s!==void 0?(t._$Co??=[])[s]=o:t._$Cl=o),o!==void 0&&(e=M(r,o._$AS(r,e.values),o,s)),e}var ot=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:s}=this._$AD,o=(e?.creationScope??T).importNode(t,!0);R.currentNode=o;let i=R.nextNode(),n=0,c=0,l=s[0];for(;l!==void 0;){if(n===l.index){let p;l.type===2?p=new q(i,i.nextSibling,this,e):l.type===1?p=new l.ctor(i,l.name,l.strings,this,e):l.type===6&&(p=new at(i,this,e)),this._$AV.push(p),l=s[++c]}n!==l?.index&&(i=R.nextNode(),n++)}return R.currentNode=T,o}p(e){let t=0;for(let s of this._$AV)s!==void 0&&(s.strings!==void 0?(s._$AI(e,s,t),t+=s.strings.length-2):s._$AI(e[t])),t++}},q=class r{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,s,o){this.type=2,this._$AH=v,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=s,this.options=o,this._$Cv=o?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=M(this,e,t),B(e)?e===v||e==null||e===""?(this._$AH!==v&&this._$AR(),this._$AH=v):e!==this._$AH&&e!==z&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):Vt(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==v&&B(this._$AH)?this._$AA.nextSibling.data=e:this.T(T.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:s}=e,o=typeof s=="number"?this._$AC(e):(s.el===void 0&&(s.el=F.createElement(Ct(s.h,s.h[0]),this.options)),s);if(this._$AH?._$AD===o)this._$AH.p(t);else{let i=new ot(o,this),n=i.u(this.options);i.p(t),this.T(n),this._$AH=i}}_$AC(e){let t=Et.get(e.strings);return t===void 0&&Et.set(e.strings,t=new F(e)),t}k(e){lt(this._$AH)||(this._$AH=[],this._$AR());let t=this._$AH,s,o=0;for(let i of e)o===t.length?t.push(s=new r(this.O(j()),this.O(j()),this,this.options)):s=t[o],s._$AI(i),o++;o<t.length&&(this._$AR(s&&s._$AB.nextSibling,o),t.length=o)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let s=_t(e).nextSibling;_t(e).remove(),e=s}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},P=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,s,o,i){this.type=1,this._$AH=v,this._$AN=void 0,this.element=e,this.name=t,this._$AM=o,this.options=i,s.length>2||s[0]!==""||s[1]!==""?(this._$AH=Array(s.length-1).fill(new String),this.strings=s):this._$AH=v}_$AI(e,t=this,s,o){let i=this.strings,n=!1;if(i===void 0)e=M(this,e,t,0),n=!B(e)||e!==this._$AH&&e!==z,n&&(this._$AH=e);else{let c=e,l,p;for(e=i[0],l=0;l<i.length-1;l++)p=M(this,c[s+l],t,l),p===z&&(p=this._$AH[l]),n||=!B(p)||p!==this._$AH[l],p===v?e=v:e!==v&&(e+=(p??"")+i[l+1]),this._$AH[l]=p}n&&!o&&this.j(e)}j(e){e===v?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},rt=class extends P{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===v?void 0:e}},it=class extends P{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==v)}},nt=class extends P{constructor(e,t,s,o,i){super(e,t,s,o,i),this.type=5}_$AI(e,t=this){if((e=M(this,e,t,0)??v)===z)return;let s=this._$AH,o=e===v&&s!==v||e.capture!==s.capture||e.once!==s.once||e.passive!==s.passive,i=e!==v&&(s===v||o);o&&this.element.removeEventListener(this.name,this,s),i&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},at=class{constructor(e,t,s){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=s}get _$AU(){return this._$AM._$AU}_$AI(e){M(this,e)}};var ee=dt.litHtmlPolyfillSupport;ee?.(F,q),(dt.litHtmlVersions??=[]).push("3.3.2");var Lt=(r,e,t)=>{let s=t?.renderBefore??e,o=s._$litPart$;if(o===void 0){let i=t?.renderBefore??null;s._$litPart$=o=new q(e.insertBefore(j(),i),i,void 0,t??{})}return o._$AI(r),o};var pt=globalThis,g=class extends C{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=Lt(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return z}};g._$litElement$=!0,g.finalized=!0,pt.litElementHydrateSupport?.({LitElement:g});var se=pt.litElementPolyfillSupport;se?.({LitElement:g});(pt.litElementVersions??=[]).push("4.2.2");var b=r=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(r,e)}):customElements.define(r,e)};var oe={attribute:!0,type:String,converter:N,reflect:!1,hasChanged:X},re=(r=oe,e,t)=>{let{kind:s,metadata:o}=t,i=globalThis.litPropertyMetadata.get(o);if(i===void 0&&globalThis.litPropertyMetadata.set(o,i=new Map),s==="setter"&&((r=Object.create(r)).wrapped=!0),i.set(t.name,r),s==="accessor"){let{name:n}=t;return{set(c){let l=e.get.call(this);e.set.call(this,c),this.requestUpdate(n,l,r,!0,c)},init(c){return c!==void 0&&this.C(n,void 0,r,c),c}}}if(s==="setter"){let{name:n}=t;return function(c){let l=this[n];e.call(this,c),this.requestUpdate(n,l,r,!0,c)}}throw Error("Unsupported decorator location: "+s)};function f(r){return(e,t)=>typeof t=="object"?re(r,e,t):((s,o,i)=>{let n=o.hasOwnProperty(i);return o.constructor.createProperty(i,s),n?Object.getOwnPropertyDescriptor(o,i):void 0})(r,e,t)}function h(r){return f({...r,state:!0,attribute:!1})}async function Dt(r){return r.callWS({type:"loxone/list_entries"})}async function I(r,e){return r.callWS({type:"loxone/get_devices",...e?{miniserver:e}:{}})}async function Ht(r,e,t){return r.callWS({type:"loxone/set_entity_enabled",entity_id:e,enabled:t})}async function Rt(r,e){return r.callWS({type:"loxone/get_areas",...e?{miniserver:e}:{}})}async function Tt(r,e){await r.callService("loxone","sync_areas",{create_areas:e})}async function zt(r){await r.callService("loxone","sync_device_names")}async function Mt(r,e){return r.callWS({type:"loxone/get_bridges",...e?{miniserver:e}:{}})}async function Pt(r,e,t,s){return r.callWS({type:"loxone/add_bridge",entity_id:e,loxone_uuid:t,...s?{miniserver:s}:{}})}async function It(r,e,t){return r.callWS({type:"loxone/remove_bridge",entity_id:e,...t?{miniserver:t}:{}})}async function Ot(r,e){return r.callWS({type:"loxone/get_status",...e?{miniserver:e}:{}})}async function Ut(r,e){return r.callWS({type:"loxone/get_structure_diff",...e?{miniserver:e}:{}})}async function Nt(r,e,t,s){return r.callWS({type:"loxone/send_command",uuid:e,command:t,...s?{miniserver:s}:{}})}var x=class extends g{constructor(){super(...arguments);this.refreshKey=0;this._devices=[];this._filter="";this._loading=!0;this._error="";this._sortKey="room";this._sortDir="asc"}connectedCallback(){super.connectedCallback(),this._loadDevices()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._loadDevices()}async _loadDevices(){this._loading=!0,this._error="";try{let t=await I(this.hass,this.miniserverId);this._devices=t.devices}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}get _filteredDevices(){let t=this._devices;if(this._filter){let s=this._filter.toLowerCase();t=t.filter(o=>o.name.toLowerCase().includes(s)||o.type.toLowerCase().includes(s)||o.room.toLowerCase().includes(s)||o.ha_entities.some(i=>i.entity_id.toLowerCase().includes(s)))}return this._sortDevices(t)}_sortDevices(t){let s=this._sortDir==="asc"?1:-1,o=(p,m)=>{let u=0;switch(this._sortKey){case"name":u=p.name.localeCompare(m.name);break;case"type":u=p.type.localeCompare(m.type)||p.name.localeCompare(m.name);break;case"room":u=(p.room||"").localeCompare(m.room||"")||p.name.localeCompare(m.name);break;case"entities":u=p.ha_entities.length-m.ha_entities.length;break}return u*s},i=new Set(t.filter(p=>!p.parent).map(p=>p.uuid)),n=new Map,c=[];for(let p of t)if(p.parent&&i.has(p.parent)){let m=n.get(p.parent)||[];m.push(p),n.set(p.parent,m)}else c.push(p);c.sort(o);for(let p of n.values())p.sort(o);let l=[];for(let p of c){l.push(p);let m=n.get(p.uuid);m&&l.push(...m)}return l}_toggleSort(t){this._sortKey===t?this._sortDir=this._sortDir==="asc"?"desc":"asc":(this._sortKey=t,this._sortDir="asc")}_sortIndicator(t){return this._sortKey!==t?v:a`<span class="sort-arrow"
+var Zt=Object.defineProperty;var Qt=Object.getOwnPropertyDescriptor;var l=(i,e,t,o)=>{for(var r=o>1?void 0:o?Qt(e,t):e,s=i.length-1,n;s>=0;s--)(n=i[s])&&(r=(o?n(e,t,r):n(r))||r);return o&&r&&Zt(e,t,r),r};var Y=globalThis,Z=Y.ShadowRoot&&(Y.ShadyCSS===void 0||Y.ShadyCSS.nativeShadow)&&"adoptedStyleSheets"in Document.prototype&&"replace"in CSSStyleSheet.prototype,st=Symbol(),vt=new WeakMap,G=class{constructor(e,t,o){if(this._$cssResult$=!0,o!==st)throw Error("CSSResult is not constructable. Use `unsafeCSS` or `css` instead.");this.cssText=e,this.t=t}get styleSheet(){let e=this.o,t=this.t;if(Z&&e===void 0){let o=t!==void 0&&t.length===1;o&&(e=vt.get(t)),e===void 0&&((this.o=e=new CSSStyleSheet).replaceSync(this.cssText),o&&vt.set(t,e))}return e}toString(){return this.cssText}},bt=i=>new G(typeof i=="string"?i:i+"",void 0,st),_=(i,...e)=>{let t=i.length===1?i[0]:e.reduce((o,r,s)=>o+(n=>{if(n._$cssResult$===!0)return n.cssText;if(typeof n=="number")return n;throw Error("Value passed to 'css' function must be a 'css' function result: "+n+". Use 'unsafeCSS' to pass non-literal values, but take care to ensure page security.")})(r)+i[s+1],i[0]);return new G(t,i,st)},_t=(i,e)=>{if(Z)i.adoptedStyleSheets=e.map(t=>t instanceof CSSStyleSheet?t:t.styleSheet);else for(let t of e){let o=document.createElement("style"),r=Y.litNonce;r!==void 0&&o.setAttribute("nonce",r),o.textContent=t.cssText,i.appendChild(o)}},it=Z?i=>i:i=>i instanceof CSSStyleSheet?(e=>{let t="";for(let o of e.cssRules)t+=o.cssText;return bt(t)})(i):i;var{is:Vt,defineProperty:te,getOwnPropertyDescriptor:ee,getOwnPropertyNames:oe,getOwnPropertySymbols:re,getPrototypeOf:se}=Object,Q=globalThis,xt=Q.trustedTypes,ie=xt?xt.emptyScript:"",ne=Q.reactiveElementPolyfillSupport,B=(i,e)=>i,K={toAttribute(i,e){switch(e){case Boolean:i=i?ie:null;break;case Object:case Array:i=i==null?i:JSON.stringify(i)}return i},fromAttribute(i,e){let t=i;switch(e){case Boolean:t=i!==null;break;case Number:t=i===null?null:Number(i);break;case Object:case Array:try{t=JSON.parse(i)}catch{t=null}}return t}},V=(i,e)=>!Vt(i,e),yt={attribute:!0,type:String,converter:K,reflect:!1,useDefault:!1,hasChanged:V};Symbol.metadata??=Symbol("metadata"),Q.litPropertyMetadata??=new WeakMap;var H=class extends HTMLElement{static addInitializer(e){this._$Ei(),(this.l??=[]).push(e)}static get observedAttributes(){return this.finalize(),this._$Eh&&[...this._$Eh.keys()]}static createProperty(e,t=yt){if(t.state&&(t.attribute=!1),this._$Ei(),this.prototype.hasOwnProperty(e)&&((t=Object.create(t)).wrapped=!0),this.elementProperties.set(e,t),!t.noAccessor){let o=Symbol(),r=this.getPropertyDescriptor(e,o,t);r!==void 0&&te(this.prototype,e,r)}}static getPropertyDescriptor(e,t,o){let{get:r,set:s}=ee(this.prototype,e)??{get(){return this[t]},set(n){this[t]=n}};return{get:r,set(n){let d=r?.call(this);s?.call(this,n),this.requestUpdate(e,d,o)},configurable:!0,enumerable:!0}}static getPropertyOptions(e){return this.elementProperties.get(e)??yt}static _$Ei(){if(this.hasOwnProperty(B("elementProperties")))return;let e=se(this);e.finalize(),e.l!==void 0&&(this.l=[...e.l]),this.elementProperties=new Map(e.elementProperties)}static finalize(){if(this.hasOwnProperty(B("finalized")))return;if(this.finalized=!0,this._$Ei(),this.hasOwnProperty(B("properties"))){let t=this.properties,o=[...oe(t),...re(t)];for(let r of o)this.createProperty(r,t[r])}let e=this[Symbol.metadata];if(e!==null){let t=litPropertyMetadata.get(e);if(t!==void 0)for(let[o,r]of t)this.elementProperties.set(o,r)}this._$Eh=new Map;for(let[t,o]of this.elementProperties){let r=this._$Eu(t,o);r!==void 0&&this._$Eh.set(r,t)}this.elementStyles=this.finalizeStyles(this.styles)}static finalizeStyles(e){let t=[];if(Array.isArray(e)){let o=new Set(e.flat(1/0).reverse());for(let r of o)t.unshift(it(r))}else e!==void 0&&t.push(it(e));return t}static _$Eu(e,t){let o=t.attribute;return o===!1?void 0:typeof o=="string"?o:typeof e=="string"?e.toLowerCase():void 0}constructor(){super(),this._$Ep=void 0,this.isUpdatePending=!1,this.hasUpdated=!1,this._$Em=null,this._$Ev()}_$Ev(){this._$ES=new Promise(e=>this.enableUpdating=e),this._$AL=new Map,this._$E_(),this.requestUpdate(),this.constructor.l?.forEach(e=>e(this))}addController(e){(this._$EO??=new Set).add(e),this.renderRoot!==void 0&&this.isConnected&&e.hostConnected?.()}removeController(e){this._$EO?.delete(e)}_$E_(){let e=new Map,t=this.constructor.elementProperties;for(let o of t.keys())this.hasOwnProperty(o)&&(e.set(o,this[o]),delete this[o]);e.size>0&&(this._$Ep=e)}createRenderRoot(){let e=this.shadowRoot??this.attachShadow(this.constructor.shadowRootOptions);return _t(e,this.constructor.elementStyles),e}connectedCallback(){this.renderRoot??=this.createRenderRoot(),this.enableUpdating(!0),this._$EO?.forEach(e=>e.hostConnected?.())}enableUpdating(e){}disconnectedCallback(){this._$EO?.forEach(e=>e.hostDisconnected?.())}attributeChangedCallback(e,t,o){this._$AK(e,o)}_$ET(e,t){let o=this.constructor.elementProperties.get(e),r=this.constructor._$Eu(e,o);if(r!==void 0&&o.reflect===!0){let s=(o.converter?.toAttribute!==void 0?o.converter:K).toAttribute(t,o.type);this._$Em=e,s==null?this.removeAttribute(r):this.setAttribute(r,s),this._$Em=null}}_$AK(e,t){let o=this.constructor,r=o._$Eh.get(e);if(r!==void 0&&this._$Em!==r){let s=o.getPropertyOptions(r),n=typeof s.converter=="function"?{fromAttribute:s.converter}:s.converter?.fromAttribute!==void 0?s.converter:K;this._$Em=r;let d=n.fromAttribute(t,s.type);this[r]=d??this._$Ej?.get(r)??d,this._$Em=null}}requestUpdate(e,t,o,r=!1,s){if(e!==void 0){let n=this.constructor;if(r===!1&&(s=this[e]),o??=n.getPropertyOptions(e),!((o.hasChanged??V)(s,t)||o.useDefault&&o.reflect&&s===this._$Ej?.get(e)&&!this.hasAttribute(n._$Eu(e,o))))return;this.C(e,t,o)}this.isUpdatePending===!1&&(this._$ES=this._$EP())}C(e,t,{useDefault:o,reflect:r,wrapped:s},n){o&&!(this._$Ej??=new Map).has(e)&&(this._$Ej.set(e,n??t??this[e]),s!==!0||n!==void 0)||(this._$AL.has(e)||(this.hasUpdated||o||(t=void 0),this._$AL.set(e,t)),r===!0&&this._$Em!==e&&(this._$Eq??=new Set).add(e))}async _$EP(){this.isUpdatePending=!0;try{await this._$ES}catch(t){Promise.reject(t)}let e=this.scheduleUpdate();return e!=null&&await e,!this.isUpdatePending}scheduleUpdate(){return this.performUpdate()}performUpdate(){if(!this.isUpdatePending)return;if(!this.hasUpdated){if(this.renderRoot??=this.createRenderRoot(),this._$Ep){for(let[r,s]of this._$Ep)this[r]=s;this._$Ep=void 0}let o=this.constructor.elementProperties;if(o.size>0)for(let[r,s]of o){let{wrapped:n}=s,d=this[r];n!==!0||this._$AL.has(r)||d===void 0||this.C(r,void 0,s,d)}}let e=!1,t=this._$AL;try{e=this.shouldUpdate(t),e?(this.willUpdate(t),this._$EO?.forEach(o=>o.hostUpdate?.()),this.update(t)):this._$EM()}catch(o){throw e=!1,this._$EM(),o}e&&this._$AE(t)}willUpdate(e){}_$AE(e){this._$EO?.forEach(t=>t.hostUpdated?.()),this.hasUpdated||(this.hasUpdated=!0,this.firstUpdated(e)),this.updated(e)}_$EM(){this._$AL=new Map,this.isUpdatePending=!1}get updateComplete(){return this.getUpdateComplete()}getUpdateComplete(){return this._$ES}shouldUpdate(e){return!0}update(e){this._$Eq&&=this._$Eq.forEach(t=>this._$ET(t,this[t])),this._$EM()}updated(e){}firstUpdated(e){}};H.elementStyles=[],H.shadowRootOptions={mode:"open"},H[B("elementProperties")]=new Map,H[B("finalized")]=new Map,ne?.({ReactiveElement:H}),(Q.reactiveElementVersions??=[]).push("2.1.2");var ht=globalThis,$t=i=>i,tt=ht.trustedTypes,wt=tt?tt.createPolicy("lit-html",{createHTML:i=>i}):void 0,Rt="$lit$",z=`lit$${Math.random().toFixed(9).slice(2)}$`,Lt="?"+z,ae=`<${Lt}>`,M=document,F=()=>M.createComment(""),W=i=>i===null||typeof i!="object"&&typeof i!="function",ut=Array.isArray,le=i=>ut(i)||typeof i?.[Symbol.iterator]=="function",nt=`[ 	
+\f\r]`,j=/<(?:(!--|\/[^a-zA-Z])|(\/?[a-zA-Z][^>\s]*)|(\/?$))/g,Et=/-->/g,kt=/>/g,T=RegExp(`>|${nt}(?:([^\\s"'>=/]+)(${nt}*=${nt}*(?:[^ 	
+\f\r"'\`<>=]|("|')|))|$)`,"g"),St=/'/g,At=/"/g,Dt=/^(?:script|style|textarea|title)$/i,gt=i=>(e,...t)=>({_$litType$:i,strings:e,values:t}),a=gt(1),ye=gt(2),$e=gt(3),P=Symbol.for("lit-noChange"),f=Symbol.for("lit-nothing"),Ct=new WeakMap,I=M.createTreeWalker(M,129);function Ht(i,e){if(!ut(i)||!i.hasOwnProperty("raw"))throw Error("invalid template strings array");return wt!==void 0?wt.createHTML(e):e}var de=(i,e)=>{let t=i.length-1,o=[],r,s=e===2?"<svg>":e===3?"<math>":"",n=j;for(let d=0;d<t;d++){let c=i[d],h,u,g=-1,k=0;for(;k<c.length&&(n.lastIndex=k,u=n.exec(c),u!==null);)k=n.lastIndex,n===j?u[1]==="!--"?n=Et:u[1]!==void 0?n=kt:u[2]!==void 0?(Dt.test(u[2])&&(r=RegExp("</"+u[2],"g")),n=T):u[3]!==void 0&&(n=T):n===T?u[0]===">"?(n=r??j,g=-1):u[1]===void 0?g=-2:(g=n.lastIndex-u[2].length,h=u[1],n=u[3]===void 0?T:u[3]==='"'?At:St):n===At||n===St?n=T:n===Et||n===kt?n=j:(n=T,r=void 0);let L=n===T&&i[d+1].startsWith("/>")?" ":"";s+=n===j?c+ae:g>=0?(o.push(h),c.slice(0,g)+Rt+c.slice(g)+z+L):c+z+(g===-2?d:L)}return[Ht(i,s+(i[t]||"<?>")+(e===2?"</svg>":e===3?"</math>":"")),o]},q=class i{constructor({strings:e,_$litType$:t},o){let r;this.parts=[];let s=0,n=0,d=e.length-1,c=this.parts,[h,u]=de(e,t);if(this.el=i.createElement(h,o),I.currentNode=this.el.content,t===2||t===3){let g=this.el.content.firstChild;g.replaceWith(...g.childNodes)}for(;(r=I.nextNode())!==null&&c.length<d;){if(r.nodeType===1){if(r.hasAttributes())for(let g of r.getAttributeNames())if(g.endsWith(Rt)){let k=u[n++],L=r.getAttribute(g).split(z),X=/([.?@])?(.*)/.exec(k);c.push({type:1,index:s,name:X[2],strings:L,ctor:X[1]==="."?lt:X[1]==="?"?dt:X[1]==="@"?ct:N}),r.removeAttribute(g)}else g.startsWith(z)&&(c.push({type:6,index:s}),r.removeAttribute(g));if(Dt.test(r.tagName)){let g=r.textContent.split(z),k=g.length-1;if(k>0){r.textContent=tt?tt.emptyScript:"";for(let L=0;L<k;L++)r.append(g[L],F()),I.nextNode(),c.push({type:2,index:++s});r.append(g[k],F())}}}else if(r.nodeType===8)if(r.data===Lt)c.push({type:2,index:s});else{let g=-1;for(;(g=r.data.indexOf(z,g+1))!==-1;)c.push({type:7,index:s}),g+=z.length-1}s++}}static createElement(e,t){let o=M.createElement("template");return o.innerHTML=e,o}};function O(i,e,t=i,o){if(e===P)return e;let r=o!==void 0?t._$Co?.[o]:t._$Cl,s=W(e)?void 0:e._$litDirective$;return r?.constructor!==s&&(r?._$AO?.(!1),s===void 0?r=void 0:(r=new s(i),r._$AT(i,t,o)),o!==void 0?(t._$Co??=[])[o]=r:t._$Cl=r),r!==void 0&&(e=O(i,r._$AS(i,e.values),r,o)),e}var at=class{constructor(e,t){this._$AV=[],this._$AN=void 0,this._$AD=e,this._$AM=t}get parentNode(){return this._$AM.parentNode}get _$AU(){return this._$AM._$AU}u(e){let{el:{content:t},parts:o}=this._$AD,r=(e?.creationScope??M).importNode(t,!0);I.currentNode=r;let s=I.nextNode(),n=0,d=0,c=o[0];for(;c!==void 0;){if(n===c.index){let h;c.type===2?h=new J(s,s.nextSibling,this,e):c.type===1?h=new c.ctor(s,c.name,c.strings,this,e):c.type===6&&(h=new pt(s,this,e)),this._$AV.push(h),c=o[++d]}n!==c?.index&&(s=I.nextNode(),n++)}return I.currentNode=M,r}p(e){let t=0;for(let o of this._$AV)o!==void 0&&(o.strings!==void 0?(o._$AI(e,o,t),t+=o.strings.length-2):o._$AI(e[t])),t++}},J=class i{get _$AU(){return this._$AM?._$AU??this._$Cv}constructor(e,t,o,r){this.type=2,this._$AH=f,this._$AN=void 0,this._$AA=e,this._$AB=t,this._$AM=o,this.options=r,this._$Cv=r?.isConnected??!0}get parentNode(){let e=this._$AA.parentNode,t=this._$AM;return t!==void 0&&e?.nodeType===11&&(e=t.parentNode),e}get startNode(){return this._$AA}get endNode(){return this._$AB}_$AI(e,t=this){e=O(this,e,t),W(e)?e===f||e==null||e===""?(this._$AH!==f&&this._$AR(),this._$AH=f):e!==this._$AH&&e!==P&&this._(e):e._$litType$!==void 0?this.$(e):e.nodeType!==void 0?this.T(e):le(e)?this.k(e):this._(e)}O(e){return this._$AA.parentNode.insertBefore(e,this._$AB)}T(e){this._$AH!==e&&(this._$AR(),this._$AH=this.O(e))}_(e){this._$AH!==f&&W(this._$AH)?this._$AA.nextSibling.data=e:this.T(M.createTextNode(e)),this._$AH=e}$(e){let{values:t,_$litType$:o}=e,r=typeof o=="number"?this._$AC(e):(o.el===void 0&&(o.el=q.createElement(Ht(o.h,o.h[0]),this.options)),o);if(this._$AH?._$AD===r)this._$AH.p(t);else{let s=new at(r,this),n=s.u(this.options);s.p(t),this.T(n),this._$AH=s}}_$AC(e){let t=Ct.get(e.strings);return t===void 0&&Ct.set(e.strings,t=new q(e)),t}k(e){ut(this._$AH)||(this._$AH=[],this._$AR());let t=this._$AH,o,r=0;for(let s of e)r===t.length?t.push(o=new i(this.O(F()),this.O(F()),this,this.options)):o=t[r],o._$AI(s),r++;r<t.length&&(this._$AR(o&&o._$AB.nextSibling,r),t.length=r)}_$AR(e=this._$AA.nextSibling,t){for(this._$AP?.(!1,!0,t);e!==this._$AB;){let o=$t(e).nextSibling;$t(e).remove(),e=o}}setConnected(e){this._$AM===void 0&&(this._$Cv=e,this._$AP?.(e))}},N=class{get tagName(){return this.element.tagName}get _$AU(){return this._$AM._$AU}constructor(e,t,o,r,s){this.type=1,this._$AH=f,this._$AN=void 0,this.element=e,this.name=t,this._$AM=r,this.options=s,o.length>2||o[0]!==""||o[1]!==""?(this._$AH=Array(o.length-1).fill(new String),this.strings=o):this._$AH=f}_$AI(e,t=this,o,r){let s=this.strings,n=!1;if(s===void 0)e=O(this,e,t,0),n=!W(e)||e!==this._$AH&&e!==P,n&&(this._$AH=e);else{let d=e,c,h;for(e=s[0],c=0;c<s.length-1;c++)h=O(this,d[o+c],t,c),h===P&&(h=this._$AH[c]),n||=!W(h)||h!==this._$AH[c],h===f?e=f:e!==f&&(e+=(h??"")+s[c+1]),this._$AH[c]=h}n&&!r&&this.j(e)}j(e){e===f?this.element.removeAttribute(this.name):this.element.setAttribute(this.name,e??"")}},lt=class extends N{constructor(){super(...arguments),this.type=3}j(e){this.element[this.name]=e===f?void 0:e}},dt=class extends N{constructor(){super(...arguments),this.type=4}j(e){this.element.toggleAttribute(this.name,!!e&&e!==f)}},ct=class extends N{constructor(e,t,o,r,s){super(e,t,o,r,s),this.type=5}_$AI(e,t=this){if((e=O(this,e,t,0)??f)===P)return;let o=this._$AH,r=e===f&&o!==f||e.capture!==o.capture||e.once!==o.once||e.passive!==o.passive,s=e!==f&&(o===f||r);r&&this.element.removeEventListener(this.name,this,o),s&&this.element.addEventListener(this.name,this,e),this._$AH=e}handleEvent(e){typeof this._$AH=="function"?this._$AH.call(this.options?.host??this.element,e):this._$AH.handleEvent(e)}},pt=class{constructor(e,t,o){this.element=e,this.type=6,this._$AN=void 0,this._$AM=t,this.options=o}get _$AU(){return this._$AM._$AU}_$AI(e){O(this,e)}};var ce=ht.litHtmlPolyfillSupport;ce?.(q,J),(ht.litHtmlVersions??=[]).push("3.3.2");var zt=(i,e,t)=>{let o=t?.renderBefore??e,r=o._$litPart$;if(r===void 0){let s=t?.renderBefore??null;o._$litPart$=r=new J(e.insertBefore(F(),s),s,void 0,t??{})}return r._$AI(i),r};var mt=globalThis,v=class extends H{constructor(){super(...arguments),this.renderOptions={host:this},this._$Do=void 0}createRenderRoot(){let e=super.createRenderRoot();return this.renderOptions.renderBefore??=e.firstChild,e}update(e){let t=this.render();this.hasUpdated||(this.renderOptions.isConnected=this.isConnected),super.update(e),this._$Do=zt(t,this.renderRoot,this.renderOptions)}connectedCallback(){super.connectedCallback(),this._$Do?.setConnected(!0)}disconnectedCallback(){super.disconnectedCallback(),this._$Do?.setConnected(!1)}render(){return P}};v._$litElement$=!0,v.finalized=!0,mt.litElementHydrateSupport?.({LitElement:v});var pe=mt.litElementPolyfillSupport;pe?.({LitElement:v});(mt.litElementVersions??=[]).push("4.2.2");var y=i=>(e,t)=>{t!==void 0?t.addInitializer(()=>{customElements.define(i,e)}):customElements.define(i,e)};var he={attribute:!0,type:String,converter:K,reflect:!1,hasChanged:V},ue=(i=he,e,t)=>{let{kind:o,metadata:r}=t,s=globalThis.litPropertyMetadata.get(r);if(s===void 0&&globalThis.litPropertyMetadata.set(r,s=new Map),o==="setter"&&((i=Object.create(i)).wrapped=!0),s.set(t.name,i),o==="accessor"){let{name:n}=t;return{set(d){let c=e.get.call(this);e.set.call(this,d),this.requestUpdate(n,c,i,!0,d)},init(d){return d!==void 0&&this.C(n,void 0,i,d),d}}}if(o==="setter"){let{name:n}=t;return function(d){let c=this[n];e.call(this,d),this.requestUpdate(n,c,i,!0,d)}}throw Error("Unsupported decorator location: "+o)};function m(i){return(e,t)=>typeof t=="object"?ue(i,e,t):((o,r,s)=>{let n=r.hasOwnProperty(s);return r.constructor.createProperty(s,o),n?Object.getOwnPropertyDescriptor(r,s):void 0})(i,e,t)}function p(i){return m({...i,state:!0,attribute:!1})}async function Tt(i){return i.callWS({type:"loxone/list_entries"})}async function U(i,e){return i.callWS({type:"loxone/get_devices",...e?{miniserver:e}:{}})}async function It(i,e,t){return i.callWS({type:"loxone/set_entity_enabled",entity_id:e,enabled:t})}async function Mt(i,e){return i.callWS({type:"loxone/get_areas",...e?{miniserver:e}:{}})}async function Pt(i,e){await i.callService("loxone","sync_areas",{create_areas:e})}async function Ot(i){await i.callService("loxone","sync_device_names")}async function Nt(i,e){return i.callWS({type:"loxone/get_bridges",...e?{miniserver:e}:{}})}async function Ut(i,e,t,o){return i.callWS({type:"loxone/add_bridge",entity_id:e,loxone_uuid:t,...o?{miniserver:o}:{}})}async function Gt(i,e,t){return i.callWS({type:"loxone/remove_bridge",entity_id:e,...t?{miniserver:t}:{}})}async function Bt(i,e){return i.callWS({type:"loxone/get_status",...e?{miniserver:e}:{}})}async function Kt(i,e){return i.callWS({type:"loxone/get_structure_diff",...e?{miniserver:e}:{}})}async function jt(i,e,t,o){return i.callWS({type:"loxone/send_command",uuid:e,command:t,...o?{miniserver:o}:{}})}async function Ft(i,e,t){return i.callWS({type:"loxone/get_control_detail",uuid:e,...t?{miniserver:t}:{}})}async function Wt(i,e){return i.callWS({type:"loxone/get_structure",...e?{miniserver:e}:{}})}function S(i,e){i.dispatchEvent(new CustomEvent("hass-notification",{bubbles:!0,composed:!0,detail:{message:e,duration:4e3}}))}var x=class extends v{constructor(){super(...arguments);this.refreshKey=0;this._devices=[];this._filter="";this._filterDomain="";this._filterRoom="";this._filterStatus="";this._loading=!0;this._error="";this._sortKey="room";this._sortDir="asc";this._detail=null;this._detailLoading=!1}connectedCallback(){super.connectedCallback(),this._loadDevices()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._loadDevices()}async _loadDevices(){this._loading=!0,this._error="";try{let t=await U(this.hass,this.miniserverId);this._devices=t.devices}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}get _allDomains(){let t=new Set;for(let o of this._devices)for(let r of o.ha_entities)t.add(r.entity_id.split(".")[0]);return[...t].sort()}get _allRooms(){let t=new Set;for(let o of this._devices)o.room&&t.add(o.room);return[...t].sort()}get _filteredDevices(){let t=this._devices;if(this._filter){let o=this._filter.toLowerCase();t=t.filter(r=>r.name.toLowerCase().includes(o)||r.type.toLowerCase().includes(o)||r.room.toLowerCase().includes(o)||r.ha_entities.some(s=>s.entity_id.toLowerCase().includes(o)))}if(this._filterDomain){let o=this._filterDomain;t=t.filter(r=>r.ha_entities.some(s=>s.entity_id.startsWith(o+".")))}if(this._filterRoom&&(t=t.filter(o=>o.room===this._filterRoom)),this._filterStatus)switch(this._filterStatus){case"enabled":t=t.filter(o=>o.ha_entities.length>0&&o.ha_entities.some(r=>!r.disabled_by));break;case"disabled":t=t.filter(o=>o.ha_entities.some(r=>!!r.disabled_by));break;case"no-entity":t=t.filter(o=>o.ha_entities.length===0);break}return this._sortDevices(t)}_sortDevices(t){let o=this._sortDir==="asc"?1:-1,r=(h,u)=>{let g=0;switch(this._sortKey){case"name":g=h.name.localeCompare(u.name);break;case"type":g=h.type.localeCompare(u.type)||h.name.localeCompare(u.name);break;case"room":g=(h.room||"").localeCompare(u.room||"")||h.name.localeCompare(u.name);break;case"entities":g=h.ha_entities.length-u.ha_entities.length;break}return g*o},s=new Set(t.filter(h=>!h.parent).map(h=>h.uuid)),n=new Map,d=[];for(let h of t)if(h.parent&&s.has(h.parent)){let u=n.get(h.parent)||[];u.push(h),n.set(h.parent,u)}else d.push(h);d.sort(r);for(let h of n.values())h.sort(r);let c=[];for(let h of d){c.push(h);let u=n.get(h.uuid);u&&c.push(...u)}return c}_toggleSort(t){this._sortKey===t?this._sortDir=this._sortDir==="asc"?"desc":"asc":(this._sortKey=t,this._sortDir="asc")}_sortIndicator(t){return this._sortKey!==t?f:a`<span class="sort-arrow"
       >${this._sortDir==="asc"?"\u25B2":"\u25BC"}</span
-    >`}async _toggleEntity(t,s){try{await Ht(this.hass,t,s),await this._loadDevices()}catch(o){this._error=o instanceof Error?o.message:String(o)}}render(){if(this._loading)return a`<p class="status">Loading devices…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._filteredDevices,s=new Set(t.map(c=>c.uuid)),o=new Map;for(let c of this._devices)for(let l of c.ha_entities){let p=l.entity_id.split(".")[0];o.set(p,(o.get(p)||0)+1)}let i=[...o.values()].reduce((c,l)=>c+l,0),n=[...o.entries()].sort((c,l)=>l[1]-c[1]).map(([c,l])=>`${l} ${c}`).join(", ");return a`
+    >`}async _openDetail(t){this._detailLoading=!0,this._detail=null;try{this._detail=await Ft(this.hass,t,this.miniserverId)}catch{this._detail=null}finally{this._detailLoading=!1}}_closeDetail(){this._detail=null}async _toggleEntity(t,o){try{await It(this.hass,t,o),S(this,`${t} ${o?"enabled":"disabled"}`),await this._loadDevices()}catch(r){this._error=r instanceof Error?r.message:String(r)}}render(){if(this._loading)return a`<p class="status">Loading devices…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._filteredDevices,o=new Set(t.map(d=>d.uuid)),r=new Map;for(let d of this._devices)for(let c of d.ha_entities){let h=c.entity_id.split(".")[0];r.set(h,(r.get(h)||0)+1)}let s=[...r.values()].reduce((d,c)=>d+c,0),n=[...r.entries()].sort((d,c)=>c[1]-d[1]).map(([d,c])=>`${c} ${d}`).join(", ");return a`
       <div class="toolbar">
         <input
           type="search"
           placeholder="Filter by name, type, room, or entity…"
           .value=${this._filter}
-          @input=${c=>{this._filter=c.target.value}}
+          @input=${d=>{this._filter=d.target.value}}
         />
-        
+        <select class="filter-select" .value=${this._filterDomain}
+          @change=${d=>{this._filterDomain=d.target.value}}>
+          <option value="">All domains</option>
+          ${this._allDomains.map(d=>a`<option value=${d}>${d}</option>`)}
+        </select>
+        <select class="filter-select" .value=${this._filterRoom}
+          @change=${d=>{this._filterRoom=d.target.value}}>
+          <option value="">All rooms</option>
+          ${this._allRooms.map(d=>a`<option value=${d}>${d}</option>`)}
+        </select>
+        <select class="filter-select" .value=${this._filterStatus}
+          @change=${d=>{this._filterStatus=d.target.value}}>
+          <option value="">All statuses</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+          <option value="no-entity">No entity</option>
+        </select>
       </div>
       <p class="summary">
         <span class="count">${this._devices.length}</span> controls,
-        <span class="count">${i}</span> HA entities
+        <span class="count">${s}</span> HA entities
         ${n?a`<span class="domain-breakdown">(${n})</span>`:""}
       </p>
       <table>
@@ -47,25 +63,26 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
           </tr>
         </thead>
         <tbody>
-          ${t.map(c=>a`
-              <tr class=${c.parent&&s.has(c.parent)?"sub-control":""}>
-                <td>${c.name}</td>
-                <td><span class="badge">${c.type}</span></td>
-                <td>${c.room||"\u2014"}</td>
+          ${t.map(d=>a`
+              <tr class="${d.parent&&o.has(d.parent)?"sub-control":""} clickable"
+                  @click=${()=>this._openDetail(d.uuid)}>
+                <td>${d.name}</td>
+                <td><span class="badge">${d.type}</span></td>
+                <td>${d.room||"\u2014"}</td>
                 <td>
-                  ${c.ha_entities.length===0?a`<span style="color: var(--secondary-text-color)"
+                  ${d.ha_entities.length===0?a`<span style="color: var(--secondary-text-color)"
                         >—</span
-                      >`:c.ha_entities.map(l=>a`
+                      >`:d.ha_entities.map(c=>a`
                           <span
-                            class="entity-chip ${l.disabled_by?"disabled":""}"
+                            class="entity-chip ${c.disabled_by?"disabled":""}"
                           >
-                            ${l.entity_id}
+                            ${c.entity_id}
                             <button
                               class="toggle-btn"
-                              title=${l.disabled_by?"Enable":"Disable"}
-                              @click=${()=>this._toggleEntity(l.entity_id,!!l.disabled_by)}
+                              title=${c.disabled_by?"Enable":"Disable"}
+                              @click=${h=>{h.stopPropagation(),this._toggleEntity(c.entity_id,!!c.disabled_by)}}
                             >
-                              ${l.disabled_by?"\u2B1A":"\u2713"}
+                              ${c.disabled_by?"\u2B1A":"\u2713"}
                             </button>
                           </span>
                         `)}
@@ -74,7 +91,55 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
             `)}
         </tbody>
       </table>
-    `}};x.styles=y`
+      ${this._detailLoading?a`<div class="drawer-overlay"><div class="drawer"><p class="status">Loading…</p></div></div>`:""}
+      ${this._detail?this._renderDrawer(this._detail):""}
+    `}_renderDrawer(t){let o=Object.entries(t.states);return a`
+      <div class="drawer-overlay" @click=${this._closeDetail}></div>
+      <div class="drawer" @click=${r=>r.stopPropagation()}>
+        <button class="close-btn" @click=${this._closeDetail}>✕</button>
+        <h2>${t.name}</h2>
+        <div class="sub-title">
+          <span class="badge">${t.type}</span>
+          ${t.room?a` — ${t.room}`:""}
+          ${t.category?a` — ${t.category}`:""}
+          ${t.is_sub_control&&t.parent_name?a` (sub-control of ${t.parent_name})`:""}
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">UUID</span>
+          <span class="detail-value">${t.uuid}</span>
+        </div>
+        ${o.length>0?a`
+          <div class="section-title">States (${o.length})</div>
+          ${o.map(([r,s])=>a`
+            <div class="detail-row">
+              <span class="detail-label">${r}</span>
+              <span class="detail-value">${s.value??"\u2014"}${s.last_changed?a` <span style="opacity:0.5;font-size:11px">${new Date(s.last_changed).toLocaleTimeString()}</span>`:""}</span>
+            </div>
+          `)}
+        `:""}
+        ${t.ha_entities.length>0?a`
+          <div class="section-title">HA Entities (${t.ha_entities.length})</div>
+          ${t.ha_entities.map(r=>a`
+            <div class="entity-row">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>${r.entity_id}</span>
+                <span class="badge" style="${r.disabled_by?"background:var(--disabled-text-color,#bdbdbd)":"background:var(--success-color,#4caf50);color:#fff"}">${r.disabled_by?"disabled":r.state??"\u2014"}</span>
+              </div>
+              ${r.last_changed?a`<div style="font-size:11px;color:var(--secondary-text-color);margin-top:2px">Last changed: ${new Date(r.last_changed).toLocaleString()}</div>`:""}
+            </div>
+          `)}
+        `:a`<div class="section-title">No HA entities</div>`}
+        ${Object.keys(t.details).length>0?a`
+          <div class="section-title">Details</div>
+          ${Object.entries(t.details).map(([r,s])=>a`
+            <div class="detail-row">
+              <span class="detail-label">${r}</span>
+              <span class="detail-value">${typeof s=="object"?JSON.stringify(s):String(s)}</span>
+            </div>
+          `)}
+        `:""}
+      </div>
+    `}};x.styles=_`
     :host {
       display: block;
     }
@@ -95,7 +160,14 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       background: var(--card-background-color, #fff);
       color: var(--primary-text-color, #212121);
     }
-    
+    .filter-select {
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer; min-width: 100px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -196,7 +268,45 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       color: var(--secondary-text-color, #727272);
       font-size: 12px;
     }
-  `,d([f({attribute:!1})],x.prototype,"hass",2),d([f({type:Number})],x.prototype,"refreshKey",2),d([f({type:String})],x.prototype,"miniserverId",2),d([h()],x.prototype,"_devices",2),d([h()],x.prototype,"_filter",2),d([h()],x.prototype,"_loading",2),d([h()],x.prototype,"_error",2),d([h()],x.prototype,"_sortKey",2),d([h()],x.prototype,"_sortDir",2),x=d([b("devices-view")],x);var $=class extends g{constructor(){super(...arguments);this.refreshKey=0;this._rooms=[];this._haAreas=[];this._loading=!0;this._syncing=!1;this._error="";this._message=""}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let t=await Rt(this.hass,this.miniserverId);this._rooms=t.rooms,this._haAreas=t.ha_areas}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}async _syncAreas(t){this._syncing=!0,this._message="",this._error="";try{await zt(this.hass),await Tt(this.hass,t),this._message=t?"Synced areas and created missing ones.":"Synced devices to existing areas.",await this._load()}catch(s){this._error=s instanceof Error?s.message:String(s)}finally{this._syncing=!1}}render(){if(this._loading)return a`<p class="status">Loading areas…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._rooms.filter(o=>o.ha_area_id).length,s=this._rooms.length;return a`
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: var(--table-row-alternative-background-color, #fafafa); }
+    .drawer-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+    }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 90vw);
+      background: var(--primary-background-color, #fafafa);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 101;
+      overflow-y: auto; padding: 24px; box-sizing: border-box;
+    }
+    .drawer h2 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+    .drawer .sub-title { font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; }
+    .drawer .close-btn {
+      position: absolute; top: 16px; right: 16px;
+      border: none; background: none; font-size: 20px; cursor: pointer;
+      color: var(--secondary-text-color);
+    }
+    .drawer .section-title {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--secondary-text-color);
+      margin: 16px 0 8px; border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      padding-bottom: 4px;
+    }
+    .drawer .detail-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 4px 0; font-size: 13px;
+    }
+    .drawer .detail-label { color: var(--secondary-text-color); }
+    .drawer .detail-value {
+      font-family: var(--ha-font-family-code, monospace); font-size: 12px;
+      color: var(--primary-text-color); max-width: 60%; text-align: right; word-break: break-all;
+    }
+    .drawer .entity-row {
+      padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); font-size: 13px;
+    }
+    .drawer .entity-row:last-child { border-bottom: none; }
+  `,l([m({attribute:!1})],x.prototype,"hass",2),l([m({type:Number})],x.prototype,"refreshKey",2),l([m({type:String})],x.prototype,"miniserverId",2),l([p()],x.prototype,"_devices",2),l([p()],x.prototype,"_filter",2),l([p()],x.prototype,"_filterDomain",2),l([p()],x.prototype,"_filterRoom",2),l([p()],x.prototype,"_filterStatus",2),l([p()],x.prototype,"_loading",2),l([p()],x.prototype,"_error",2),l([p()],x.prototype,"_sortKey",2),l([p()],x.prototype,"_sortDir",2),l([p()],x.prototype,"_detail",2),l([p()],x.prototype,"_detailLoading",2),x=l([y("devices-view")],x);var $=class extends v{constructor(){super(...arguments);this.refreshKey=0;this._rooms=[];this._haAreas=[];this._loading=!0;this._syncing=!1;this._error="";this._message=""}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let t=await Mt(this.hass,this.miniserverId);this._rooms=t.rooms,this._haAreas=t.ha_areas}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}async _syncAreas(t){this._syncing=!0,this._message="",this._error="";try{await Ot(this.hass),await Pt(this.hass,t),this._message=t?"Synced areas and created missing ones.":"Synced devices to existing areas.",S(this,this._message),await this._load()}catch(o){this._error=o instanceof Error?o.message:String(o)}finally{this._syncing=!1}}render(){if(this._loading)return a`<p class="status">Loading areas…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._rooms.filter(r=>r.ha_area_id).length,o=this._rooms.length;return a`
       <div class="toolbar">
         <button
           ?disabled=${this._syncing}
@@ -214,7 +324,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       </div>
       ${this._message?a`<p class="message">${this._message}</p>`:""}
       <p class="summary">
-        <span class="count">${t}</span> / ${s} Loxone rooms mapped to
+        <span class="count">${t}</span> / ${o} Loxone rooms mapped to
         HA areas
       </p>
       <table>
@@ -226,18 +336,18 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
           </tr>
         </thead>
         <tbody>
-          ${this._rooms.map(o=>a`
+          ${this._rooms.map(r=>a`
               <tr>
-                <td>${o.name}</td>
+                <td>${r.name}</td>
                 <td>
-                  ${o.ha_area_name?a`<span class="mapped">${o.ha_area_name}</span>`:a`<span class="unmapped">Not mapped</span>`}
+                  ${r.ha_area_name?a`<span class="mapped">${r.ha_area_name}</span>`:a`<span class="unmapped">Not mapped</span>`}
                 </td>
-                <td>${o.device_count}</td>
+                <td>${r.device_count}</td>
               </tr>
             `)}
         </tbody>
       </table>
-    `}};$.styles=y`
+    `}};$.styles=_`
     :host {
       display: block;
     }
@@ -325,7 +435,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       font-weight: 500;
       color: var(--primary-color, #03a9f4);
     }
-  `,d([f({attribute:!1})],$.prototype,"hass",2),d([f({type:Number})],$.prototype,"refreshKey",2),d([f({type:String})],$.prototype,"miniserverId",2),d([h()],$.prototype,"_rooms",2),d([h()],$.prototype,"_haAreas",2),d([h()],$.prototype,"_loading",2),d([h()],$.prototype,"_syncing",2),d([h()],$.prototype,"_error",2),d([h()],$.prototype,"_message",2),$=d([b("areas-view")],$);var ie=["sensor","binary_sensor","switch","light","number","input_boolean","input_number"],_=class extends g{constructor(){super(...arguments);this.refreshKey=0;this._bridges=[];this._devices=[];this._loading=!0;this._error="";this._message="";this._newEntityId="";this._newLoxoneUuid="";this._entityFilter="";this._loxoneFilter="";this._showEntityDropdown=!1;this._showLoxoneDropdown=!1}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let[t,s]=await Promise.all([Mt(this.hass,this.miniserverId),I(this.hass,this.miniserverId)]);this._bridges=t.bridges,this._devices=s.devices}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}get _availableEntities(){let t=new Set(this._bridges.map(i=>i.entity_id)),s=new Set;for(let i of this._devices)for(let n of i.ha_entities)s.add(n.entity_id);let o=[];for(let[i,n]of Object.entries(this.hass.states)){let c=i.split(".")[0];ie.includes(c)&&(s.has(i)||t.has(i)||o.push({entity_id:i,friendly_name:n.attributes.friendly_name||"",domain:c}))}return o.sort((i,n)=>i.domain!==n.domain?i.domain.localeCompare(n.domain):i.entity_id.localeCompare(n.entity_id)),o}get _filteredEntities(){if(!this._entityFilter)return this._availableEntities;let t=this._entityFilter.toLowerCase();return this._availableEntities.filter(s=>s.entity_id.toLowerCase().includes(t)||s.friendly_name.toLowerCase().includes(t))}_groupByKey(t,s){let o=new Map;for(let i of t){let n=s(i),c=o.get(n)||[];c.push(i),o.set(n,c)}return o}get _availableLoxoneControls(){let t=new Set(this._bridges.map(o=>o.loxone_uuid)),s=[];for(let o of this._devices)t.has(o.uuid)||s.push({uuid:o.uuid,name:o.name,type:o.type,room:o.room||"\u2014"});return s.sort((o,i)=>o.room!==i.room?o.room.localeCompare(i.room):o.name.localeCompare(i.name)),s}get _filteredLoxoneControls(){if(!this._loxoneFilter)return this._availableLoxoneControls;let t=this._loxoneFilter.toLowerCase();return this._availableLoxoneControls.filter(s=>s.name.toLowerCase().includes(t)||s.type.toLowerCase().includes(t)||s.room.toLowerCase().includes(t))}_onEntityFocus(){this._showEntityDropdown=!0}_onEntityBlur(){setTimeout(()=>{this._showEntityDropdown=!1},200)}_selectEntity(t){this._newEntityId=t,this._entityFilter=t,this._showEntityDropdown=!1}_onLoxoneFocus(){this._showLoxoneDropdown=!0}_onLoxoneBlur(){setTimeout(()=>{this._showLoxoneDropdown=!1},200)}_selectLoxone(t,s){this._newLoxoneUuid=t,this._loxoneFilter=s,this._showLoxoneDropdown=!1}async _addBridge(){if(!(!this._newEntityId||!this._newLoxoneUuid)){this._error="",this._message="";try{await Pt(this.hass,this._newEntityId,this._newLoxoneUuid,this.miniserverId),this._message=`Bridge added: ${this._newEntityId}`,this._newEntityId="",this._newLoxoneUuid="",this._entityFilter="",this._loxoneFilter="",await this._load()}catch(t){this._error=t instanceof Error?t.message:String(t)}}}async _removeBridge(t){this._error="",this._message="";try{await It(this.hass,t,this.miniserverId),this._message=`Bridge removed: ${t}`,await this._load()}catch(s){this._error=s instanceof Error?s.message:String(s)}}render(){if(this._loading)return a`<p class="status">Loading bridges…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._filteredEntities,s=this._groupByKey(t,n=>n.domain),o=this._filteredLoxoneControls,i=this._groupByKey(o,n=>n.room);return a`
+  `,l([m({attribute:!1})],$.prototype,"hass",2),l([m({type:Number})],$.prototype,"refreshKey",2),l([m({type:String})],$.prototype,"miniserverId",2),l([p()],$.prototype,"_rooms",2),l([p()],$.prototype,"_haAreas",2),l([p()],$.prototype,"_loading",2),l([p()],$.prototype,"_syncing",2),l([p()],$.prototype,"_error",2),l([p()],$.prototype,"_message",2),$=l([y("areas-view")],$);var ge=["sensor","binary_sensor","switch","light","number","input_boolean","input_number"],b=class extends v{constructor(){super(...arguments);this.refreshKey=0;this._bridges=[];this._devices=[];this._loading=!0;this._error="";this._message="";this._newEntityId="";this._newLoxoneUuid="";this._entityFilter="";this._loxoneFilter="";this._showEntityDropdown=!1;this._showLoxoneDropdown=!1;this._tableFilter="";this._confirmRemove=null}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let[t,o]=await Promise.all([Nt(this.hass,this.miniserverId),U(this.hass,this.miniserverId)]);this._bridges=t.bridges,this._devices=o.devices}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}get _availableEntities(){let t=new Set(this._bridges.map(s=>s.entity_id)),o=new Set;for(let s of this._devices)for(let n of s.ha_entities)o.add(n.entity_id);let r=[];for(let[s,n]of Object.entries(this.hass.states)){let d=s.split(".")[0];ge.includes(d)&&(o.has(s)||t.has(s)||r.push({entity_id:s,friendly_name:n.attributes.friendly_name||"",domain:d}))}return r.sort((s,n)=>s.domain!==n.domain?s.domain.localeCompare(n.domain):s.entity_id.localeCompare(n.entity_id)),r}get _filteredEntities(){if(!this._entityFilter)return this._availableEntities;let t=this._entityFilter.toLowerCase();return this._availableEntities.filter(o=>o.entity_id.toLowerCase().includes(t)||o.friendly_name.toLowerCase().includes(t))}_groupByKey(t,o){let r=new Map;for(let s of t){let n=o(s),d=r.get(n)||[];d.push(s),r.set(n,d)}return r}get _availableLoxoneControls(){let t=new Set(this._bridges.map(r=>r.loxone_uuid)),o=[];for(let r of this._devices)t.has(r.uuid)||o.push({uuid:r.uuid,name:r.name,type:r.type,room:r.room||"\u2014"});return o.sort((r,s)=>r.room!==s.room?r.room.localeCompare(s.room):r.name.localeCompare(s.name)),o}get _filteredLoxoneControls(){if(!this._loxoneFilter)return this._availableLoxoneControls;let t=this._loxoneFilter.toLowerCase();return this._availableLoxoneControls.filter(o=>o.name.toLowerCase().includes(t)||o.type.toLowerCase().includes(t)||o.room.toLowerCase().includes(t))}_onEntityFocus(){this._showEntityDropdown=!0}_onEntityBlur(){setTimeout(()=>{this._showEntityDropdown=!1},200)}_selectEntity(t){this._newEntityId=t,this._entityFilter=t,this._showEntityDropdown=!1}_onLoxoneFocus(){this._showLoxoneDropdown=!0}_onLoxoneBlur(){setTimeout(()=>{this._showLoxoneDropdown=!1},200)}_selectLoxone(t,o){this._newLoxoneUuid=t,this._loxoneFilter=o,this._showLoxoneDropdown=!1}get _filteredBridges(){if(!this._tableFilter)return this._bridges;let t=this._tableFilter.toLowerCase();return this._bridges.filter(o=>o.entity_id.toLowerCase().includes(t)||(o.loxone_name||"").toLowerCase().includes(t)||o.loxone_type.toLowerCase().includes(t))}async _addBridge(){if(!(!this._newEntityId||!this._newLoxoneUuid)){this._error="",this._message="";try{await Ut(this.hass,this._newEntityId,this._newLoxoneUuid,this.miniserverId),S(this,`Bridge added: ${this._newEntityId}`),this._message=`Bridge added: ${this._newEntityId}`,this._newEntityId="",this._newLoxoneUuid="",this._entityFilter="",this._loxoneFilter="",await this._load()}catch(t){this._error=t instanceof Error?t.message:String(t)}}}_requestRemove(t){this._confirmRemove=t}async _confirmAndRemove(){let t=this._confirmRemove;if(t){this._confirmRemove=null,this._error="",this._message="";try{await Gt(this.hass,t,this.miniserverId),S(this,`Bridge removed: ${t}`),this._message=`Bridge removed: ${t}`,await this._load()}catch(o){this._error=o instanceof Error?o.message:String(o)}}}render(){if(this._loading)return a`<p class="status">Loading bridges…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;let t=this._filteredEntities,o=this._groupByKey(t,n=>n.domain),r=this._filteredLoxoneControls,s=this._groupByKey(r,n=>n.room);return a`
       <div class="add-form">
         <div class="field">
           <label>HA Entity</label>
@@ -341,16 +451,16 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
             />
             ${this._showEntityDropdown?a`
                   <div class="combo-dropdown">
-                    ${t.length===0?a`<div class="combo-empty">No matching entities</div>`:Array.from(s.entries()).map(([n,c])=>a`
+                    ${t.length===0?a`<div class="combo-empty">No matching entities</div>`:Array.from(o.entries()).map(([n,d])=>a`
                             <div class="combo-group">${n}</div>
-                            ${c.map(l=>a`
+                            ${d.map(c=>a`
                                 <div
                                   class="combo-option"
-                                  @mousedown=${p=>{p.preventDefault(),this._selectEntity(l.entity_id)}}
+                                  @mousedown=${h=>{h.preventDefault(),this._selectEntity(c.entity_id)}}
                                 >
-                                  <span>${l.entity_id}</span>
-                                  ${l.friendly_name?a`<span class="secondary"
-                                        >${l.friendly_name}</span
+                                  <span>${c.entity_id}</span>
+                                  ${c.friendly_name?a`<span class="secondary"
+                                        >${c.friendly_name}</span
                                       >`:""}
                                 </div>
                               `)}
@@ -373,15 +483,15 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
             />
             ${this._showLoxoneDropdown?a`
                   <div class="combo-dropdown">
-                    ${o.length===0?a`<div class="combo-empty">No matching controls</div>`:Array.from(i.entries()).map(([n,c])=>a`
+                    ${r.length===0?a`<div class="combo-empty">No matching controls</div>`:Array.from(s.entries()).map(([n,d])=>a`
                             <div class="combo-group">${n}</div>
-                            ${c.map(l=>a`
+                            ${d.map(c=>a`
                                 <div
                                   class="combo-option"
-                                  @mousedown=${p=>{p.preventDefault(),this._selectLoxone(l.uuid,l.name)}}
+                                  @mousedown=${h=>{h.preventDefault(),this._selectLoxone(c.uuid,c.name)}}
                                 >
-                                  <span>${l.name}</span>
-                                  <span class="secondary">${l.type}</span>
+                                  <span>${c.name}</span>
+                                  <span class="secondary">${c.type}</span>
                                 </div>
                               `)}
                           `)}
@@ -392,44 +502,56 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
         <button @click=${this._addBridge}>Add Bridge</button>
       </div>
       ${this._message?a`<p class="message">${this._message}</p>`:""}
-      ${this._bridges.length===0?a`<p class="empty">No device bridges configured.</p>`:a`
-            <table>
-              <thead>
-                <tr>
-                  <th>HA Entity</th>
-                  <th>State</th>
-                  <th></th>
-                  <th>Loxone Control</th>
-                  <th>Type</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this._bridges.map(n=>{let c=this.hass.states[n.entity_id],l=c?c.state:"unavailable",p=!c||l==="unavailable"||l==="unknown"?"state-warn":"";return a`
-                    <tr>
-                      <td>${n.entity_id}</td>
-                      <td>
-                        <span class="state-value ${p}"
-                          >${l}</span
-                        >
-                      </td>
-                      <td class="direction">→</td>
-                      <td>${n.loxone_name||n.loxone_uuid}</td>
-                      <td><span class="badge">${n.loxone_type}</span></td>
-                      <td>
-                        <button
-                          class="danger"
-                          @click=${()=>this._removeBridge(n.entity_id)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  `})}
-              </tbody>
-            </table>
-          `}
-    `}};_.styles=y`
+      ${this._bridges.length>0?a`
+        <p class="summary"><span class="count">${this._bridges.length}</span> bridge${this._bridges.length!==1?"s":""} configured</p>
+        <div class="table-toolbar">
+          <input type="text" placeholder="Search bridges…"
+            .value=${this._tableFilter}
+            @input=${n=>{this._tableFilter=n.target.value}} />
+        </div>
+      `:""}
+      ${this._bridges.length===0?a`<p class="empty">No device bridges configured.</p>`:(()=>{let n=this._filteredBridges,d=this._groupByKey(n,c=>c.entity_id.split(".")[0]);return a`
+              <table>
+                <thead>
+                  <tr>
+                    <th>HA Entity</th>
+                    <th>State</th>
+                    <th></th>
+                    <th>Loxone Control</th>
+                    <th>Type</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Array.from(d.entries()).map(([c,h])=>a`
+                    <tr class="group-label"><td colspan="6">${c} (${h.length})</td></tr>
+                    ${h.map(u=>{let g=this.hass.states[u.entity_id],k=g?g.state:"unavailable",L=!g||k==="unavailable"||k==="unknown"?"state-warn":"";return a`
+                        <tr>
+                          <td>${u.entity_id}</td>
+                          <td><span class="state-value ${L}">${k}</span></td>
+                          <td class="direction">→</td>
+                          <td>${u.loxone_name||u.loxone_uuid}</td>
+                          <td><span class="badge">${u.loxone_type}</span></td>
+                          <td><button class="danger" @click=${()=>this._requestRemove(u.entity_id)}>Remove</button></td>
+                        </tr>
+                      `})}
+                  `)}
+                </tbody>
+              </table>
+            `})()}
+      ${this._confirmRemove?a`
+        <div class="confirm-overlay" @click=${()=>{this._confirmRemove=null}}>
+          <div class="confirm-dialog" @click=${n=>n.stopPropagation()}>
+            <h3>Remove bridge?</h3>
+            <p>This will remove the bridge for <strong>${this._confirmRemove}</strong>. The entity will no longer be bridged to its Loxone control.</p>
+            <div class="actions">
+              <button class="secondary" @click=${()=>{this._confirmRemove=null}}>Cancel</button>
+              <button class="danger" @click=${this._confirmAndRemove}>Remove</button>
+            </div>
+          </div>
+        </div>
+      `:""}
+    `}};b.styles=_`
     :host {
       display: block;
     }
@@ -607,13 +729,44 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       padding: 24px;
       text-align: center;
     }
-  `,d([f({attribute:!1})],_.prototype,"hass",2),d([f({type:Number})],_.prototype,"refreshKey",2),d([f({type:String})],_.prototype,"miniserverId",2),d([h()],_.prototype,"_bridges",2),d([h()],_.prototype,"_devices",2),d([h()],_.prototype,"_loading",2),d([h()],_.prototype,"_error",2),d([h()],_.prototype,"_message",2),d([h()],_.prototype,"_newEntityId",2),d([h()],_.prototype,"_newLoxoneUuid",2),d([h()],_.prototype,"_entityFilter",2),d([h()],_.prototype,"_loxoneFilter",2),d([h()],_.prototype,"_showEntityDropdown",2),d([h()],_.prototype,"_showLoxoneDropdown",2),_=d([b("bridges-view")],_);var E=class extends g{constructor(){super(...arguments);this.refreshKey=0;this._status=null;this._diff=null;this._loading=!0;this._error=""}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let[t,s]=await Promise.all([Ot(this.hass,this.miniserverId),Ut(this.hass,this.miniserverId).catch(()=>null)]);this._status=t,this._diff=s}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}render(){if(this._loading)return a`<p class="status">Loading status…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;if(!this._status)return a`<p class="status">No status available.</p>`;let t=this._status,s=t.connection_state==="connected"?"conn-connected":t.connection_state==="reconnecting"?"conn-reconnecting":"conn-disconnected",o=t.entities_without_state.length;return a`
+    .table-toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .table-toolbar input {
+      padding: 8px 12px; border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px; background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121); flex: 1; min-width: 180px; max-width: 350px;
+    }
+    .summary { font-size: 13px; color: var(--secondary-text-color, #727272); margin-bottom: 12px; }
+    .summary .count { font-weight: 500; color: var(--primary-color, #03a9f4); }
+    .group-label td {
+      padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--secondary-text-color, #727272);
+      background: var(--table-header-background-color, var(--primary-background-color, #fafafa));
+    }
+    .confirm-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .confirm-dialog {
+      background: var(--card-background-color, #fff); border-radius: 12px;
+      padding: 24px; min-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .confirm-dialog h3 { margin: 0 0 12px; font-size: 16px; font-weight: 500; }
+    .confirm-dialog p { font-size: 14px; margin: 0 0 20px; color: var(--secondary-text-color); }
+    .confirm-dialog .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .confirm-dialog button.secondary {
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #212121);
+      border: 1px solid var(--divider-color, #e0e0e0);
+    }
+  `,l([m({attribute:!1})],b.prototype,"hass",2),l([m({type:Number})],b.prototype,"refreshKey",2),l([m({type:String})],b.prototype,"miniserverId",2),l([p()],b.prototype,"_bridges",2),l([p()],b.prototype,"_devices",2),l([p()],b.prototype,"_loading",2),l([p()],b.prototype,"_error",2),l([p()],b.prototype,"_message",2),l([p()],b.prototype,"_newEntityId",2),l([p()],b.prototype,"_newLoxoneUuid",2),l([p()],b.prototype,"_entityFilter",2),l([p()],b.prototype,"_loxoneFilter",2),l([p()],b.prototype,"_showEntityDropdown",2),l([p()],b.prototype,"_showLoxoneDropdown",2),l([p()],b.prototype,"_tableFilter",2),l([p()],b.prototype,"_confirmRemove",2),b=l([y("bridges-view")],b);var A=class extends v{constructor(){super(...arguments);this.refreshKey=0;this._status=null;this._diff=null;this._loading=!0;this._error=""}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{let[t,o]=await Promise.all([Bt(this.hass,this.miniserverId),Kt(this.hass,this.miniserverId).catch(()=>null)]);this._status=t,this._diff=o}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}render(){if(this._loading)return a`<p class="status">Loading status…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;if(!this._status)return a`<p class="status">No status available.</p>`;let t=this._status,o=t.connection_state==="connected"?"conn-connected":t.connection_state==="reconnecting"?"conn-reconnecting":"conn-disconnected",r=t.entities_without_state.length;return a`
       <div class="grid">
         <div class="card">
           <h3 class="card-title">Connection</h3>
           <div class="info-row">
             <span class="info-label">Status</span>
-            <span class="conn-badge ${s}">${t.connection_state}</span>
+            <span class="conn-badge ${o}">${t.connection_state}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Host</span>
@@ -673,16 +826,16 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
         </div>
 
         <div class="diag-item">
-          <span class="diag-icon ${o===0?"diag-ok":"diag-warn"}"
-            >${o===0?"\u2713":"\u26A0"}</span
+          <span class="diag-icon ${r===0?"diag-ok":"diag-warn"}"
+            >${r===0?"\u2713":"\u26A0"}</span
           >
           <div>
             <div class="diag-label">Entities without state</div>
             <div class="diag-detail">
-              ${o===0?`All ${t.entities_enabled} enabled entities have state`:a`${o} of ${t.entities_enabled} enabled
+              ${r===0?`All ${t.entities_enabled} enabled entities have state`:a`${r} of ${t.entities_enabled} enabled
                     entities missing state:
                     <br />
-                    ${t.entities_without_state.slice(0,10).join(", ")}${o>10?` \u2026 and ${o-10} more`:""}`}
+                    ${t.entities_without_state.slice(0,10).join(", ")}${r>10?` \u2026 and ${r-10} more`:""}`}
             </div>
           </div>
         </div>
@@ -725,7 +878,8 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       </div>
 
       ${this._renderStructureDiff()}
-    `}_renderStructureDiff(){let t=this._diff;if(!t||!t.has_diff)return a`
+      <button class="download-btn" @click=${this._downloadDiagnostics}>⬇ Download Diagnostics</button>
+    `}_downloadDiagnostics(){try{let t={status:this._status,structureDiff:this._diff,exported:new Date().toISOString()},o=new Blob([JSON.stringify(t,null,2)],{type:"application/json"}),r=URL.createObjectURL(o),s=document.createElement("a");s.href=r,s.download=`loxone-diagnostics-${new Date().toISOString().slice(0,10)}.json`,document.body.appendChild(s),s.click(),document.body.removeChild(s),URL.revokeObjectURL(r),S(this,"Diagnostics downloaded")}catch{S(this,"Failed to download diagnostics")}}_renderStructureDiff(){let t=this._diff;if(!t||!t.has_diff)return a`
         <h3 class="diagnostics-title" style="margin-top:24px">Structure Changes</h3>
         <div class="diag-card">
           <div class="diag-item">
@@ -738,11 +892,11 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
             </div>
           </div>
         </div>
-      `;let s=t.added.length+t.removed.length+t.changed.length,o=t.timestamp?new Date(t.timestamp).toLocaleString(this.hass.language||"en"):"Unknown";return a`
+      `;let o=t.added.length+t.removed.length+t.changed.length,r=t.timestamp?new Date(t.timestamp).toLocaleString(this.hass.language||"en"):"Unknown";return a`
       <h3 class="diagnostics-title" style="margin-top:24px">
         Structure Changes
         <span style="font-weight:400;font-size:12px;color:var(--secondary-text-color)">
-          — ${s} change${s!==1?"s":""} at ${o}
+          — ${o} change${o!==1?"s":""} at ${r}
         </span>
       </h3>
       <div class="diag-card">
@@ -752,7 +906,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
                 <div>
                   <div class="diag-label">Added (${t.added.length})</div>
                   <div class="diag-detail">
-                    ${t.added.map(i=>a`<div>${i.name} <span style="opacity:0.6">(${i.type})</span> — ${i.room||"no room"}</div>`)}
+                    ${t.added.map(s=>a`<div>${s.name} <span style="opacity:0.6">(${s.type})</span> — ${s.room||"no room"}</div>`)}
                   </div>
                 </div>
               </div>
@@ -763,7 +917,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
                 <div>
                   <div class="diag-label">Removed (${t.removed.length})</div>
                   <div class="diag-detail">
-                    ${t.removed.map(i=>a`<div>${i.name} <span style="opacity:0.6">(${i.type})</span> — ${i.room||"no room"}</div>`)}
+                    ${t.removed.map(s=>a`<div>${s.name} <span style="opacity:0.6">(${s.type})</span> — ${s.room||"no room"}</div>`)}
                   </div>
                 </div>
               </div>
@@ -774,13 +928,13 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
                 <div>
                   <div class="diag-label">Changed (${t.changed.length})</div>
                   <div class="diag-detail">
-                    ${t.changed.map(i=>a`<div>${i.old.name} → ${i.new.name} <span style="opacity:0.6">(${i.new.type})</span></div>`)}
+                    ${t.changed.map(s=>a`<div>${s.old.name} → ${s.new.name} <span style="opacity:0.6">(${s.new.type})</span></div>`)}
                   </div>
                 </div>
               </div>
             `:""}
       </div>
-    `}};E.styles=y`
+    `}};A.styles=_`
     :host {
       display: block;
     }
@@ -901,8 +1055,15 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
     .error {
       color: var(--error-color, #db4437);
     }
-    
-  `,d([f({attribute:!1})],E.prototype,"hass",2),d([f({type:Number})],E.prototype,"refreshKey",2),d([f({type:String})],E.prototype,"miniserverId",2),d([h()],E.prototype,"_status",2),d([h()],E.prototype,"_diff",2),d([h()],E.prototype,"_loading",2),d([h()],E.prototype,"_error",2),E=d([b("status-view")],E);var V=500,S=class extends g{constructor(){super(...arguments);this._events=[];this._paused=!1;this._filter="";this._connected=!1;this._error="";this._pendingEvents=[]}connectedCallback(){super.connectedCallback(),this._subscribe()}disconnectedCallback(){super.disconnectedCallback(),this._unsubscribe()}updated(t){t.has("miniserverId")&&(this._unsubscribe(),this._events=[],this._subscribe())}async _subscribe(){this._error="";try{this._unsub=await this.hass.connection.subscribeMessage(t=>{let s=t;if(s.events){if(this._paused){this._pendingEvents.push(...s.events),this._pendingEvents.length>V&&(this._pendingEvents=this._pendingEvents.slice(-V));return}this._events=[...s.events,...this._events].slice(0,V)}},{type:"loxone/subscribe_events",...this.miniserverId?{miniserver:this.miniserverId}:{}}),this._connected=!0}catch(t){this._error=t instanceof Error?t.message:String(t),this._connected=!1}}_unsubscribe(){this._unsub&&(this._unsub(),this._unsub=void 0),this._connected=!1}_togglePause(){this._paused=!this._paused,!this._paused&&this._pendingEvents.length>0&&(this._events=[...this._pendingEvents,...this._events].slice(0,V),this._pendingEvents=[])}_clear(){this._events=[],this._pendingEvents=[]}_onFilterInput(t){this._filter=t.target.value.toLowerCase()}_formatTime(t){try{return new Date(t).toLocaleTimeString(this.hass.language||"en",{hour:"2-digit",minute:"2-digit",second:"2-digit",fractionalSecondDigits:1})}catch{return t}}_formatValue(t){return t==null?"\u2014":typeof t=="number"?Number.isInteger(t)?String(t):t.toFixed(2):typeof t=="object"?JSON.stringify(t):String(t)}render(){let t=this._filter,s=t?this._events.filter(o=>o.name.toLowerCase().includes(t)||o.room.toLowerCase().includes(t)||o.uuid.toLowerCase().includes(t)):this._events;return a`
+    .download-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #212121);
+      transition: opacity 0.2s; margin-top: 16px;
+    }
+    .download-btn:hover { opacity: 0.75; }
+  `,l([m({attribute:!1})],A.prototype,"hass",2),l([m({type:Number})],A.prototype,"refreshKey",2),l([m({type:String})],A.prototype,"miniserverId",2),l([p()],A.prototype,"_status",2),l([p()],A.prototype,"_diff",2),l([p()],A.prototype,"_loading",2),l([p()],A.prototype,"_error",2),A=l([y("status-view")],A);var ot=500,C=class extends v{constructor(){super(...arguments);this._events=[];this._paused=!1;this._filter="";this._connected=!1;this._error="";this._pendingEvents=[]}connectedCallback(){super.connectedCallback(),this._subscribe()}disconnectedCallback(){super.disconnectedCallback(),this._unsubscribe()}updated(t){t.has("miniserverId")&&(this._unsubscribe(),this._events=[],this._subscribe())}async _subscribe(){this._error="";try{this._unsub=await this.hass.connection.subscribeMessage(t=>{let o=t;if(o.events){if(this._paused){this._pendingEvents.push(...o.events),this._pendingEvents.length>ot&&(this._pendingEvents=this._pendingEvents.slice(-ot));return}this._events=[...o.events,...this._events].slice(0,ot)}},{type:"loxone/subscribe_events",...this.miniserverId?{miniserver:this.miniserverId}:{}}),this._connected=!0}catch(t){this._error=t instanceof Error?t.message:String(t),this._connected=!1}}_unsubscribe(){this._unsub&&(this._unsub(),this._unsub=void 0),this._connected=!1}_togglePause(){this._paused=!this._paused,!this._paused&&this._pendingEvents.length>0&&(this._events=[...this._pendingEvents,...this._events].slice(0,ot),this._pendingEvents=[])}_clear(){this._events=[],this._pendingEvents=[]}_onFilterInput(t){this._filter=t.target.value.toLowerCase()}_formatTime(t){try{return new Date(t).toLocaleTimeString(this.hass.language||"en",{hour:"2-digit",minute:"2-digit",second:"2-digit",fractionalSecondDigits:1})}catch{return t}}_formatValue(t){return t==null?"\u2014":typeof t=="number"?Number.isInteger(t)?String(t):t.toFixed(2):typeof t=="object"?JSON.stringify(t):String(t)}render(){let t=this._filter,o=t?this._events.filter(r=>r.name.toLowerCase().includes(t)||r.room.toLowerCase().includes(t)||r.uuid.toLowerCase().includes(t)):this._events;return a`
       <div class="toolbar">
         <span class="status-dot ${this._connected?"on":"off"}"></span>
         <button class="${this._paused?"active":""}" @click=${this._togglePause}>
@@ -915,11 +1076,11 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
           .value=${this._filter}
           @input=${this._onFilterInput}
         />
-        <span class="count">${s.length} event${s.length!==1?"s":""}</span>
+        <span class="count">${o.length} event${o.length!==1?"s":""}</span>
         ${this._error?a`<span class="error">${this._error}</span>`:""}
       </div>
       <div class="log-container">
-        ${s.length===0?a`<div class="empty">
+        ${o.length===0?a`<div class="empty">
               ${this._connected?"Waiting for events\u2026":"Not connected"}
             </div>`:a`
               <div class="scroll-box">
@@ -934,13 +1095,13 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
                     </tr>
                   </thead>
                   <tbody>
-                    ${s.map(o=>a`
+                    ${o.map(r=>a`
                         <tr>
-                          <td class="ts">${this._formatTime(o.timestamp)}</td>
-                          <td class="name">${o.name||"\u2014"}</td>
-                          <td class="room">${o.room||"\u2014"}</td>
-                          <td class="value">${this._formatValue(o.value)}</td>
-                          <td class="uuid" title=${o.uuid}>${o.uuid}</td>
+                          <td class="ts">${this._formatTime(r.timestamp)}</td>
+                          <td class="name">${r.name||"\u2014"}</td>
+                          <td class="room">${r.room||"\u2014"}</td>
+                          <td class="value">${this._formatValue(r.value)}</td>
+                          <td class="uuid" title=${r.uuid}>${r.uuid}</td>
                         </tr>
                       `)}
                   </tbody>
@@ -948,7 +1109,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
               </div>
             `}
       </div>
-    `}};S.styles=y`
+    `}};C.styles=_`
     :host {
       display: block;
     }
@@ -1075,7 +1236,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       color: var(--error-color, #db4437);
       font-size: 13px;
     }
-  `,d([f({attribute:!1})],S.prototype,"hass",2),d([f({type:String})],S.prototype,"miniserverId",2),d([h()],S.prototype,"_events",2),d([h()],S.prototype,"_paused",2),d([h()],S.prototype,"_filter",2),d([h()],S.prototype,"_connected",2),d([h()],S.prototype,"_error",2),S=d([b("monitor-view")],S);var Kt="loxone_console_history",ht=50,w=class extends g{constructor(){super(...arguments);this._uuid="";this._command="";this._sending=!1;this._history=[];this._devices=[];this._suggestions=[];this._selectedDevice=null}connectedCallback(){super.connectedCallback(),this._loadHistory(),this._loadDevices()}updated(t){t.has("miniserverId")&&this._loadDevices()}_loadHistory(){try{let t=localStorage.getItem(Kt);t&&(this._history=JSON.parse(t))}catch{}}_saveHistory(){try{localStorage.setItem(Kt,JSON.stringify(this._history.slice(-ht)))}catch{}}async _loadDevices(){try{let t=await I(this.hass,this.miniserverId);this._devices=t.devices}catch{}}_onUuidInput(t){this._uuid=t.target.value,this._selectedDevice=null;let s=this._uuid.toLowerCase();s.length>=2?this._suggestions=this._devices.filter(o=>o.name.toLowerCase().includes(s)||o.uuid.toLowerCase().includes(s)||o.type.toLowerCase().includes(s)).slice(0,8):this._suggestions=[]}_selectSuggestion(t){this._uuid=t.uuid,this._selectedDevice=t,this._suggestions=[]}_getCommandHints(){if(!this._selectedDevice)return[];switch(this._selectedDevice.type){case"Switch":return["On","Off","pulse"];case"Dimmer":case"EIBDimmer":return["On","Off","0","50","100"];case"Slider":return["0","50","100"];case"Jalousie":return["up","down","fullUp","fullDown","shade","stop"];case"Gate":return["open","close","stop"];case"LightController":case"LightControllerV2":return["on","off","plus","minus","changeTo/1"];case"IRoomController":case"IRoomControllerV2":return["setComfortTemperature/21","setEcoOffset/2","operatingMode/0"];case"Alarm":return["on","off","delayedOn"];case"ColorPickerV2":return["hsv(0,100,100)","temp(2700,100)"];case"TextInput":return[];default:return["On","Off","pulse"]}}_applyHint(t){this._command=t}_onCommandInput(t){this._command=t.target.value}_onKeyDown(t){t.key==="Enter"&&this._uuid&&this._command&&this._send(),t.key==="Escape"&&(this._suggestions=[])}async _send(){if(!this._uuid||!this._command||this._sending)return;this._sending=!0,this._suggestions=[];let t=new Date().toLocaleTimeString(this.hass.language||"en",{hour:"2-digit",minute:"2-digit",second:"2-digit"}),s=this._selectedDevice?.name,o=this._selectedDevice?.uuid||this._uuid;try{let i=await Nt(this.hass,o,this._command,this.miniserverId);this._history=[...this._history,{uuid:o,name:s,command:this._command,result:"OK",ok:!0,timestamp:t}].slice(-ht)}catch(i){let n=i instanceof Error?i.message:String(i);this._history=[...this._history,{uuid:o,name:s,command:this._command,result:n,ok:!1,timestamp:t}].slice(-ht)}finally{this._sending=!1,this._saveHistory()}}_clearHistory(){this._history=[],this._saveHistory()}render(){return a`
+  `,l([m({attribute:!1})],C.prototype,"hass",2),l([m({type:String})],C.prototype,"miniserverId",2),l([p()],C.prototype,"_events",2),l([p()],C.prototype,"_paused",2),l([p()],C.prototype,"_filter",2),l([p()],C.prototype,"_connected",2),l([p()],C.prototype,"_error",2),C=l([y("monitor-view")],C);var qt="loxone_console_history",ft=50,w=class extends v{constructor(){super(...arguments);this._uuid="";this._command="";this._sending=!1;this._history=[];this._devices=[];this._suggestions=[];this._selectedDevice=null}connectedCallback(){super.connectedCallback(),this._loadHistory(),this._loadDevices()}updated(t){t.has("miniserverId")&&this._loadDevices()}_loadHistory(){try{let t=localStorage.getItem(qt);t&&(this._history=JSON.parse(t))}catch{}}_saveHistory(){try{localStorage.setItem(qt,JSON.stringify(this._history.slice(-ft)))}catch{}}async _loadDevices(){try{let t=await U(this.hass,this.miniserverId);this._devices=t.devices}catch{}}_onUuidInput(t){this._uuid=t.target.value,this._selectedDevice=null;let o=this._uuid.toLowerCase();o.length>=2?this._suggestions=this._devices.filter(r=>r.name.toLowerCase().includes(o)||r.uuid.toLowerCase().includes(o)||r.type.toLowerCase().includes(o)).slice(0,8):this._suggestions=[]}_selectSuggestion(t){this._uuid=t.uuid,this._selectedDevice=t,this._suggestions=[]}_getCommandHints(){if(!this._selectedDevice)return[];switch(this._selectedDevice.type){case"Switch":return["On","Off","pulse"];case"Dimmer":case"EIBDimmer":return["On","Off","0","50","100"];case"Slider":return["0","50","100"];case"Jalousie":return["up","down","fullUp","fullDown","shade","stop"];case"Gate":return["open","close","stop"];case"LightController":case"LightControllerV2":return["on","off","plus","minus","changeTo/1"];case"IRoomController":case"IRoomControllerV2":return["setComfortTemperature/21","setEcoOffset/2","operatingMode/0"];case"Alarm":return["on","off","delayedOn"];case"ColorPickerV2":return["hsv(0,100,100)","temp(2700,100)"];case"TextInput":return[];default:return["On","Off","pulse"]}}_applyHint(t){this._command=t}_onCommandInput(t){this._command=t.target.value}_onKeyDown(t){t.key==="Enter"&&this._uuid&&this._command&&this._send(),t.key==="Escape"&&(this._suggestions=[])}async _send(){if(!this._uuid||!this._command||this._sending)return;this._sending=!0,this._suggestions=[];let t=new Date().toLocaleTimeString(this.hass.language||"en",{hour:"2-digit",minute:"2-digit",second:"2-digit"}),o=this._selectedDevice?.name,r=this._selectedDevice?.uuid||this._uuid;try{let s=await jt(this.hass,r,this._command,this.miniserverId);S(this,`Sent "${this._command}" to ${o||r}`),this._history=[...this._history,{uuid:r,name:o,command:this._command,result:"OK",ok:!0,timestamp:t}].slice(-ft)}catch(s){let n=s instanceof Error?s.message:String(s);S(this,`Error: ${n}`),this._history=[...this._history,{uuid:r,name:o,command:this._command,result:n,ok:!1,timestamp:t}].slice(-ft)}finally{this._sending=!1,this._saveHistory()}}_clearHistory(){this._history=[],this._saveHistory()}render(){return a`
       <div class="card">
         <h3 class="card-title">Send Command</h3>
         <div class="form">
@@ -1162,7 +1323,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
               </table>
             `}
       </div>
-    `}};w.styles=y`
+    `}};w.styles=_`
     :host {
       display: block;
     }
@@ -1326,7 +1487,251 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       background: var(--primary-color, #03a9f4);
       color: #fff;
     }
-  `,d([f({attribute:!1})],w.prototype,"hass",2),d([f({type:String})],w.prototype,"miniserverId",2),d([h()],w.prototype,"_uuid",2),d([h()],w.prototype,"_command",2),d([h()],w.prototype,"_sending",2),d([h()],w.prototype,"_history",2),d([h()],w.prototype,"_devices",2),d([h()],w.prototype,"_suggestions",2),d([h()],w.prototype,"_selectedDevice",2),w=d([b("console-view")],w);var A=class extends g{constructor(){super(...arguments);this._activeTab="devices";this._refreshKey=0;this._entries=[]}connectedCallback(){super.connectedCallback(),this._loadEntries()}async _loadEntries(){try{let t=await Dt(this.hass);this._entries=t.entries,!this._selectedMiniserver&&this._entries.length>0&&(this._selectedMiniserver=this._entries[0].miniserver)}catch{}}_setTab(t){this._activeTab=t}_refresh(){this._refreshKey++}_onEntryChange(t){let s=t.target;this._selectedMiniserver=s.value,this._refreshKey++}render(){let t=this._entries.length>1;return a`
+  `,l([m({attribute:!1})],w.prototype,"hass",2),l([m({type:String})],w.prototype,"miniserverId",2),l([p()],w.prototype,"_uuid",2),l([p()],w.prototype,"_command",2),l([p()],w.prototype,"_sending",2),l([p()],w.prototype,"_history",2),l([p()],w.prototype,"_devices",2),l([p()],w.prototype,"_suggestions",2),l([p()],w.prototype,"_selectedDevice",2),w=l([y("console-view")],w);var rt=500,me={DEBUG:"var(--secondary-text-color, #727272)",INFO:"var(--primary-color, #03a9f4)",WARNING:"var(--warning-color, #ff9800)",ERROR:"var(--error-color, #db4437)",CRITICAL:"var(--error-color, #db4437)"},Jt={DEBUG:10,INFO:20,WARNING:30,ERROR:40,CRITICAL:50},R=class extends v{constructor(){super(...arguments);this._logs=[];this._paused=!1;this._filter="";this._levelFilter="";this._connected=!1;this._error="";this._pending=[]}connectedCallback(){super.connectedCallback(),this._subscribe()}disconnectedCallback(){super.disconnectedCallback(),this._unsubscribe()}async _subscribe(){this._error="";try{this._unsub=await this.hass.connection.subscribeMessage(t=>{let o=t;if(!o.message)return;let r={name:o.name,level:o.level,message:o.message,timestamp:o.timestamp};if(this._paused){this._pending.push(r),this._pending.length>rt&&(this._pending=this._pending.slice(-rt));return}this._logs=[r,...this._logs].slice(0,rt)},{type:"loxone/subscribe_logs"}),this._connected=!0}catch(t){this._error=t instanceof Error?t.message:String(t),this._connected=!1}}_unsubscribe(){this._unsub&&(this._unsub(),this._unsub=void 0),this._connected=!1}_togglePause(){this._paused=!this._paused,!this._paused&&this._pending.length>0&&(this._logs=[...this._pending.reverse(),...this._logs].slice(0,rt),this._pending=[])}_clear(){this._logs=[],this._pending=[]}_formatTime(t){try{return new Date(t*1e3).toLocaleTimeString(this.hass.language||"en",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}catch{return String(t)}}_shortName(t){return t.replace(/^custom_components\.loxone\.?/,"")}render(){let t=this._filter.toLowerCase(),o=this._levelFilter,r=this._logs;if(t&&(r=r.filter(s=>s.message.toLowerCase().includes(t)||s.name.toLowerCase().includes(t))),o){let s=Jt[o]??0;r=r.filter(n=>(Jt[n.level]??0)>=s)}return a`
+      <div class="toolbar">
+        <span class="status-dot ${this._connected?"on":"off"}"></span>
+        <button class="${this._paused?"active":""}" @click=${this._togglePause}>
+          ${this._paused?"\u25B6 Resume":"\u23F8 Pause"}
+        </button>
+        <button @click=${this._clear}>Clear</button>
+        <input type="text" placeholder="Filter…" .value=${this._filter}
+          @input=${s=>{this._filter=s.target.value}} />
+        <select .value=${this._levelFilter}
+          @change=${s=>{this._levelFilter=s.target.value}}>
+          <option value="">All levels</option>
+          <option value="DEBUG">DEBUG+</option>
+          <option value="INFO">INFO+</option>
+          <option value="WARNING">WARNING+</option>
+          <option value="ERROR">ERROR+</option>
+        </select>
+        <span class="count">${r.length} log${r.length!==1?"s":""}</span>
+        ${this._error?a`<span class="error">${this._error}</span>`:""}
+      </div>
+      <p class="hint">Showing warnings and errors by default. For debug/info logs, add <code>custom_components.loxone: debug</code> to your <code>logger:</code> in <code>configuration.yaml</code>.</p>
+      <div class="log-container">
+        ${r.length===0?a`<div class="empty">${this._connected?"Waiting for log messages\u2026<br>Warnings and errors will appear here.":"Not connected"}</div>`:a`
+            <div class="scroll-box">
+              ${r.map(s=>a`
+                <div class="log-line">
+                  <span class="log-ts">${this._formatTime(s.timestamp)}</span>
+                  <span class="log-level" style="color:${me[s.level]||"inherit"}">${s.level}</span>
+                  <span class="log-name" title=${s.name}>${this._shortName(s.name)}</span>
+                  <span class="log-msg">${s.message}</span>
+                </div>
+              `)}
+            </div>
+          `}
+      </div>
+    `}};R.styles=_`
+    :host { display: block; }
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .toolbar button {
+      padding: 6px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer; font-size: 13px; font-weight: 500;
+    }
+    .toolbar button.active {
+      background: var(--primary-color, #03a9f4);
+      color: #fff; border-color: var(--primary-color, #03a9f4);
+    }
+    .toolbar input {
+      padding: 6px 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      flex: 1; min-width: 120px; max-width: 300px;
+    }
+    .toolbar select {
+      padding: 6px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer;
+    }
+    .count { font-size: 12px; color: var(--secondary-text-color, #727272); }
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 50%; display: inline-block;
+    }
+    .status-dot.on { background: var(--success-color, #4caf50); }
+    .status-dot.off { background: var(--error-color, #db4437); }
+    .log-container {
+      background: var(--card-background-color, #fff);
+      border-radius: 12px;
+      box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.1));
+      overflow: hidden;
+    }
+    .scroll-box { max-height: 600px; overflow-y: auto; }
+    .log-line {
+      padding: 4px 12px; font-size: 12px;
+      font-family: var(--ha-font-family-code, "Roboto Mono", monospace);
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      display: flex; gap: 8px; align-items: baseline;
+    }
+    .log-line:hover { background: var(--table-row-alternative-background-color, #fafafa); }
+    .log-ts { color: var(--secondary-text-color); white-space: nowrap; min-width: 80px; }
+    .log-level {
+      font-weight: 600; font-size: 11px; min-width: 55px;
+      text-transform: uppercase;
+    }
+    .log-name { color: var(--secondary-text-color); min-width: 100px; max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .log-msg { flex: 1; word-break: break-word; }
+    .empty {
+      padding: 24px; text-align: center;
+      color: var(--secondary-text-color); font-size: 14px;
+      line-height: 1.6;
+    }
+    .hint {
+      font-size: 12px; color: var(--secondary-text-color);
+      margin-bottom: 12px;
+    }
+    .hint code {
+      background: var(--secondary-background-color, #e8e8e8);
+      padding: 1px 5px; border-radius: 4px;
+      font-family: var(--ha-font-family-code, monospace);
+      font-size: 11px;
+    }
+    .error { color: var(--error-color, #db4437); font-size: 13px; }
+  `,l([m({attribute:!1})],R.prototype,"hass",2),l([p()],R.prototype,"_logs",2),l([p()],R.prototype,"_paused",2),l([p()],R.prototype,"_filter",2),l([p()],R.prototype,"_levelFilter",2),l([p()],R.prototype,"_connected",2),l([p()],R.prototype,"_error",2),R=l([y("logs-view")],R);var E=class extends v{constructor(){super(...arguments);this.refreshKey=0;this._data=null;this._loading=!0;this._error="";this._filter="";this._groupBy="room";this._expanded=new Set}connectedCallback(){super.connectedCallback(),this._load()}updated(t){t.has("refreshKey")&&t.get("refreshKey")!==void 0&&this._load()}async _load(){this._loading=!0,this._error="";try{this._data=await Wt(this.hass,this.miniserverId)}catch(t){this._error=t instanceof Error?t.message:String(t)}finally{this._loading=!1}}_toggle(t){let o=new Set(this._expanded);o.has(t)?o.delete(t):o.add(t),this._expanded=o}_groupControls(t){let o=new Map;for(let r of t){let s=this._groupBy==="room"?r.room||"No room":this._groupBy==="category"?r.category||"No category":r.type,n=o.get(s)||[];n.push(r),o.set(s,n)}return new Map([...o.entries()].sort((r,s)=>r[0].localeCompare(s[0])))}render(){if(this._loading)return a`<p class="status">Loading structure…</p>`;if(this._error)return a`<p class="status error">Error: ${this._error}</p>`;if(!this._data)return a`<p class="status">No data.</p>`;let t=this._data.controls;if(this._filter){let s=this._filter.toLowerCase();t=t.filter(n=>n.name.toLowerCase().includes(s)||n.type.toLowerCase().includes(s)||n.room.toLowerCase().includes(s)||n.uuid.toLowerCase().includes(s))}let o=this._groupControls(t),r=t.reduce((s,n)=>s+n.sub_controls.length,0);return a`
+      <div class="toolbar">
+        <input type="search" placeholder="Search controls…" .value=${this._filter}
+          @input=${s=>{this._filter=s.target.value}} />
+        <select .value=${this._groupBy}
+          @change=${s=>{this._groupBy=s.target.value}}>
+          <option value="room">Group by room</option>
+          <option value="category">Group by category</option>
+          <option value="type">Group by type</option>
+        </select>
+      </div>
+      <p class="summary">
+        <span class="count">${t.length}</span> controls,
+        <span class="count">${r}</span> sub-controls,
+        <span class="count">${this._data.rooms.length}</span> rooms,
+        <span class="count">${this._data.categories.length}</span> categories
+      </p>
+      ${[...o.entries()].map(([s,n])=>{let d=`g_${s}`,c=this._expanded.has(d);return a`
+          <div class="group-card">
+            <div class="group-header" @click=${()=>this._toggle(d)}>
+              <div><span class="arrow">${c?"\u25BC":"\u25B6"}</span>${s}</div>
+              <span class="group-count">${n.length}</span>
+            </div>
+            ${c?n.map(h=>a`
+              <div class="ctrl-row">
+                <div>
+                  <span class="ctrl-name">${h.name}</span>
+                  ${h.states.length>0?a`
+                    <div class="states-chips">
+                      ${h.states.map(u=>a`<span class="state-chip">${u}</span>`)}
+                    </div>
+                  `:f}
+                </div>
+                <div class="ctrl-meta">
+                  <span class="badge">${h.type}</span>
+                  <span style="font-family:var(--ha-font-family-code,monospace);font-size:10px;opacity:0.6"
+                        title=${h.uuid}>${h.uuid.slice(0,8)}…</span>
+                </div>
+              </div>
+              ${h.sub_controls.map(u=>a`
+                <div class="sub-row">
+                  ${u.name} <span class="badge">${u.type}</span>
+                  ${u.states.length>0?a`
+                    <div class="states-chips">
+                      ${u.states.map(g=>a`<span class="state-chip">${g}</span>`)}
+                    </div>
+                  `:f}
+                </div>
+              `)}
+            `):f}
+          </div>
+        `})}
+    `}};E.styles=_`
+    :host { display: block; }
+    .toolbar {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .toolbar input {
+      padding: 8px 12px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 14px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      flex: 1; min-width: 200px;
+    }
+    .toolbar select {
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer;
+    }
+    .summary {
+      font-size: 13px; color: var(--secondary-text-color);
+      margin-bottom: 12px;
+    }
+    .count { font-weight: 500; color: var(--primary-color, #03a9f4); }
+    .group-card {
+      background: var(--card-background-color, #fff);
+      border-radius: 12px; margin-bottom: 12px;
+      box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0,0,0,0.1));
+      overflow: hidden;
+    }
+    .group-header {
+      padding: 12px 16px; cursor: pointer; display: flex;
+      justify-content: space-between; align-items: center;
+      font-size: 14px; font-weight: 500;
+      background: var(--table-header-background-color, var(--card-background-color, #fff));
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      user-select: none;
+    }
+    .group-header:hover { background: var(--table-row-alternative-background-color, #fafafa); }
+    .group-count {
+      font-size: 12px; font-weight: 400;
+      color: var(--secondary-text-color);
+    }
+    .arrow { font-size: 10px; margin-right: 8px; }
+    .ctrl-row {
+      padding: 8px 16px; font-size: 13px;
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .ctrl-row:last-child { border-bottom: none; }
+    .ctrl-name { font-weight: 500; }
+    .ctrl-meta {
+      display: flex; gap: 8px; align-items: center;
+      color: var(--secondary-text-color); font-size: 12px;
+    }
+    .badge {
+      display: inline-block; padding: 2px 8px; border-radius: 8px;
+      font-size: 11px; font-weight: 500;
+      background: var(--divider-color, #e0e0e0);
+      color: var(--secondary-text-color);
+    }
+    .sub-row {
+      padding: 4px 16px 4px 32px; font-size: 12px;
+      color: var(--secondary-text-color);
+      border-bottom: 1px solid var(--divider-color, #e0e0e0);
+    }
+    .sub-row:last-child { border-bottom: none; }
+    .states-chips {
+      display: flex; gap: 4px; flex-wrap: wrap; margin-top: 2px;
+    }
+    .state-chip {
+      padding: 1px 6px; border-radius: 8px; font-size: 10px;
+      background: var(--secondary-background-color, #e8e8e8);
+      color: var(--primary-text-color);
+    }
+    .status { color: var(--secondary-text-color); font-size: 14px; padding: 16px; }
+    .error { color: var(--error-color, #db4437); }
+  `,l([m({attribute:!1})],E.prototype,"hass",2),l([m({type:Number})],E.prototype,"refreshKey",2),l([m({type:String})],E.prototype,"miniserverId",2),l([p()],E.prototype,"_data",2),l([p()],E.prototype,"_loading",2),l([p()],E.prototype,"_error",2),l([p()],E.prototype,"_filter",2),l([p()],E.prototype,"_groupBy",2),l([p()],E.prototype,"_expanded",2),E=l([y("structure-view")],E);var Yt=["devices","areas","bridges","monitor","console","logs","structure","status"];function Xt(){let i=window.location.hash.replace(/^#/,"").split("?")[0];return Yt.includes(i)?i:"devices"}var D=class extends v{constructor(){super(...arguments);this._activeTab=Xt();this._refreshKey=0;this._entries=[];this._onHashChange=()=>{this._activeTab=Xt()}}connectedCallback(){super.connectedCallback(),window.addEventListener("hashchange",this._onHashChange),this._loadEntries()}disconnectedCallback(){super.disconnectedCallback(),window.removeEventListener("hashchange",this._onHashChange)}async _loadEntries(){try{let t=await Tt(this.hass);this._entries=t.entries,!this._selectedMiniserver&&this._entries.length>0&&(this._selectedMiniserver=this._entries[0].miniserver)}catch{}}_setTab(t){this._activeTab=t,window.location.hash=t==="devices"?"":t}_refresh(){this._refreshKey++}_onEntryChange(t){let o=t.target;this._selectedMiniserver=o.value,this._refreshKey++}render(){let t=this._entries.length>1;return a`
       <div class="header">
         <div class="header-left">
           <h1>Loxone</h1>
@@ -1336,28 +1741,28 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
                   .value=${this._selectedMiniserver??""}
                   @change=${this._onEntryChange}
                 >
-                  ${this._entries.map(s=>a`
-                      <option value=${s.miniserver}>
-                        ${s.name||s.title||s.host}
+                  ${this._entries.map(o=>a`
+                      <option value=${o.miniserver}>
+                        ${o.name||o.title||o.host}
                       </option>
                     `)}
                 </select>
-              `:v}
+              `:f}
         </div>
         <button class="refresh-btn" @click=${this._refresh}>↻ Refresh</button>
       </div>
       <div class="tabs">
-        ${["devices","areas","bridges","monitor","console","status"].map(s=>a`
+        ${Yt.map(o=>a`
             <div
-              class="tab ${this._activeTab===s?"active":""}"
-              @click=${()=>this._setTab(s)}
+              class="tab ${this._activeTab===o?"active":""}"
+              @click=${()=>this._setTab(o)}
             >
-              ${s.charAt(0).toUpperCase()+s.slice(1)}
+              ${o.charAt(0).toUpperCase()+o.slice(1)}
             </div>
           `)}
       </div>
       ${this._renderTab()}
-    `}_renderTab(){let t=this._refreshKey,s=this._selectedMiniserver;switch(this._activeTab){case"devices":return a`<devices-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${s}></devices-view>`;case"areas":return a`<areas-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${s}></areas-view>`;case"bridges":return a`<bridges-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${s}></bridges-view>`;case"monitor":return a`<monitor-view .hass=${this.hass} .miniserverId=${s}></monitor-view>`;case"console":return a`<console-view .hass=${this.hass} .miniserverId=${s}></console-view>`;case"status":return a`<status-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${s}></status-view>`}}};A.styles=y`
+    `}_renderTab(){let t=this._refreshKey,o=this._selectedMiniserver;switch(this._activeTab){case"devices":return a`<devices-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${o}></devices-view>`;case"areas":return a`<areas-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${o}></areas-view>`;case"bridges":return a`<bridges-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${o}></bridges-view>`;case"monitor":return a`<monitor-view .hass=${this.hass} .miniserverId=${o}></monitor-view>`;case"console":return a`<console-view .hass=${this.hass} .miniserverId=${o}></console-view>`;case"logs":return a`<logs-view .hass=${this.hass}></logs-view>`;case"structure":return a`<structure-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${o}></structure-view>`;case"status":return a`<status-view .hass=${this.hass} .refreshKey=${t} .miniserverId=${o}></status-view>`}}};D.styles=_`
     :host {
       display: block;
       padding: 24px;
@@ -1413,6 +1818,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       gap: 0;
       margin-bottom: 24px;
       border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      overflow-x: auto;
     }
     .tab {
       padding: 10px 20px;
@@ -1424,6 +1830,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       margin-bottom: -2px;
       transition: color 0.2s, border-color 0.2s;
       user-select: none;
+      white-space: nowrap;
     }
     .tab:hover {
       color: var(--primary-text-color, #212121);
@@ -1432,7 +1839,7 @@ var jt=Object.defineProperty;var Bt=Object.getOwnPropertyDescriptor;var d=(r,e,t
       color: var(--primary-color, #03a9f4);
       border-bottom-color: var(--primary-color, #03a9f4);
     }
-  `,d([f({attribute:!1})],A.prototype,"hass",2),d([h()],A.prototype,"_activeTab",2),d([h()],A.prototype,"_refreshKey",2),d([h()],A.prototype,"_entries",2),d([h()],A.prototype,"_selectedMiniserver",2),A=d([b("loxone-panel")],A);export{A as LoxonePanel};
+  `,l([m({attribute:!1})],D.prototype,"hass",2),l([p()],D.prototype,"_activeTab",2),l([p()],D.prototype,"_refreshKey",2),l([p()],D.prototype,"_entries",2),l([p()],D.prototype,"_selectedMiniserver",2),D=l([y("loxone-panel")],D);export{D as LoxonePanel};
 /*! Bundled license information:
 
 @lit/reactive-element/css-tag.js:

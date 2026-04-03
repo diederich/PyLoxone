@@ -78,6 +78,9 @@ async def register_panel(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe_events)
     websocket_api.async_register_command(hass, ws_send_command)
     websocket_api.async_register_command(hass, ws_get_structure_diff)
+    websocket_api.async_register_command(hass, ws_get_control_detail)
+    websocket_api.async_register_command(hass, ws_get_structure)
+    websocket_api.async_register_command(hass, ws_subscribe_logs)
 
     if DOMAIN not in hass.data.get("frontend_panels", {}):
         from homeassistant.setup import async_setup_component
@@ -729,3 +732,205 @@ def ws_get_structure_diff(
         "removed": _to_list(diff.get("removed", {})),
         "changed": _changed_to_list(diff.get("changed", {})),
     })
+
+
+# ---------------------------------------------------------------------------
+# Control detail
+# ---------------------------------------------------------------------------
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_control_detail",
+        vol.Required("uuid"): str,
+        vol.Optional("miniserver"): str,
+    }
+)
+@callback
+def ws_get_control_detail(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return detailed info for a single Loxone control."""
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
+    if coordinator is None:
+        connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
+        return
+
+    api = coordinator.api
+    controls = api.controls if api else {}
+    uuid = msg["uuid"]
+    ctrl = controls.get(uuid)
+    if ctrl is None:
+        connection.send_error(msg["id"], "not_found", f"Control {uuid} not found")
+        return
+
+    rooms = api.rooms if api else {}
+    cats = api.categories if api else {}
+
+    room_uuid = ctrl.get("room", "")
+    cat_uuid = ctrl.get("cat", "")
+    room_name = rooms.get(room_uuid, {}).get("name", "") if room_uuid else ""
+    cat_name = cats.get(cat_uuid, {}).get("name", "") if cat_uuid else ""
+    parent_uuid = ctrl.get("parentUuid")
+    parent_name = None
+    is_sub = False
+    if parent_uuid and parent_uuid in controls:
+        parent_name = controls[parent_uuid].get("name", parent_uuid)
+        is_sub = True
+
+    states_raw = ctrl.get("states", {})
+    state_map: dict[str, dict] = {}
+    for sname, suuid in states_raw.items():
+        state_map[sname] = {
+            "uuid": suuid,
+            "value": None,
+            "last_changed": None,
+        }
+
+    ent_reg = er.async_get(hass)
+    entry_id = coordinator.config_entry.entry_id
+    entity_entries = er.async_entries_for_config_entry(ent_reg, entry_id)
+    ha_entities = []
+    for e in entity_entries:
+        if e.unique_id and uuid in e.unique_id:
+            st = hass.states.get(e.entity_id)
+            ha_entities.append({
+                "entity_id": e.entity_id,
+                "domain": e.domain,
+                "disabled_by": e.disabled_by,
+                "state": st.state if st else None,
+                "last_changed": st.last_changed.isoformat() if st and st.last_changed else None,
+            })
+
+    safe_keys = {"name", "type", "room", "cat", "states", "parentUuid"}
+    details = {k: v for k, v in ctrl.items() if k not in safe_keys and not k.startswith("_")}
+
+    connection.send_result(msg["id"], {
+        "uuid": uuid,
+        "name": ctrl.get("name", uuid),
+        "type": ctrl.get("type", ""),
+        "room": room_name,
+        "category": cat_name,
+        "is_sub_control": is_sub,
+        "parent_name": parent_name,
+        "states": state_map,
+        "ha_entities": ha_entities,
+        "details": details,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Structure tree
+# ---------------------------------------------------------------------------
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "loxone/get_structure",
+        vol.Optional("miniserver"): str,
+    }
+)
+@callback
+def ws_get_structure(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Return the full structure tree from the Miniserver."""
+    coordinator = _get_coordinator(hass, msg.get("miniserver"))
+    if coordinator is None:
+        connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
+        return
+
+    api = coordinator.api
+    controls = api.controls if api else {}
+    rooms = api.rooms if api else {}
+    cats = api.categories if api else {}
+
+    room_list = [{"uuid": k, "name": v.get("name", k)} for k, v in rooms.items()]
+    cat_list = [{"uuid": k, "name": v.get("name", k)} for k, v in cats.items()]
+
+    ctrl_list = []
+    for uuid, c in controls.items():
+        if c.get("parentUuid"):
+            continue
+        state_names = list((c.get("states") or {}).keys())
+        subs = []
+        for suuid, sc in c.get("subControls", {}).items():
+            subs.append({
+                "uuid": suuid,
+                "name": sc.get("name", suuid),
+                "type": sc.get("type", ""),
+                "states": list((sc.get("states") or {}).keys()),
+            })
+        room_uuid = c.get("room", "")
+        cat_uuid = c.get("cat", "")
+        ctrl_list.append({
+            "uuid": uuid,
+            "name": c.get("name", uuid),
+            "type": c.get("type", ""),
+            "room": rooms.get(room_uuid, {}).get("name", "") if room_uuid else "",
+            "category": cats.get(cat_uuid, {}).get("name", "") if cat_uuid else "",
+            "states": state_names,
+            "sub_controls": subs,
+        })
+
+    ctrl_list.sort(key=lambda x: (x["room"], x["name"]))
+
+    connection.send_result(msg["id"], {
+        "rooms": room_list,
+        "categories": cat_list,
+        "controls": ctrl_list,
+    })
+
+
+# ---------------------------------------------------------------------------
+# Log viewer subscription
+# ---------------------------------------------------------------------------
+
+class _PanelLogHandler(logging.Handler):
+    """Streams log records to a WS subscription."""
+
+    def __init__(self, send_fn):
+        super().__init__(logging.DEBUG)
+        self._send = send_fn
+
+    def emit(self, record: logging.LogRecord) -> None:
+        try:
+            self._send({
+                "name": record.name,
+                "level": record.levelname,
+                "message": self.format(record),
+                "timestamp": record.created,
+            })
+        except Exception:
+            pass
+
+
+@websocket_api.require_admin
+@websocket_api.websocket_command(
+    {vol.Required("type"): "loxone/subscribe_logs"}
+)
+@callback
+def ws_subscribe_logs(
+    hass: HomeAssistant,
+    connection: websocket_api.ActiveConnection,
+    msg: dict[str, Any],
+) -> None:
+    """Subscribe to live log output for the loxone integration."""
+    logger = logging.getLogger("custom_components.loxone")
+
+    handler = _PanelLogHandler(
+        lambda event: connection.send_message(
+            websocket_api.event_message(msg["id"], event)
+        )
+    )
+    logger.addHandler(handler)
+
+    def _unsubscribe() -> None:
+        logger.removeHandler(handler)
+
+    connection.subscriptions[msg["id"]] = _unsubscribe
+    connection.send_result(msg["id"])

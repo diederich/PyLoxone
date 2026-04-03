@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LoxoneDevice } from "./types";
+import { showToast } from "./types";
 import { fetchDevices, sendCommand } from "./api";
 
 interface HistoryEntry {
@@ -319,12 +320,14 @@ export class ConsoleView extends LitElement {
 
     try {
       const result = await sendCommand(this.hass, sendUuid, this._command, this.miniserverId);
+      showToast(this, `Sent "${this._command}" to ${deviceName || sendUuid}`);
       this._history = [
         ...this._history,
         { uuid: sendUuid, name: deviceName, command: this._command, result: "OK", ok: true, timestamp: ts },
       ].slice(-MAX_HISTORY);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
+      showToast(this, `Error: ${msg}`);
       this._history = [
         ...this._history,
         { uuid: sendUuid, name: deviceName, command: this._command, result: msg, ok: false, timestamp: ts },

@@ -16,6 +16,15 @@ export interface HomeAssistant {
   states: Record<string, HassState>;
 }
 
+export function showToast(el: HTMLElement, message: string): void {
+  el.dispatchEvent(
+    new CustomEvent("hass-notification", {
+      bubbles: true, composed: true,
+      detail: { message, duration: 4000 },
+    }),
+  );
+}
+
 export interface LoxoneEntry {
   miniserver: string;
   title: string;
@@ -135,6 +144,56 @@ export interface GetStructureDiffResult {
   added: StructureDiffEntry[];
   removed: StructureDiffEntry[];
   changed: StructureChangedEntry[];
+}
+
+export interface ControlStateValue {
+  uuid: string;
+  value: string | null;
+  last_changed: string | null;
+}
+
+export interface ControlEntityInfo {
+  entity_id: string;
+  domain: string;
+  disabled_by: string | null;
+  state: string | null;
+  last_changed: string | null;
+}
+
+export interface GetControlDetailResult {
+  uuid: string;
+  name: string;
+  type: string;
+  room: string;
+  category: string;
+  is_sub_control: boolean;
+  parent_name: string | null;
+  states: Record<string, ControlStateValue>;
+  ha_entities: ControlEntityInfo[];
+  details: Record<string, unknown>;
+}
+
+export interface StructureControl {
+  uuid: string;
+  name: string;
+  type: string;
+  room: string;
+  category: string;
+  states: string[];
+  sub_controls: { uuid: string; name: string; type: string; states: string[] }[];
+}
+
+export interface GetStructureResult {
+  rooms: { uuid: string; name: string }[];
+  categories: { uuid: string; name: string }[];
+  controls: StructureControl[];
+}
+
+export interface LogEntry {
+  name: string;
+  level: string;
+  message: string;
+  timestamp: number;
 }
 
 export interface GetStatusResult {

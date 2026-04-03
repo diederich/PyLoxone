@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, GetStatusResult, GetStructureDiffResult } from "./types";
+import { showToast } from "./types";
 import { fetchStatus, fetchStructureDiff } from "./api";
 
 @customElement("status-view")
@@ -134,7 +135,14 @@ export class StatusView extends LitElement {
     .error {
       color: var(--error-color, #db4437);
     }
-    
+    .download-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer;
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #212121);
+      transition: opacity 0.2s; margin-top: 16px;
+    }
+    .download-btn:hover { opacity: 0.75; }
   `;
 
   connectedCallback(): void {
@@ -312,7 +320,21 @@ export class StatusView extends LitElement {
       </div>
 
       ${this._renderStructureDiff()}
+      <button class="download-btn" @click=${this._downloadDiagnostics}>⬇ Download Diagnostics</button>
     `;
+  }
+
+  private _downloadDiagnostics(): void {
+    try {
+      const data = { status: this._status, structureDiff: this._diff, exported: new Date().toISOString() };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `loxone-diagnostics-${new Date().toISOString().slice(0,10)}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast(this, "Diagnostics downloaded");
+    } catch { showToast(this, "Failed to download diagnostics"); }
   }
 
   private _renderStructureDiff() {

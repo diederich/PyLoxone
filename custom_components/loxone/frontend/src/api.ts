@@ -2,9 +2,11 @@ import type {
   AddBridgeResult,
   GetAreasResult,
   GetBridgesResult,
+  GetControlDetailResult,
   GetDevicesResult,
   GetStatusResult,
   GetStructureDiffResult,
+  GetStructureResult,
   HomeAssistant,
   ListEntriesResult,
   RemoveBridgeResult,
@@ -129,6 +131,28 @@ export async function sendCommand(
     type: "loxone/send_command",
     uuid,
     command,
+    ...(miniserverId ? { miniserver: miniserverId } : {}),
+  });
+}
+
+export async function fetchControlDetail(
+  hass: HomeAssistant,
+  uuid: string,
+  miniserverId?: string,
+): Promise<GetControlDetailResult> {
+  return hass.callWS<GetControlDetailResult>({
+    type: "loxone/get_control_detail",
+    uuid,
+    ...(miniserverId ? { miniserver: miniserverId } : {}),
+  });
+}
+
+export async function fetchStructure(
+  hass: HomeAssistant,
+  miniserverId?: string,
+): Promise<GetStructureResult> {
+  return hass.callWS<GetStructureResult>({
+    type: "loxone/get_structure",
     ...(miniserverId ? { miniserver: miniserverId } : {}),
   });
 }

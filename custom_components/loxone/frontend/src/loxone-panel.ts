@@ -8,16 +8,28 @@ import "./bridges-view";
 import "./status-view";
 import "./monitor-view";
 import "./console-view";
+import "./logs-view";
+import "./structure-view";
 
-type TabId = "devices" | "areas" | "bridges" | "monitor" | "console" | "status";
+type TabId = "devices" | "areas" | "bridges" | "monitor" | "console" | "logs" | "structure" | "status";
+const TABS: TabId[] = ["devices", "areas", "bridges", "monitor", "console", "logs", "structure", "status"];
+
+function _readTabFromHash(): TabId {
+  const raw = window.location.hash.replace(/^#/, "").split("?")[0];
+  return TABS.includes(raw as TabId) ? (raw as TabId) : "devices";
+}
 
 @customElement("loxone-panel")
 export class LoxonePanel extends LitElement {
   @property({ attribute: false }) hass!: HomeAssistant;
-  @state() private _activeTab: TabId = "devices";
+  @state() private _activeTab: TabId = _readTabFromHash();
   @state() private _refreshKey = 0;
   @state() private _entries: LoxoneEntry[] = [];
   @state() private _selectedMiniserver: string | undefined;
+
+  private _onHashChange = () => {
+    this._activeTab = _readTabFromHash();
+  };
 
   static styles = css`
     :host {
@@ -75,6 +87,7 @@ export class LoxonePanel extends LitElement {
       gap: 0;
       margin-bottom: 24px;
       border-bottom: 2px solid var(--divider-color, #e0e0e0);
+      overflow-x: auto;
     }
     .tab {
       padding: 10px 20px;
@@ -86,6 +99,7 @@ export class LoxonePanel extends LitElement {
       margin-bottom: -2px;
       transition: color 0.2s, border-color 0.2s;
       user-select: none;
+      white-space: nowrap;
     }
     .tab:hover {
       color: var(--primary-text-color, #212121);
@@ -98,7 +112,13 @@ export class LoxonePanel extends LitElement {
 
   connectedCallback(): void {
     super.connectedCallback();
+    window.addEventListener("hashchange", this._onHashChange);
     this._loadEntries();
+  }
+
+  disconnectedCallback(): void {
+    super.disconnectedCallback();
+    window.removeEventListener("hashchange", this._onHashChange);
   }
 
   private async _loadEntries(): Promise<void> {
@@ -109,12 +129,13 @@ export class LoxonePanel extends LitElement {
         this._selectedMiniserver = this._entries[0].miniserver;
       }
     } catch {
-      // Single-entry fallback: leave _selectedEntryId undefined
+      // Single-entry fallback
     }
   }
 
   private _setTab(tab: TabId): void {
     this._activeTab = tab;
+    window.location.hash = tab === "devices" ? "" : tab;
   }
 
   private _refresh(): void {
@@ -154,7 +175,7 @@ export class LoxonePanel extends LitElement {
         <button class="refresh-btn" @click=${this._refresh}>↻ Refresh</button>
       </div>
       <div class="tabs">
-        ${(["devices", "areas", "bridges", "monitor", "console", "status"] as TabId[]).map(
+        ${TABS.map(
           (tab) => html`
             <div
               class="tab ${this._activeTab === tab ? "active" : ""}"
@@ -183,6 +204,10 @@ export class LoxonePanel extends LitElement {
         return html`<monitor-view .hass=${this.hass} .miniserverId=${eid}></monitor-view>`;
       case "console":
         return html`<console-view .hass=${this.hass} .miniserverId=${eid}></console-view>`;
+      case "logs":
+        return html`<logs-view .hass=${this.hass}></logs-view>`;
+      case "structure":
+        return html`<structure-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></structure-view>`;
       case "status":
         return html`<status-view .hass=${this.hass} .refreshKey=${k} .miniserverId=${eid}></status-view>`;
     }

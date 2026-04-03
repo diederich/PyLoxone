@@ -4,6 +4,35 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Frontend feature gap closure + DHCP fix
+
+### Decisions
+- Entity inspector drawer: state UUIDs shown but live values not populated (coordinator doesn't accumulate a state dict — values are dispatched per-UUID); structure metadata (room, category, states, entities) is fully available
+- Log viewer: does not manipulate the logger level — users must set `custom_components.loxone: debug` in `configuration.yaml` for debug/info messages; by default only WARNING+ reaches the handler
+- Bridges UX: added domain grouping, search, and a confirmation dialog for removals to improve usability with many bridges
+- DHCP duplicate fix: IP-based de-duplication added alongside MAC-based unique_id check, since a Miniserver can present multiple MACs (dual NIC, Audio Server) for the same IP
+
+### Changes
+- **loxone-panel.ts** — URL routing via `window.location.hash` (deep-linkable tabs); added Logs and Structure tabs
+- **devices-view.ts** — advanced filters (domain, room, status dropdowns); clickable rows open entity inspector drawer; toast notifications on enable/disable
+- **bridges-view.ts** — summary line, table search, domain grouping, removal confirmation dialog, toast notifications
+- **console-view.ts** — toast notifications on send success/error
+- **areas-view.ts** — toast notifications on sync
+- **status-view.ts** — diagnostics download button (JSON export of status + structure diff)
+- **logs-view.ts** — new view: real-time log streamer with pause/resume, text filter, level filter (WARNING+ by default), hint about logger config
+- **structure-view.ts** — new view: searchable/groupable/collapsible tree of Miniserver structure (rooms, categories, controls, sub-controls, states)
+- **api.ts** — added `fetchControlDetail`, `fetchStructure` API functions
+- **types.ts** — added `showToast` utility, `GetControlDetailResult`, `GetStructureResult`, `LogEntry`, and related interfaces
+- **websocket.py** — registered 3 new WS commands: `loxone/get_control_detail`, `loxone/get_structure`, `loxone/subscribe_logs`
+- **config_flow.py** — DHCP `async_step_dhcp` now checks existing entries by IP (via `entry.options`) before creating a new flow, preventing duplicate discovery cards for multi-NIC Miniservers
+- **test_config_flow.py** — added `test_dhcp_discovery_aborts_second_nic_same_ip` covering the IP-based de-duplication
+
+### Investigations
+- Coordinator does not store a UUID→value map; live values are dispatched per-UUID via `async_dispatcher_send` and consumed directly by entities. The inspector drawer shows state names and UUIDs but not live values.
+- Python logging hierarchy: `custom_components.loxone` logger defaults to WARNING in HA. The subscribe_logs handler attaches at DEBUG but only receives records that pass the logger's effective level.
+
+---
+
 ## 2026-04-03 — Docs accuracy pass
 
 ### Changes

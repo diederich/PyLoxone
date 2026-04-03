@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, BridgeInfo, LoxoneDevice } from "./types";
+import { showToast } from "./types";
 import { fetchBridges, addBridge, removeBridge, fetchDevices } from "./api";
 
 const BRIDGEABLE_DOMAINS = [
@@ -42,6 +43,8 @@ export class BridgesView extends LitElement {
   @state() private _loxoneFilter = "";
   @state() private _showEntityDropdown = false;
   @state() private _showLoxoneDropdown = false;
+  @state() private _tableFilter = "";
+  @state() private _confirmRemove: string | null = null;
 
   static styles = css`
     :host {
@@ -221,6 +224,37 @@ export class BridgesView extends LitElement {
       padding: 24px;
       text-align: center;
     }
+    .table-toolbar {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+    }
+    .table-toolbar input {
+      padding: 8px 12px; border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px; background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121); flex: 1; min-width: 180px; max-width: 350px;
+    }
+    .summary { font-size: 13px; color: var(--secondary-text-color, #727272); margin-bottom: 12px; }
+    .summary .count { font-weight: 500; color: var(--primary-color, #03a9f4); }
+    .group-label td {
+      padding: 8px 16px; font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--secondary-text-color, #727272);
+      background: var(--table-header-background-color, var(--primary-background-color, #fafafa));
+    }
+    .confirm-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .confirm-dialog {
+      background: var(--card-background-color, #fff); border-radius: 12px;
+      padding: 24px; min-width: 320px; box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .confirm-dialog h3 { margin: 0 0 12px; font-size: 16px; font-weight: 500; }
+    .confirm-dialog p { font-size: 14px; margin: 0 0 20px; color: var(--secondary-text-color); }
+    .confirm-dialog .actions { display: flex; gap: 8px; justify-content: flex-end; }
+    .confirm-dialog button.secondary {
+      background: var(--card-background-color, #fff); color: var(--primary-text-color, #212121);
+      border: 1px solid var(--divider-color, #e0e0e0);
+    }
   `;
 
   connectedCallback(): void {
@@ -374,12 +408,23 @@ export class BridgesView extends LitElement {
 
   // -- Actions ----------------------------------------------------------------
 
+  private get _filteredBridges(): BridgeInfo[] {
+    if (!this._tableFilter) return this._bridges;
+    const lower = this._tableFilter.toLowerCase();
+    return this._bridges.filter(
+      (b) => b.entity_id.toLowerCase().includes(lower) ||
+             (b.loxone_name || "").toLowerCase().includes(lower) ||
+             b.loxone_type.toLowerCase().includes(lower),
+    );
+  }
+
   private async _addBridge(): Promise<void> {
     if (!this._newEntityId || !this._newLoxoneUuid) return;
     this._error = "";
     this._message = "";
     try {
       await addBridge(this.hass, this._newEntityId, this._newLoxoneUuid, this.miniserverId);
+      showToast(this, `Bridge added: ${this._newEntityId}`);
       this._message = `Bridge added: ${this._newEntityId}`;
       this._newEntityId = "";
       this._newLoxoneUuid = "";
@@ -391,11 +436,19 @@ export class BridgesView extends LitElement {
     }
   }
 
-  private async _removeBridge(entityId: string): Promise<void> {
+  private _requestRemove(entityId: string): void {
+    this._confirmRemove = entityId;
+  }
+
+  private async _confirmAndRemove(): Promise<void> {
+    const entityId = this._confirmRemove;
+    if (!entityId) return;
+    this._confirmRemove = null;
     this._error = "";
     this._message = "";
     try {
       await removeBridge(this.hass, entityId, this.miniserverId);
+      showToast(this, `Bridge removed: ${entityId}`);
       this._message = `Bridge removed: ${entityId}`;
       await this._load();
     } catch (err: unknown) {
@@ -518,53 +571,68 @@ export class BridgesView extends LitElement {
         <button @click=${this._addBridge}>Add Bridge</button>
       </div>
       ${this._message ? html`<p class="message">${this._message}</p>` : ""}
+      ${this._bridges.length > 0 ? html`
+        <p class="summary"><span class="count">${this._bridges.length}</span> bridge${this._bridges.length !== 1 ? "s" : ""} configured</p>
+        <div class="table-toolbar">
+          <input type="text" placeholder="Search bridges…"
+            .value=${this._tableFilter}
+            @input=${(e: Event) => { this._tableFilter = (e.target as HTMLInputElement).value; }} />
+        </div>
+      ` : ""}
       ${this._bridges.length === 0
         ? html`<p class="empty">No device bridges configured.</p>`
-        : html`
-            <table>
-              <thead>
-                <tr>
-                  <th>HA Entity</th>
-                  <th>State</th>
-                  <th></th>
-                  <th>Loxone Control</th>
-                  <th>Type</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                ${this._bridges.map((b) => {
-                  const st = this.hass.states[b.entity_id];
-                  const stateStr = st ? st.state : "unavailable";
-                  const stateClass =
-                    !st || stateStr === "unavailable" || stateStr === "unknown"
-                      ? "state-warn"
-                      : "";
-                  return html`
-                    <tr>
-                      <td>${b.entity_id}</td>
-                      <td>
-                        <span class="state-value ${stateClass}"
-                          >${stateStr}</span
-                        >
-                      </td>
-                      <td class="direction">→</td>
-                      <td>${b.loxone_name || b.loxone_uuid}</td>
-                      <td><span class="badge">${b.loxone_type}</span></td>
-                      <td>
-                        <button
-                          class="danger"
-                          @click=${() => this._removeBridge(b.entity_id)}
-                        >
-                          Remove
-                        </button>
-                      </td>
-                    </tr>
-                  `;
-                })}
-              </tbody>
-            </table>
-          `}
+        : (() => {
+            const filtered = this._filteredBridges;
+            const grouped = this._groupByKey(filtered, (b) => b.entity_id.split(".")[0]);
+            return html`
+              <table>
+                <thead>
+                  <tr>
+                    <th>HA Entity</th>
+                    <th>State</th>
+                    <th></th>
+                    <th>Loxone Control</th>
+                    <th>Type</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${Array.from(grouped.entries()).map(([domain, bridges]) => html`
+                    <tr class="group-label"><td colspan="6">${domain} (${bridges.length})</td></tr>
+                    ${bridges.map((b) => {
+                      const st = this.hass.states[b.entity_id];
+                      const stateStr = st ? st.state : "unavailable";
+                      const stateClass =
+                        !st || stateStr === "unavailable" || stateStr === "unknown"
+                          ? "state-warn" : "";
+                      return html`
+                        <tr>
+                          <td>${b.entity_id}</td>
+                          <td><span class="state-value ${stateClass}">${stateStr}</span></td>
+                          <td class="direction">→</td>
+                          <td>${b.loxone_name || b.loxone_uuid}</td>
+                          <td><span class="badge">${b.loxone_type}</span></td>
+                          <td><button class="danger" @click=${() => this._requestRemove(b.entity_id)}>Remove</button></td>
+                        </tr>
+                      `;
+                    })}
+                  `)}
+                </tbody>
+              </table>
+            `;
+          })()}
+      ${this._confirmRemove ? html`
+        <div class="confirm-overlay" @click=${() => { this._confirmRemove = null; }}>
+          <div class="confirm-dialog" @click=${(e: Event) => e.stopPropagation()}>
+            <h3>Remove bridge?</h3>
+            <p>This will remove the bridge for <strong>${this._confirmRemove}</strong>. The entity will no longer be bridged to its Loxone control.</p>
+            <div class="actions">
+              <button class="secondary" @click=${() => { this._confirmRemove = null; }}>Cancel</button>
+              <button class="danger" @click=${this._confirmAndRemove}>Remove</button>
+            </div>
+          </div>
+        </div>
+      ` : ""}
     `;
   }
 }

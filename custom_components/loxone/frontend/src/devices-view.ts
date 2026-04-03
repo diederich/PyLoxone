@@ -1,7 +1,8 @@
 import { LitElement, html, css, nothing } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import type { HomeAssistant, LoxoneDevice } from "./types";
-import { fetchDevices, setEntityEnabled } from "./api";
+import type { HomeAssistant, LoxoneDevice, GetControlDetailResult } from "./types";
+import { showToast } from "./types";
+import { fetchDevices, setEntityEnabled, fetchControlDetail } from "./api";
 
 type SortKey = "name" | "type" | "room" | "entities";
 type SortDir = "asc" | "desc";
@@ -13,10 +14,15 @@ export class DevicesView extends LitElement {
   @property({ type: String }) miniserverId?: string;
   @state() private _devices: LoxoneDevice[] = [];
   @state() private _filter = "";
+  @state() private _filterDomain = "";
+  @state() private _filterRoom = "";
+  @state() private _filterStatus = "";
   @state() private _loading = true;
   @state() private _error = "";
   @state() private _sortKey: SortKey = "room";
   @state() private _sortDir: SortDir = "asc";
+  @state() private _detail: GetControlDetailResult | null = null;
+  @state() private _detailLoading = false;
 
   static styles = css`
     :host {
@@ -39,7 +45,14 @@ export class DevicesView extends LitElement {
       background: var(--card-background-color, #fff);
       color: var(--primary-text-color, #212121);
     }
-    
+    .filter-select {
+      padding: 8px 10px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px; font-size: 13px;
+      background: var(--card-background-color, #fff);
+      color: var(--primary-text-color, #212121);
+      cursor: pointer; min-width: 100px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
@@ -140,6 +153,44 @@ export class DevicesView extends LitElement {
       color: var(--secondary-text-color, #727272);
       font-size: 12px;
     }
+    tr.clickable { cursor: pointer; }
+    tr.clickable:hover td { background: var(--table-row-alternative-background-color, #fafafa); }
+    .drawer-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.4); z-index: 100;
+    }
+    .drawer {
+      position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 90vw);
+      background: var(--primary-background-color, #fafafa);
+      box-shadow: -4px 0 20px rgba(0,0,0,0.15); z-index: 101;
+      overflow-y: auto; padding: 24px; box-sizing: border-box;
+    }
+    .drawer h2 { font-size: 18px; font-weight: 500; margin: 0 0 4px; }
+    .drawer .sub-title { font-size: 13px; color: var(--secondary-text-color); margin-bottom: 16px; }
+    .drawer .close-btn {
+      position: absolute; top: 16px; right: 16px;
+      border: none; background: none; font-size: 20px; cursor: pointer;
+      color: var(--secondary-text-color);
+    }
+    .drawer .section-title {
+      font-size: 12px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--secondary-text-color);
+      margin: 16px 0 8px; border-bottom: 1px solid var(--divider-color, #e0e0e0);
+      padding-bottom: 4px;
+    }
+    .drawer .detail-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 4px 0; font-size: 13px;
+    }
+    .drawer .detail-label { color: var(--secondary-text-color); }
+    .drawer .detail-value {
+      font-family: var(--ha-font-family-code, monospace); font-size: 12px;
+      color: var(--primary-text-color); max-width: 60%; text-align: right; word-break: break-all;
+    }
+    .drawer .entity-row {
+      padding: 6px 0; border-bottom: 1px solid var(--divider-color, #e0e0e0); font-size: 13px;
+    }
+    .drawer .entity-row:last-child { border-bottom: none; }
   `;
 
   connectedCallback(): void {
@@ -166,6 +217,18 @@ export class DevicesView extends LitElement {
     }
   }
 
+  private get _allDomains(): string[] {
+    const s = new Set<string>();
+    for (const d of this._devices) for (const e of d.ha_entities) s.add(e.entity_id.split(".")[0]);
+    return [...s].sort();
+  }
+
+  private get _allRooms(): string[] {
+    const s = new Set<string>();
+    for (const d of this._devices) if (d.room) s.add(d.room);
+    return [...s].sort();
+  }
+
   private get _filteredDevices(): LoxoneDevice[] {
     let devices = this._devices;
     if (this._filter) {
@@ -177,6 +240,18 @@ export class DevicesView extends LitElement {
           d.room.toLowerCase().includes(lower) ||
           d.ha_entities.some((e) => e.entity_id.toLowerCase().includes(lower)),
       );
+    }
+    if (this._filterDomain) {
+      const dom = this._filterDomain;
+      devices = devices.filter((d) => d.ha_entities.some((e) => e.entity_id.startsWith(dom + ".")));
+    }
+    if (this._filterRoom) devices = devices.filter((d) => d.room === this._filterRoom);
+    if (this._filterStatus) {
+      switch (this._filterStatus) {
+        case "enabled": devices = devices.filter((d) => d.ha_entities.length > 0 && d.ha_entities.some((e) => !e.disabled_by)); break;
+        case "disabled": devices = devices.filter((d) => d.ha_entities.some((e) => !!e.disabled_by)); break;
+        case "no-entity": devices = devices.filter((d) => d.ha_entities.length === 0); break;
+      }
     }
     return this._sortDevices(devices);
   }
@@ -252,12 +327,23 @@ export class DevicesView extends LitElement {
     >`;
   }
 
+  private async _openDetail(uuid: string): Promise<void> {
+    this._detailLoading = true;
+    this._detail = null;
+    try { this._detail = await fetchControlDetail(this.hass, uuid, this.miniserverId); }
+    catch { this._detail = null; }
+    finally { this._detailLoading = false; }
+  }
+
+  private _closeDetail(): void { this._detail = null; }
+
   private async _toggleEntity(
     entityId: string,
     currentlyDisabled: boolean,
   ): Promise<void> {
     try {
       await setEntityEnabled(this.hass, entityId, currentlyDisabled);
+      showToast(this, `${entityId} ${currentlyDisabled ? "enabled" : "disabled"}`);
       await this._loadDevices();
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);
@@ -297,11 +383,25 @@ export class DevicesView extends LitElement {
           type="search"
           placeholder="Filter by name, type, room, or entity…"
           .value=${this._filter}
-          @input=${(e: Event) => {
-            this._filter = (e.target as HTMLInputElement).value;
-          }}
+          @input=${(e: Event) => { this._filter = (e.target as HTMLInputElement).value; }}
         />
-        
+        <select class="filter-select" .value=${this._filterDomain}
+          @change=${(e: Event) => { this._filterDomain = (e.target as HTMLSelectElement).value; }}>
+          <option value="">All domains</option>
+          ${this._allDomains.map((d) => html`<option value=${d}>${d}</option>`)}
+        </select>
+        <select class="filter-select" .value=${this._filterRoom}
+          @change=${(e: Event) => { this._filterRoom = (e.target as HTMLSelectElement).value; }}>
+          <option value="">All rooms</option>
+          ${this._allRooms.map((r) => html`<option value=${r}>${r}</option>`)}
+        </select>
+        <select class="filter-select" .value=${this._filterStatus}
+          @change=${(e: Event) => { this._filterStatus = (e.target as HTMLSelectElement).value; }}>
+          <option value="">All statuses</option>
+          <option value="enabled">Enabled</option>
+          <option value="disabled">Disabled</option>
+          <option value="no-entity">No entity</option>
+        </select>
       </div>
       <p class="summary">
         <span class="count">${this._devices.length}</span> controls,
@@ -342,7 +442,8 @@ export class DevicesView extends LitElement {
         <tbody>
           ${devices.map(
             (d) => html`
-              <tr class=${d.parent && visibleUuids.has(d.parent) ? "sub-control" : ""}>
+              <tr class="${d.parent && visibleUuids.has(d.parent) ? "sub-control" : ""} clickable"
+                  @click=${() => this._openDetail(d.uuid)}>
                 <td>${d.name}</td>
                 <td><span class="badge">${d.type}</span></td>
                 <td>${d.room || "—"}</td>
@@ -362,11 +463,10 @@ export class DevicesView extends LitElement {
                             <button
                               class="toggle-btn"
                               title=${ent.disabled_by ? "Enable" : "Disable"}
-                              @click=${() =>
-                                this._toggleEntity(
-                                  ent.entity_id,
-                                  !!ent.disabled_by,
-                                )}
+                              @click=${(ev: Event) => {
+                                ev.stopPropagation();
+                                this._toggleEntity(ent.entity_id, !!ent.disabled_by);
+                              }}
                             >
                               ${ent.disabled_by ? "⬚" : "✓"}
                             </button>
@@ -379,6 +479,60 @@ export class DevicesView extends LitElement {
           )}
         </tbody>
       </table>
+      ${this._detailLoading ? html`<div class="drawer-overlay"><div class="drawer"><p class="status">Loading…</p></div></div>` : ""}
+      ${this._detail ? this._renderDrawer(this._detail) : ""}
+    `;
+  }
+
+  private _renderDrawer(d: GetControlDetailResult) {
+    const stateEntries = Object.entries(d.states);
+    return html`
+      <div class="drawer-overlay" @click=${this._closeDetail}></div>
+      <div class="drawer" @click=${(e: Event) => e.stopPropagation()}>
+        <button class="close-btn" @click=${this._closeDetail}>✕</button>
+        <h2>${d.name}</h2>
+        <div class="sub-title">
+          <span class="badge">${d.type}</span>
+          ${d.room ? html` — ${d.room}` : ""}
+          ${d.category ? html` — ${d.category}` : ""}
+          ${d.is_sub_control && d.parent_name ? html` (sub-control of ${d.parent_name})` : ""}
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">UUID</span>
+          <span class="detail-value">${d.uuid}</span>
+        </div>
+        ${stateEntries.length > 0 ? html`
+          <div class="section-title">States (${stateEntries.length})</div>
+          ${stateEntries.map(([name, sv]) => html`
+            <div class="detail-row">
+              <span class="detail-label">${name}</span>
+              <span class="detail-value">${sv.value ?? "—"}${sv.last_changed
+                ? html` <span style="opacity:0.5;font-size:11px">${new Date(sv.last_changed).toLocaleTimeString()}</span>` : ""}</span>
+            </div>
+          `)}
+        ` : ""}
+        ${d.ha_entities.length > 0 ? html`
+          <div class="section-title">HA Entities (${d.ha_entities.length})</div>
+          ${d.ha_entities.map((ent) => html`
+            <div class="entity-row">
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span>${ent.entity_id}</span>
+                <span class="badge" style="${ent.disabled_by ? "background:var(--disabled-text-color,#bdbdbd)" : "background:var(--success-color,#4caf50);color:#fff"}">${ent.disabled_by ? "disabled" : ent.state ?? "—"}</span>
+              </div>
+              ${ent.last_changed ? html`<div style="font-size:11px;color:var(--secondary-text-color);margin-top:2px">Last changed: ${new Date(ent.last_changed).toLocaleString()}</div>` : ""}
+            </div>
+          `)}
+        ` : html`<div class="section-title">No HA entities</div>`}
+        ${Object.keys(d.details).length > 0 ? html`
+          <div class="section-title">Details</div>
+          ${Object.entries(d.details).map(([k, v]) => html`
+            <div class="detail-row">
+              <span class="detail-label">${k}</span>
+              <span class="detail-value">${typeof v === "object" ? JSON.stringify(v) : String(v)}</span>
+            </div>
+          `)}
+        ` : ""}
+      </div>
     `;
   }
 }

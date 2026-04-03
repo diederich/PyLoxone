@@ -815,3 +815,28 @@ async def test_dhcp_discovery_aborts_if_already_configured(
     )
     assert result["type"] is FlowResultType.ABORT
     assert result["reason"] == "already_configured"
+
+
+async def test_dhcp_discovery_aborts_second_nic_same_ip(
+    hass: HomeAssistant,
+) -> None:
+    """DHCP with a different MAC but same IP should abort as already_configured."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="504F94AAAAAA",
+        options=VALID_USER_INPUT,
+    ).add_to_hass(hass)
+
+    different_mac_discovery = MagicMock(
+        ip="192.168.1.77",
+        hostname="loxone",
+        macaddress="504F94BBBBBB",
+    )
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "dhcp"},
+        data=different_mac_discovery,
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

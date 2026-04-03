@@ -1,6 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, LoxoneRoom, HaArea } from "./types";
+import { showToast } from "./types";
 import { fetchAreas, syncAreas, syncDeviceNames } from "./api";
 
 @customElement("areas-view")
@@ -140,6 +141,7 @@ export class AreasView extends LitElement {
       this._message = createAreas
         ? "Synced areas and created missing ones."
         : "Synced devices to existing areas.";
+      showToast(this, this._message);
       await this._load();
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);
