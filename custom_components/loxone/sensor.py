@@ -42,6 +42,8 @@ _LOGGER = logging.getLogger(__name__)
 
 DEFAULT_NAME = "Loxone Sensor"
 
+PARALLEL_UPDATES = 0
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_ACTIONID): cv.string,

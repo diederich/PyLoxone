@@ -16,7 +16,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
                                  CONF_USERNAME, EVENT_COMPONENT_LOADED,
                                  Platform)
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
 from homeassistant.helpers import area_registry as ar
 from homeassistant.helpers import config_validation as cv
@@ -24,6 +24,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
 
 from .bridge import BridgeRuntime
@@ -37,6 +38,8 @@ from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_DEVICE,
                     LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
 from .coordinator import ConnectionState, LoxoneCoordinator
 from .miniserver import get_miniserver_from_hass
+
+type LoxoneConfigEntry = ConfigEntry[LoxoneCoordinator]
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
                                       LoxoneConnectionError,
                                       LoxoneServiceUnAvailableError,
@@ -70,11 +73,12 @@ _UNDEF: dict = {}
 # TODO: get version and check for updates https://update.loxone.com/updatecheck.xml?serial=xxxxxxxxx
 
 
-def _get_coordinator(hass: HomeAssistant):
+def _get_coordinator(hass: HomeAssistant) -> LoxoneCoordinator | None:
     """Return the first available LoxoneCoordinator, or None."""
-    for value in hass.data.get(DOMAIN, {}).values():
-        if hasattr(value, "api"):
-            return value
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator: LoxoneCoordinator | None = getattr(entry, "runtime_data", None)
+        if coordinator is not None:
+            return coordinator
     return None
 
 
@@ -155,11 +159,7 @@ async def _async_sync_areas(hass: HomeAssistant, data=None):
 
     rooms_created = 0
     if create_areas:
-        coordinator = None
-        for value in hass.data.get(DOMAIN, {}).values():
-            if hasattr(value, "api"):
-                coordinator = value
-                break
+        coordinator = _get_coordinator(hass)
         if coordinator:
             structure = coordinator.api.structure_file or {}
             for room in structure.get("rooms", {}).values():
@@ -296,9 +296,13 @@ def _async_register_services(hass: HomeAssistant):
     hass.services.async_register(DOMAIN, "reload", handle_reload)
 
 
-async def async_unload_entry(hass, config_entry):
+async def async_unload_entry(
+    hass: HomeAssistant, config_entry: LoxoneConfigEntry
+) -> bool:
     """Completely unloads the Loxone integration and closes all connections."""
-    coordinator = hass.data.get(DOMAIN, {}).get(config_entry.entry_id)
+    coordinator: LoxoneCoordinator | None = getattr(
+        config_entry, "runtime_data", None
+    )
 
     if coordinator is not None:
         try:
@@ -308,8 +312,6 @@ async def async_unload_entry(hass, config_entry):
 
         if hasattr(coordinator, "bridge_runtime") and coordinator.bridge_runtime:
             await coordinator.bridge_runtime.async_teardown()
-
-        hass.data[DOMAIN].pop(config_entry.entry_id, None)
 
     unload_ok = await hass.config_entries.async_unload_platforms(
         config_entry, LOXONE_PLATFORMS
@@ -430,8 +432,10 @@ async def async_setup_entry(hass, config_entry):
         raise ConfigEntryNotReady from err
     except LoxoneUnauthorisedError:
         _LOGGER.error(
-            "Could not connect to Loxone Miniserver. Unauthorised. Please check username and password."
+            "Could not connect to Loxone Miniserver. Unauthorised. "
+            "Please check username and password."
         )
+        config_entry.async_start_reauth(hass)
         return False
     except OSError as err:
         await coordinator.api.close()
@@ -463,7 +467,7 @@ async def async_setup_entry(hass, config_entry):
         host,
     )
 
-    hass.data.setdefault(DOMAIN, {})[config_entry.entry_id] = coordinator
+    config_entry.runtime_data = coordinator
 
     await hass.config_entries.async_forward_entry_setups(config_entry, LOXONE_PLATFORMS)
 
@@ -684,7 +688,7 @@ async def async_setup_entry(hass, config_entry):
         )
 
     async def _async_options_updated(hass_ref, entry):
-        coord = hass_ref.data.get(DOMAIN, {}).get(entry.entry_id)
+        coord: LoxoneCoordinator | None = getattr(entry, "runtime_data", None)
         if coord and hasattr(coord, "bridge_runtime") and coord.bridge_runtime:
             await coord.bridge_runtime.async_options_updated()
 
@@ -712,6 +716,16 @@ async def async_remove_config_entry_device(
     return True
 
 
+class _DispatchEvent:
+    """Lightweight stand-in for HA Event so existing event_handlers work unchanged."""
+
+    __slots__ = ("data", "event_type")
+
+    def __init__(self, data: dict, event_type: str = EVENT):
+        self.data = data
+        self.event_type = event_type
+
+
 class LoxoneEntity(Entity):
     """
     @DynamicAttrs
@@ -736,16 +750,13 @@ class LoxoneEntity(Entity):
                 except Exception:
                     _LOGGER.exception("Unexpected error setting %s", key)
 
-        self.listener = None
         self._prev_available: bool | None = None
 
-        # Initialize base extra state attributes with common Loxone fields
         self._attr_extra_state_attributes = {
             "uuid": kwargs.get("uuidAction", ""),
             "platform": "loxone",
         }
 
-        # Add optional common attributes from Loxone JSON if they exist
         if "room" in kwargs and kwargs["room"]:
             self._attr_extra_state_attributes["room"] = kwargs["room"]
         if "cat" in kwargs and kwargs["cat"]:
@@ -758,10 +769,33 @@ class LoxoneEntity(Entity):
             return True
         return coordinator.last_update_success
 
+    def _get_state_uuids(self) -> set[str]:
+        """Return all UUIDs this entity should listen to."""
+        uuids: set[str] = set()
+        if hasattr(self, "uuidAction"):
+            uuids.add(self.uuidAction)
+        if hasattr(self, "states") and isinstance(self.states, dict):
+            for v in self.states.values():
+                if isinstance(v, str):
+                    uuids.add(v)
+        return uuids
+
     async def async_added_to_hass(self):
-        """Subscribe to device events and coordinator availability updates."""
-        self.listener = self.hass.bus.async_listen(EVENT, self.event_handler)
+        """Subscribe to per-UUID dispatchers and coordinator availability."""
         self._register_coordinator_listener()
+        for uuid in self._get_state_uuids():
+            self.async_on_remove(
+                async_dispatcher_connect(
+                    self.hass, f"loxone_uuid_{uuid}", self._dispatch_handler
+                )
+            )
+
+    @callback
+    def _dispatch_handler(self, message: dict) -> None:
+        """Convert dispatcher signal to legacy event_handler call."""
+        self.hass.async_create_task(
+            self.event_handler(_DispatchEvent(message))
+        )
 
     def _register_coordinator_listener(self):
         """Subscribe to coordinator updates so availability changes propagate."""
@@ -772,15 +806,11 @@ class LoxoneEntity(Entity):
             )
 
     def _handle_coordinator_update(self) -> None:
-        """Called when the coordinator's state changes — only write if availability flipped."""
+        """Called when the coordinator's state changes -- only write if availability flipped."""
         current = self.available
         if current != self._prev_available:
             self._prev_available = current
             self.async_write_ha_state()
-
-    async def async_will_remove_from_hass(self):
-        """Disconnect callbacks."""
-        self.listener = None
 
     async def event_handler(self, e):
         pass

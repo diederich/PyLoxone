@@ -33,6 +33,8 @@ _LOGGER = logging.getLogger(__name__)
 NEW_SENSOR = "sensors"
 DEFAULT_NAME = "Loxone Binary Sensor"
 
+PARALLEL_UPDATES = 0
+
 PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_ACTIONID): cv.string,
@@ -69,7 +71,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up entry."""
     miniserver = get_miniserver_from_hass(hass)
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][config_entry.entry_id]
+    coordinator: LoxoneCoordinator = config_entry.runtime_data
     loxconfig = miniserver.lox_config.json
     entities = []
 

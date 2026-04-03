@@ -28,8 +28,7 @@ async def test_setup_entry(
     """Test that the integration sets up successfully."""
     entry = init_integration
     assert entry.state is ConfigEntryState.LOADED
-    assert DOMAIN in hass.data
-    assert entry.entry_id in hass.data[DOMAIN]
+    assert entry.runtime_data is not None
 
 
 async def test_unload_entry(

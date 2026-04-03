@@ -43,9 +43,10 @@ def _panel_js_hash() -> str:
 
 def _get_coordinator(hass: HomeAssistant):
     """Return the first available LoxoneCoordinator, or None."""
-    for value in hass.data.get(DOMAIN, {}).values():
-        if hasattr(value, "api"):
-            return value
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = getattr(entry, "runtime_data", None)
+        if coordinator is not None:
+            return coordinator
     return None
 
 

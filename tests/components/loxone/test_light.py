@@ -13,9 +13,10 @@ from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_HS_COLOR, ATTR_
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from tests.components.loxone.conftest import fire_loxone_event
+
 from custom_components.loxone.const import (
     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
-    EVENT,
     SENDDOMAIN,
 )
 
@@ -65,7 +66,7 @@ async def test_mood_list_parsed_from_json(
         {"id": 99, "name": "Default", "static": False, "used": True},
         {"id": 100, "name": "Movie", "static": False, "used": True},
     ])
-    hass.bus.async_fire(EVENT, {LC_MOOD_LIST_UUID: mood_data})
+    fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
 
     state = hass.states.get(LC_ENTITY_ID)
@@ -80,7 +81,7 @@ async def test_mood_list_with_json_booleans(
     """JSON booleans (true/false) must parse correctly — old eval() code
     required string replacement to Python True/False first."""
     raw_json = '[{"id":99,"name":"Bright","static":true,"used":false}]'
-    hass.bus.async_fire(EVENT, {LC_MOOD_LIST_UUID: raw_json})
+    fire_loxone_event(hass, {LC_MOOD_LIST_UUID: raw_json})
     await hass.async_block_till_done()
 
     state = hass.states.get(LC_ENTITY_ID)
@@ -93,10 +94,10 @@ async def test_active_moods_parsed_from_json(
 ) -> None:
     """activeMoods event should parse a JSON integer array."""
     mood_data = json.dumps([{"id": 99, "name": "Default"}, {"id": 100, "name": "Movie"}])
-    hass.bus.async_fire(EVENT, {LC_MOOD_LIST_UUID: mood_data})
+    fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
 
-    hass.bus.async_fire(EVENT, {LC_ACTIVE_MOODS_UUID: "[99]"})
+    fire_loxone_event(hass, {LC_ACTIVE_MOODS_UUID: "[99]"})
     await hass.async_block_till_done()
 
     state = hass.states.get(LC_ENTITY_ID)
@@ -107,7 +108,7 @@ async def test_additional_moods_parsed_from_json(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """additionalMoods event should parse a JSON array without error."""
-    hass.bus.async_fire(EVENT, {LC_ADDITIONAL_MOODS_UUID: "[100, 101]"})
+    fire_loxone_event(hass, {LC_ADDITIONAL_MOODS_UUID: "[100, 101]"})
     await hass.async_block_till_done()
 
     state = hass.states.get(LC_ENTITY_ID)
@@ -142,7 +143,7 @@ async def test_light_controller_turn_on_with_effect(
         {"id": 99, "name": "Default"},
         {"id": 100, "name": "Movie"},
     ])
-    hass.bus.async_fire(EVENT, {LC_MOOD_LIST_UUID: mood_data})
+    fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
 
     events = []
@@ -210,7 +211,7 @@ async def test_rgb_hsv_event_parsed(
     mock_config_entry.add_to_hass(hass)
     await _setup_with_subcontrols(hass, mock_config_entry, mock_loxone_connection)
 
-    hass.bus.async_fire(EVENT, {RGB_COLOR_UUID: "hsv(180,50,80)"})
+    fire_loxone_event(hass, {RGB_COLOR_UUID: "hsv(180,50,80)"})
     await hass.async_block_till_done()
 
     state = hass.states.get(RGB_ENTITY_ID)
@@ -226,7 +227,7 @@ async def test_rgb_temp_event_parsed(
     mock_config_entry.add_to_hass(hass)
     await _setup_with_subcontrols(hass, mock_config_entry, mock_loxone_connection)
 
-    hass.bus.async_fire(EVENT, {RGB_COLOR_UUID: "temp(75,4000)"})
+    fire_loxone_event(hass, {RGB_COLOR_UUID: "temp(75,4000)"})
     await hass.async_block_till_done()
 
     state = hass.states.get(RGB_ENTITY_ID)
@@ -289,7 +290,7 @@ async def test_rgb_turn_on_brightness_without_prior_hs(
     await _setup_with_subcontrols(hass, mock_config_entry, mock_loxone_connection)
 
     # Put it in HS mode first
-    hass.bus.async_fire(EVENT, {RGB_COLOR_UUID: "hsv(120,60,50)"})
+    fire_loxone_event(hass, {RGB_COLOR_UUID: "hsv(120,60,50)"})
     await hass.async_block_till_done()
 
     events = []

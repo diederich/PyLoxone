@@ -8,7 +8,9 @@ from homeassistant.components.media_player import (
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -63,7 +65,7 @@ async def test_volume_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Volume event should update volume_level when player is not OFF."""
-    hass.bus.async_fire(EVENT, {PLAY_STATE_UUID: 2, VOLUME_UUID: 50})
+    fire_loxone_event(hass, {PLAY_STATE_UUID: 2, VOLUME_UUID: 50})
     await hass.async_block_till_done()
 
     state = hass.states.get(MP_ENTITY_ID)
@@ -75,7 +77,7 @@ async def test_play_state_playing(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """playState=2 should report playing."""
-    hass.bus.async_fire(EVENT, {PLAY_STATE_UUID: 2})
+    fire_loxone_event(hass, {PLAY_STATE_UUID: 2})
     await hass.async_block_till_done()
 
     state = hass.states.get(MP_ENTITY_ID)
@@ -86,7 +88,7 @@ async def test_play_state_paused(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """playState=1 should report paused."""
-    hass.bus.async_fire(EVENT, {PLAY_STATE_UUID: 1})
+    fire_loxone_event(hass, {PLAY_STATE_UUID: 1})
     await hass.async_block_till_done()
 
     state = hass.states.get(MP_ENTITY_ID)
@@ -97,7 +99,7 @@ async def test_play_state_idle(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """playState=0 should report idle."""
-    hass.bus.async_fire(EVENT, {PLAY_STATE_UUID: 0})
+    fire_loxone_event(hass, {PLAY_STATE_UUID: 0})
     await hass.async_block_till_done()
 
     state = hass.states.get(MP_ENTITY_ID)

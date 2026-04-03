@@ -14,8 +14,9 @@ async def async_get_config_entry_diagnostics(
     hass: HomeAssistant, config_entry: ConfigEntry
 ) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
-    for k, v in hass.data[DOMAIN].items():
+    coordinator = getattr(config_entry, "runtime_data", None)
+    if coordinator is not None and coordinator.miniserver is not None:
         return {
-            "LoxAPP3.json": v.miniserver.lox_config.json,
+            "LoxAPP3.json": coordinator.miniserver.lox_config.json,
         }
-    return None
+    return {}

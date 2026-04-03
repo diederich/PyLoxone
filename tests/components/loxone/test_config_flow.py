@@ -105,7 +105,7 @@ async def test_user_flow_rejects_non_latin1_username(hass: HomeAssistant) -> Non
         user_input={**VALID_USER_INPUT, "username": "user\u4e16"},
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"]["base"] == "Username contains characters that are not latin-1 compatible"
+    assert result["errors"]["base"] == "username_not_latin1"
 
 
 async def test_user_flow_rejects_non_latin1_password(hass: HomeAssistant) -> None:
@@ -118,7 +118,7 @@ async def test_user_flow_rejects_non_latin1_password(hass: HomeAssistant) -> Non
         user_input={**VALID_USER_INPUT, "password": "p\u00e4ss\u4e16"},
     )
     assert result["type"] is FlowResultType.FORM
-    assert result["errors"]["base"] == "Password contains characters that are not latin-1 compatible"
+    assert result["errors"]["base"] == "password_not_latin1"
 
 
 async def test_user_flow_accepts_latin1_special_chars(hass: HomeAssistant) -> None:

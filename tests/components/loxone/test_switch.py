@@ -5,7 +5,9 @@ from homeassistant.const import STATE_ON, STATE_OFF
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -54,7 +56,7 @@ async def test_switch_turns_on_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Receiving active=1.0 from the Miniserver should set state to on."""
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 1.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 1.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(SWITCH_ENTITY_ID)
@@ -66,11 +68,11 @@ async def test_switch_turns_off_from_event(
 ) -> None:
     """Receiving active=0.0 should set state to off."""
     # First turn on
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 1.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 1.0})
     await hass.async_block_till_done()
 
     # Then off
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 0.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 0.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(SWITCH_ENTITY_ID)
@@ -83,7 +85,7 @@ async def test_switch_ignores_unrelated_events(
     """Events with an unrelated UUID should not change state."""
     initial_state = hass.states.get(SWITCH_ENTITY_ID).state
 
-    hass.bus.async_fire(EVENT, {"unrelated-uuid": 1.0})
+    fire_loxone_event(hass, {"unrelated-uuid": 1.0})
     await hass.async_block_till_done()
 
     assert hass.states.get(SWITCH_ENTITY_ID).state == initial_state
@@ -97,7 +99,7 @@ async def test_switch_turn_on_sends_command(
 ) -> None:
     """turn_on should fire a SENDDOMAIN event with value 'On'."""
     # First give the switch a known off state
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 0.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 0.0})
     await hass.async_block_till_done()
 
     events = []
@@ -120,7 +122,7 @@ async def test_switch_turn_off_sends_command(
 ) -> None:
     """turn_off should fire a SENDDOMAIN event with value 'Off'."""
     # Give it an on state first so turn_off actually fires
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 1.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 1.0})
     await hass.async_block_till_done()
 
     events = []
@@ -142,7 +144,7 @@ async def test_switch_turn_on_noop_when_already_on(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Calling turn_on when already on should not fire a command."""
-    hass.bus.async_fire(EVENT, {SWITCH_ACTIVE_UUID: 1.0})
+    fire_loxone_event(hass, {SWITCH_ACTIVE_UUID: 1.0})
     await hass.async_block_till_done()
 
     events = []
@@ -165,7 +167,7 @@ async def test_timed_switch_delay_attributes(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """TimedSwitch should expose delay remaining and total in attributes."""
-    hass.bus.async_fire(EVENT, {
+    fire_loxone_event(hass, {
         TIMED_DELAY_UUID: 45.0,
         TIMED_DELAY_TOTAL_UUID: 120.0,
     })
@@ -181,7 +183,7 @@ async def test_timed_switch_delay_zero_means_off(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """TimedSwitch with deactivationDelay=0 should be off."""
-    hass.bus.async_fire(EVENT, {TIMED_DELAY_UUID: 0.0})
+    fire_loxone_event(hass, {TIMED_DELAY_UUID: 0.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(TIMED_ENTITY_ID)

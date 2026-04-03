@@ -21,6 +21,8 @@ from .sensor import LoxoneSensor
 
 _LOGGER = logging.getLogger(__name__)
 
+PARALLEL_UPDATES = 0
+
 DEFAULT_FAN_SPEED_HOME = 30
 DEFAULT_FAN_SPEED_AWAY = 10
 DEFAULT_FAN_SPEED_BOOST = 100

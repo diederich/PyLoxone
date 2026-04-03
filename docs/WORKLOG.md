@@ -4,6 +4,38 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Phase 0+1: runtime_data, O(1) dispatch, reauth, config flow rewrite
+
+### Decisions
+
+- Adopted `ConfigEntry.runtime_data` as the typed storage for `LoxoneCoordinator`, eliminating `hass.data[DOMAIN][entry_id]` lookups across 20+ files.
+- Switched from `SchemaConfigFlowHandler` to standard `ConfigFlow` to enable `async_step_reauth` and proper `unique_id` fetching via Miniserver serial (MAC).
+- Replaced `hass.bus.async_fire(EVENT, message)` O(entities×events) broadcast with per-UUID `async_dispatcher_send` for O(1) entity routing — the single highest-impact performance change.
+- Used a `_DispatchEvent` shim so all 25 existing `event_handler` implementations work unchanged with the new dispatcher.
+- Fixed listener leak in `LoxoneEntity.async_will_remove_from_hass` — bus listener was set to `None` without calling the unsubscribe callable.
+- Set `PARALLEL_UPDATES = 0` on all 12 platform files (required for non-polling integrations on the HA Quality Scale).
+
+### Changes
+
+- **`__init__.py`:** `type LoxoneConfigEntry`, `_DispatchEvent` shim, `_get_state_uuids()` + `_dispatch_handler()` on `LoxoneEntity`, `_get_coordinator` iterates config entries, listener leak fix, reauth trigger on `LoxoneUnauthorisedError`.
+- **`coordinator.py`:** `_message_callback` now dispatches `loxone_uuid_{uuid}` per UUID instead of bus fire.
+- **`miniserver.py`:** `get_miniserver_from_hass` iterates config entries instead of `hass.data[DOMAIN]`.
+- **`websocket.py`:** `_get_coordinator` iterates config entries.
+- **`diagnostics.py`:** Uses `config_entry.runtime_data`.
+- **`system_health.py`:** Iterates config entries with typed coordinator access.
+- **`config_flow.py`:** Full rewrite — `LoxoneFlowHandler(ConfigFlow)` with live connection test, serial-based `unique_id`, `async_step_reauth`/`reauth_confirm`, `LoxoneOptionsFlowHandler` with menu (settings + device bridges).
+- **`bridge.py`:** Loxone-side listeners use `async_dispatcher_connect` per subscribe UUID.
+- **`alarm_control_panel.py`:** Removed redundant `hass.bus.async_listen(EVENT, ...)` — base class handles it.
+- **All 12 platform files:** Added `PARALLEL_UPDATES = 0`.
+- **`translations/en.json`, `de.json`:** Added `reauth_confirm` step, `already_configured`/`reauth_successful` abort reasons, `username_not_latin1`/`password_not_latin1` errors.
+- **Tests:** All `hass.data[DOMAIN][entry.entry_id]` → `entry.runtime_data`, all `hass.bus.async_fire(EVENT, ...)` → `fire_loxone_event(hass, ...)` helper, updated error expectations for new config flow.
+
+### Test results
+
+- 309 passed, 0 failures, 3 warnings (mock coroutine noise from serial fetch)
+
+---
+
 ## 2026-04-02 — Panel polish, Status tab, sync fixes
 
 ### Decisions

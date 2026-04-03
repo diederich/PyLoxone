@@ -184,10 +184,13 @@ LoxoneConnection._listen()
     │  Parses header + payload via websocket_protocol
     ▼
 coordinator._message_callback()        [coordinator.py]
-    │  Fires hass.bus event per UUID
+    │  Per-UUID dispatch: async_dispatcher_send(hass, "loxone_uuid_{uuid}", message)
     ▼
-hass.bus → "loxone_event"
-    │  Each entity filters by its UUID
+async_dispatcher → "loxone_uuid_{uuid}"
+    │  O(1) routing — only entities subscribed to that UUID wake up
+    ▼
+LoxoneEntity._dispatch_handler()       [__init__.py base class]
+    │  Wraps message in _DispatchEvent, calls entity's event_handler
     ▼
 LoxoneEntity.event_handler()           [per-entity subclass]
     │  Updates internal state

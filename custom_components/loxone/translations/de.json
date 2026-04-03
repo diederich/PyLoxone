@@ -3,12 +3,26 @@
     "error": {
       "cannot_connect": "Verbindung zum Miniserver nicht möglich. Überprüfe Host, Port und Netzwerk.",
       "invalid_auth": "Ungültiger Benutzername oder Passwort.",
+      "username_not_latin1": "Benutzername enthält Zeichen, die nicht Latin-1-kompatibel sind.",
+      "password_not_latin1": "Passwort enthält Zeichen, die nicht Latin-1-kompatibel sind.",
       "unknown": "Ein unerwarteter Fehler ist aufgetreten."
     },
     "abort": {
-      "single_instance_allowed": "Bereits konfiguriert"
+      "single_instance_allowed": "Bereits konfiguriert.",
+      "already_configured": "Dieser Miniserver ist bereits konfiguriert.",
+      "reauth_successful": "Zugangsdaten erfolgreich aktualisiert."
     },
     "step": {
+      "reauth_confirm": {
+        "title": "Loxone erneut authentifizieren",
+        "description": "Der Miniserver hat die Zugangsdaten abgelehnt. Bitte gültige Zugangsdaten eingeben.",
+        "data": {
+          "username": "Benutzer",
+          "password": "Password",
+          "host": "Miniserver IP",
+          "port": "Port"
+        }
+      },
       "user": {
         "title": "Loxone",
         "description": "Loxone Konfiguration",

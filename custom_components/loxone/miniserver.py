@@ -4,8 +4,7 @@ import traceback
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
-from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
-                                 CONF_USERNAME)
+from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.core import callback
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.device_registry import format_mac
@@ -23,8 +22,12 @@ NEW_COVERS = "covers"
 
 @callback
 def get_miniserver_from_hass(hass):
-    """Return Miniserver with a matching bridge id."""
-    return hass.data[DOMAIN][list(hass.data[DOMAIN].keys())[0]].miniserver
+    """Return the first available MiniServer, or None."""
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = getattr(entry, "runtime_data", None)
+        if coordinator is not None and coordinator.miniserver is not None:
+            return coordinator.miniserver
+    return None
 
 
 @callback

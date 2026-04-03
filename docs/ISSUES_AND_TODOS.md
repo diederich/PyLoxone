@@ -37,20 +37,6 @@ The file is a god object handling HTTP setup, WebSocket lifecycle, encryption, t
 | `connection.py` | WebSocket connect/listen/send only   |
 | `session.py`    | HTTP setup, structure file retrieval |
 
-### IMP-002: Replace event bus broadcast with UUID-targeted dispatch
-
-Every `loxone_event` is broadcast to all entities, each filtering by UUID. With 100+ entities, this is O(entities × events).
-
-**Better approach:**
-
-```python
-# In message_callback:
-async_dispatcher_send(hass, f"loxone_event_{uuid}", data)
-
-# In entity:
-async_dispatcher_connect(hass, f"loxone_event_{self.uuidAction}", self._handle_update)
-```
-
 ### IMP-005: Consolidate exception hierarchy
 
 Two overlapping sets of exceptions exist in `pyloxone_api/exceptions.py`:
@@ -82,59 +68,6 @@ Pick one naming convention and consolidate.
 | `hass.bus.fire()`            | `hass.bus.async_fire()`                       | switch.py, button.py           |
 | `schedule_update_ha_state()` | `async_schedule_update_ha_state()`            | cover.py, number.py, button.py |
 | `hass.loop.call_later()`     | `async_call_later()` or `async_create_task()` | scene.py                       |
-
-### IMP-008: Replace event bus broadcast with UUID-targeted dispatch
-
-**Impact:** O(entities) work per state update event; scales poorly with large installations
-
-Currently, every WebSocket state update is fired as a single `loxone_event` on the HA event bus, and every entity subscribes to it, filtering by UUID. With 150 entities and a state batch containing 3 UUIDs, HA dispatches to all 150 listeners — 147 do a dict lookup, find nothing, and return.
-
-**Current flow:**
-
-```python
-# __init__.py — fires one event with ALL uuid:value pairs
-async def message_callback(message):
-    hass.bus.async_fire(EVENT, message)
-
-# LoxoneEntity — every entity subscribes to the same event
-async def async_added_to_hass(self):
-    self.listener = self.hass.bus.async_listen(EVENT, self.event_handler)
-
-# Per-entity handler — checks if its UUID is in the dict (usually: no)
-async def event_handler(self, e):
-    if self.uuidAction in e.data:
-        ...
-```
-
-**Recommended fix:** Use `async_dispatcher_send` / `async_dispatcher_connect` with per-UUID signal names. This is the HA-blessed pattern (used by WLED, Hue, deCONZ). Already imported in `sensor.py`, `cover.py`, `binary_sensor.py` for device discovery.
-
-```python
-# __init__.py — dispatch per UUID
-from homeassistant.helpers.dispatcher import async_dispatcher_send
-
-async def message_callback(message):
-    for uuid, value in message.items():
-        async_dispatcher_send(hass, f"loxone_event_{uuid}", value)
-
-# LoxoneEntity — subscribe only to own UUIDs
-async def async_added_to_hass(self):
-    self.async_on_remove(
-        async_dispatcher_connect(
-            self.hass, f"loxone_event_{self.uuidAction}", self._handle_update
-        )
-    )
-    for state_uuid in self.states.values():
-        if isinstance(state_uuid, str):
-            self.async_on_remove(
-                async_dispatcher_connect(
-                    self.hass, f"loxone_event_{state_uuid}", self._handle_state
-                )
-            )
-```
-
-**Complexity:** O(changed_uuids) per message instead of O(entities).
-
-**Migration:** Mechanical — change `message_callback`, change base class subscription, update each platform's `event_handler(self, e)` → `_handle_update(self, value)` to receive the value directly instead of a dict.
 
 ---
 

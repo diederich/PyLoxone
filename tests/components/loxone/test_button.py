@@ -4,7 +4,9 @@ import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -68,7 +70,7 @@ async def test_button_event_updates_state(
     """Active=1.0 event should update button's last pressed timestamp."""
     state_before = hass.states.get(BUTTON_ENTITY_ID).state
 
-    hass.bus.async_fire(EVENT, {BUTTON_ACTIVE_UUID: 1.0})
+    fire_loxone_event(hass, {BUTTON_ACTIVE_UUID: 1.0})
     await hass.async_block_till_done()
 
     state_after = hass.states.get(BUTTON_ENTITY_ID).state
@@ -81,7 +83,7 @@ async def test_button_ignores_unrelated_event(
     """Unrelated UUID should not change button state."""
     state_before = hass.states.get(BUTTON_ENTITY_ID).state
 
-    hass.bus.async_fire(EVENT, {"unrelated-uuid": 1.0})
+    fire_loxone_event(hass, {"unrelated-uuid": 1.0})
     await hass.async_block_till_done()
 
     assert hass.states.get(BUTTON_ENTITY_ID).state == state_before

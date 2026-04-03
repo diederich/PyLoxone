@@ -10,7 +10,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import DOMAIN, EVENT
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import DOMAIN
 
 MINISERVER_SERIAL = "504F94A0FEA2"
 
@@ -214,7 +216,7 @@ async def test_sensor_state_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Firing the sensor UUID should update native_value."""
-    hass.bus.async_fire(EVENT, {TEMP_ACTION_UUID: 21.5})
+    fire_loxone_event(hass, {TEMP_ACTION_UUID: 21.5})
     await hass.async_block_till_done()
 
     state = hass.states.get(TEMP_ENTITY_ID)
@@ -225,10 +227,10 @@ async def test_sensor_ignores_unrelated_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Unrelated UUID should not change sensor state."""
-    hass.bus.async_fire(EVENT, {TEMP_ACTION_UUID: 20.0})
+    fire_loxone_event(hass, {TEMP_ACTION_UUID: 20.0})
     await hass.async_block_till_done()
 
-    hass.bus.async_fire(EVENT, {"unrelated-uuid": 99.0})
+    fire_loxone_event(hass, {"unrelated-uuid": 99.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(TEMP_ENTITY_ID)
@@ -250,7 +252,7 @@ async def test_text_sensor_state_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Firing the text state UUID should update the sensor."""
-    hass.bus.async_fire(EVENT, {TEXT_STATE_UUID: "All systems normal"})
+    fire_loxone_event(hass, {TEXT_STATE_UUID: "All systems normal"})
     await hass.async_block_till_done()
 
     state = hass.states.get(TEXT_ENTITY_ID)
@@ -277,7 +279,7 @@ async def test_meter_actual_state_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Firing the actual state UUID should update the actual subsensor."""
-    hass.bus.async_fire(EVENT, {METER_ACTUAL_UUID: 1234.5})
+    fire_loxone_event(hass, {METER_ACTUAL_UUID: 1234.5})
     await hass.async_block_till_done()
 
     state = hass.states.get("sensor.energy_meter_actual")
@@ -288,7 +290,7 @@ async def test_meter_total_state_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Firing the total state UUID should update the total subsensor."""
-    hass.bus.async_fire(EVENT, {METER_TOTAL_UUID: 9876.0})
+    fire_loxone_event(hass, {METER_TOTAL_UUID: 9876.0})
     await hass.async_block_till_done()
 
     state = hass.states.get("sensor.energy_meter_total")

@@ -6,6 +6,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+from homeassistant.helpers.dispatcher import async_dispatcher_send
 
 
 @pytest.fixture(autouse=True)
@@ -26,6 +27,12 @@ from custom_components.loxone.const import (
 )
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
+
+
+def fire_loxone_event(hass: "HomeAssistant", data: dict) -> None:
+    """Simulate a Miniserver state update via per-UUID dispatcher signals."""
+    for uuid in data:
+        async_dispatcher_send(hass, f"loxone_uuid_{uuid}", data)
 
 MOCK_OPTIONS = {
     CONF_HOST: "192.168.1.100",

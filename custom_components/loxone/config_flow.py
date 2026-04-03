@@ -1,24 +1,23 @@
-"""
-Config Flow for PyLoxone
+"""Config Flow for PyLoxone.
 
-For more details about this component, please refer to the documentation at
-https://github.com/JoDehli/PyLoxone
+Supports initial setup with live connection test, reauth on credential
+failure, and an options flow for settings + device bridges.
 """
 
 import asyncio
 import logging
-from typing import Any, Mapping
+from typing import Any
 
 import aiohttp
 import voluptuous as vol
-from homeassistant.config_entries import ConfigEntry, OptionsFlow
-from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
-                                 CONF_USERNAME)
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigFlow,
+    OptionsFlow,
+)
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.schema_config_entry_flow import (
-    SchemaCommonFlowHandler, SchemaConfigFlowHandler, SchemaFlowError,
-    SchemaFlowFormStep)
 from homeassistant.helpers.selector import (
     BooleanSelector,
     EntitySelector,
@@ -35,97 +34,277 @@ from homeassistant.helpers.selector import (
     TextSelectorType,
 )
 
-from .const import (CONF_CREATE_AREAS, CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
-                    CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE,
-                    DEFAULT_IP, DEFAULT_PORT, DOMAIN)
+from .const import (
+    CONF_CREATE_AREAS,
+    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
+    CONF_SCENE_GEN,
+    CONF_SCENE_GEN_DELAY,
+    DEFAULT_DELAY_SCENE,
+    DEFAULT_IP,
+    DEFAULT_PORT,
+    DOMAIN,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
 _TEST_ENDPOINT = "/jdev/cfg/apiKey"
+_SERIAL_ENDPOINT = "/jdev/cfg/mac"
+
+_BRIDGEABLE_TOP_LEVEL = frozenset({"Switch", "Slider", "TextInput"})
+_BRIDGEABLE_SUBCTRLS = frozenset({"Dimmer", "EIBDimmer", "Switch", "ColorPickerV2"})
 
 
-async def validate_loxone_setup(
-    handler: SchemaCommonFlowHandler, user_input: dict[str, Any]
-) -> dict[str, Any]:
-    """Validate Loxone setup: schema checks + live connection test."""
+def _setup_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
+    """Build the user/reauth data schema with optional suggested values."""
+    d = defaults or {}
+    return vol.Schema(
+        {
+            vol.Required(
+                CONF_USERNAME, default=d.get(CONF_USERNAME, "")
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+            vol.Required(
+                CONF_PASSWORD, default=d.get(CONF_PASSWORD, "")
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+            vol.Required(
+                CONF_HOST, default=d.get(CONF_HOST, DEFAULT_IP)
+            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+            vol.Required(
+                CONF_PORT, default=d.get(CONF_PORT, DEFAULT_PORT)
+            ): NumberSelector(
+                NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
+            ),
+            vol.Required(
+                CONF_SCENE_GEN, default=d.get(CONF_SCENE_GEN, True)
+            ): BooleanSelector(),
+            vol.Optional(
+                CONF_SCENE_GEN_DELAY,
+                default=d.get(CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE),
+            ): NumberSelector(
+                NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)
+            ),
+            vol.Required(
+                CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
+                default=d.get(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, False),
+            ): BooleanSelector(),
+            vol.Required(
+                CONF_CREATE_AREAS, default=d.get(CONF_CREATE_AREAS, True)
+            ): BooleanSelector(),
+        }
+    )
+
+
+async def _async_validate_credentials(
+    session: aiohttp.ClientSession,
+    host: str,
+    port: int,
+    username: str,
+    password: str,
+) -> str | None:
+    """Validate credentials against the Miniserver.
+
+    Returns the Miniserver serial on success, None if serial cannot be fetched.
+    Raises SchemaFlowError-style strings on failure.
+    """
     try:
-        if CONF_USERNAME in user_input:
-            user_input[CONF_USERNAME].encode("latin-1")
-    except UnicodeEncodeError as err:
-        raise SchemaFlowError(
-            "Username contains characters that are not latin-1 compatible"
-        ) from err
+        username.encode("latin-1")
+    except UnicodeEncodeError:
+        raise ValueError("username_not_latin1")
 
     try:
-        if CONF_PASSWORD in user_input:
-            user_input[CONF_PASSWORD].encode("latin-1")
-    except UnicodeEncodeError as err:
-        raise SchemaFlowError(
-            "Password contains characters that are not latin-1 compatible"
-        ) from err
+        password.encode("latin-1")
+    except UnicodeEncodeError:
+        raise ValueError("password_not_latin1")
 
-    if CONF_PORT in user_input:
-        user_input[CONF_PORT] = int(user_input[CONF_PORT])
-    if CONF_SCENE_GEN_DELAY in user_input:
-        user_input[CONF_SCENE_GEN_DELAY] = int(user_input[CONF_SCENE_GEN_DELAY])
-
-    # Live connection test against the Miniserver
-    hass = handler.parent_handler.hass
-    host = user_input.get(CONF_HOST, "")
-    port = user_input.get(CONF_PORT, DEFAULT_PORT)
-    username = user_input.get(CONF_USERNAME, "")
-    password = user_input.get(CONF_PASSWORD, "")
-
-    session = async_get_clientsession(hass)
     url = f"http://{host}:{port}{_TEST_ENDPOINT}"
-
     try:
         async with asyncio.timeout(10):
             resp = await session.get(
-                url,
-                auth=aiohttp.BasicAuth(username, password),
+                url, auth=aiohttp.BasicAuth(username, password)
             )
             if resp.status == 401:
-                raise SchemaFlowError("invalid_auth")
+                raise ValueError("invalid_auth")
             if resp.status not in (200, 301, 302):
-                _LOGGER.warning("Miniserver returned HTTP %s for %s", resp.status, url)
-                raise SchemaFlowError("cannot_connect")
-    except SchemaFlowError:
+                _LOGGER.warning(
+                    "Miniserver returned HTTP %s for %s", resp.status, url
+                )
+                raise ValueError("cannot_connect")
+    except ValueError:
         raise
     except (asyncio.TimeoutError, TimeoutError):
-        raise SchemaFlowError("cannot_connect")
+        raise ValueError("cannot_connect")
     except aiohttp.ClientError:
-        raise SchemaFlowError("cannot_connect")
+        raise ValueError("cannot_connect")
     except OSError:
-        raise SchemaFlowError("cannot_connect")
+        raise ValueError("cannot_connect")
 
-    return user_input
+    serial = await _async_fetch_serial(session, host, port, username, password)
+    return serial
 
 
-DATA_SCHEMA_SETUP = vol.Schema(
-    {
-        vol.Required(CONF_USERNAME, default=""): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.TEXT)
-        ),
-        vol.Required(CONF_PASSWORD, default=""): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-        ),
-        vol.Required(CONF_HOST, default=DEFAULT_IP): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.TEXT)
-        ),
-        vol.Required(CONF_PORT, default=DEFAULT_PORT): NumberSelector(
-            NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
-        ),
-        vol.Required(CONF_SCENE_GEN, default=True): BooleanSelector(),
-        vol.Optional(CONF_SCENE_GEN_DELAY, default=DEFAULT_DELAY_SCENE): NumberSelector(
-            NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)
-        ),
-        vol.Required(
-            CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, default=False
-        ): BooleanSelector(),
-        vol.Required(CONF_CREATE_AREAS, default=True): BooleanSelector(),
-    }
-)
+async def _async_fetch_serial(
+    session: aiohttp.ClientSession,
+    host: str,
+    port: int,
+    username: str,
+    password: str,
+) -> str | None:
+    """Fetch the Miniserver serial (MAC) for use as unique_id."""
+    url = f"http://{host}:{port}{_SERIAL_ENDPOINT}"
+    try:
+        async with asyncio.timeout(5):
+            resp = await session.get(
+                url, auth=aiohttp.BasicAuth(username, password)
+            )
+            if resp.status == 200:
+                data = await resp.json(content_type=None)
+                value = data.get("LL", {}).get("value", "")
+                if isinstance(value, str) and value:
+                    return value.replace(":", "").upper()
+    except Exception:
+        _LOGGER.debug("Could not fetch Miniserver serial", exc_info=True)
+    return None
+
+
+class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
+    """Handle Loxone config flow."""
+
+    VERSION = 3
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._reauth_entry: ConfigEntry | None = None
+
+    async def async_step_user(
+        self, user_input: dict[str, Any] | None = None
+    ) -> Any:
+        """Handle the initial configuration step."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            if CONF_PORT in user_input:
+                user_input[CONF_PORT] = int(user_input[CONF_PORT])
+            if CONF_SCENE_GEN_DELAY in user_input:
+                user_input[CONF_SCENE_GEN_DELAY] = int(
+                    user_input[CONF_SCENE_GEN_DELAY]
+                )
+
+            session = async_get_clientsession(self.hass)
+            try:
+                serial = await _async_validate_credentials(
+                    session,
+                    user_input[CONF_HOST],
+                    user_input[CONF_PORT],
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                if serial:
+                    await self.async_set_unique_id(serial)
+                    self._abort_if_unique_id_configured()
+
+                title = f"PyLoxone ({user_input.get(CONF_HOST, 'Loxone')})"
+                return self.async_create_entry(
+                    title=title, data={}, options=user_input
+                )
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=_setup_schema(),
+            errors=errors,
+        )
+
+    # -- Reauth flow -----------------------------------------------------------
+
+    async def async_step_reauth(
+        self, entry_data: dict[str, Any]
+    ) -> Any:
+        """Handle reauth triggered by the coordinator on auth failure."""
+        self._reauth_entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        return await self.async_step_reauth_confirm()
+
+    async def async_step_reauth_confirm(
+        self, user_input: dict[str, Any] | None = None
+    ) -> Any:
+        """Show reauth form and validate new credentials."""
+        errors: dict[str, str] = {}
+        assert self._reauth_entry is not None
+
+        if user_input is not None:
+            session = async_get_clientsession(self.hass)
+            host = user_input.get(CONF_HOST, self._reauth_entry.options.get(CONF_HOST))
+            port = int(
+                user_input.get(CONF_PORT, self._reauth_entry.options.get(CONF_PORT))
+            )
+            try:
+                await _async_validate_credentials(
+                    session,
+                    host,
+                    port,
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                updated_options = {
+                    **self._reauth_entry.options,
+                    CONF_USERNAME: user_input[CONF_USERNAME],
+                    CONF_PASSWORD: user_input[CONF_PASSWORD],
+                }
+                if CONF_HOST in user_input:
+                    updated_options[CONF_HOST] = user_input[CONF_HOST]
+                if CONF_PORT in user_input:
+                    updated_options[CONF_PORT] = int(user_input[CONF_PORT])
+
+                self.hass.config_entries.async_update_entry(
+                    self._reauth_entry, options=updated_options
+                )
+                await self.hass.config_entries.async_reload(
+                    self._reauth_entry.entry_id
+                )
+                return self.async_abort(reason="reauth_successful")
+
+        defaults = {
+            CONF_USERNAME: self._reauth_entry.options.get(CONF_USERNAME, ""),
+            CONF_PASSWORD: "",
+            CONF_HOST: self._reauth_entry.options.get(CONF_HOST, ""),
+            CONF_PORT: self._reauth_entry.options.get(CONF_PORT, DEFAULT_PORT),
+        }
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_USERNAME, default=defaults[CONF_USERNAME]
+                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(CONF_PASSWORD, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
+                vol.Required(
+                    CONF_HOST, default=defaults[CONF_HOST]
+                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(
+                    CONF_PORT, default=defaults[CONF_PORT]
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        mode=NumberSelectorMode.BOX, min=1, max=65535
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="reauth_confirm",
+            data_schema=schema,
+            errors=errors,
+        )
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: ConfigEntry) -> "LoxoneOptionsFlowHandler":
+        return LoxoneOptionsFlowHandler(config_entry)
+
 
 SETTINGS_SCHEMA = vol.Schema(
     {
@@ -149,17 +328,6 @@ SETTINGS_SCHEMA = vol.Schema(
         vol.Required(CONF_CREATE_AREAS): BooleanSelector(),
     }
 )
-
-CONFIG_FLOW = {
-    "user": SchemaFlowFormStep(
-        schema=DATA_SCHEMA_SETUP,
-        validate_user_input=validate_loxone_setup,
-    ),
-}
-
-# Loxone control types that can serve as bridge targets
-_BRIDGEABLE_TOP_LEVEL = frozenset({"Switch", "Slider", "TextInput"})
-_BRIDGEABLE_SUBCTRLS = frozenset({"Dimmer", "EIBDimmer", "Switch", "ColorPickerV2"})
 
 
 class LoxoneOptionsFlowHandler(OptionsFlow):
@@ -191,7 +359,9 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                 return self.async_show_form(
                     step_id="settings",
                     data_schema=self._settings_schema(),
-                    errors={"base": "Username contains characters that are not latin-1 compatible"},
+                    errors={
+                        "base": "Username contains characters that are not latin-1 compatible"
+                    },
                 )
             try:
                 user_input[CONF_PASSWORD].encode("latin-1")
@@ -199,13 +369,17 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                 return self.async_show_form(
                     step_id="settings",
                     data_schema=self._settings_schema(),
-                    errors={"base": "Password contains characters that are not latin-1 compatible"},
+                    errors={
+                        "base": "Password contains characters that are not latin-1 compatible"
+                    },
                 )
 
             if CONF_PORT in user_input:
                 user_input[CONF_PORT] = int(user_input[CONF_PORT])
             if CONF_SCENE_GEN_DELAY in user_input:
-                user_input[CONF_SCENE_GEN_DELAY] = int(user_input[CONF_SCENE_GEN_DELAY])
+                user_input[CONF_SCENE_GEN_DELAY] = int(
+                    user_input[CONF_SCENE_GEN_DELAY]
+                )
 
             self._options.update(user_input)
             return self.async_create_entry(title="", data=self._options)
@@ -324,19 +498,13 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
     # -- Helpers -------------------------------------------------------------
 
     def _get_structure_file(self) -> dict:
-        coordinator = self.hass.data.get(DOMAIN, {}).get(
-            self.config_entry.entry_id
-        )
+        coordinator = getattr(self.config_entry, "runtime_data", None)
         if coordinator and hasattr(coordinator, "api"):
             return coordinator.api.structure_file or {}
         return {}
 
     def _build_control_options(self) -> list[SelectOptionDict]:
-        """Build a flat list of bridgeable controls from the structure file.
-
-        Includes both top-level controls (VIs) and sub-controls (light
-        circuits inside LightControllerV2).
-        """
+        """Build a flat list of bridgeable controls from the structure file."""
         structure = self._get_structure_file()
         controls = structure.get("controls", {})
         rooms = structure.get("rooms", {})
@@ -388,7 +556,9 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                     "type": ctrl.get("type", ""),
                     "states": ctrl.get("states", {}),
                     "details": ctrl.get("details", {}),
-                    "label": f"{ctrl.get('name', '')} ({room_name})" if room_name else ctrl.get("name", ""),
+                    "label": f"{ctrl.get('name', '')} ({room_name})"
+                    if room_name
+                    else ctrl.get("name", ""),
                 }
 
             for _sc_key, sc in ctrl.get("subControls", {}).items():
@@ -420,7 +590,9 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
             ),
             vol.Optional("cooldown", default=1.0): NumberSelector(
                 NumberSelectorConfig(
-                    min=0, max=60, step=0.1,
+                    min=0,
+                    max=60,
+                    step=0.1,
                     mode=NumberSelectorMode.BOX,
                     unit_of_measurement="s",
                 )
@@ -434,35 +606,3 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
         lox = b.get("loxone_name") or b.get("loxone_uuid", "?")
         lox_type = b.get("loxone_type", "")
         return f"{entity} \u2194 {lox} ({lox_type})"
-
-
-class LoxoneFlowHandler(SchemaConfigFlowHandler, domain=DOMAIN):
-    """Handle Loxone config flow."""
-
-    VERSION = 3
-    config_flow = CONFIG_FLOW
-
-    def async_config_entry_title(self, options: Mapping[str, Any]) -> str:
-        """Return config entry title."""
-        host = options.get(CONF_HOST, "Loxone")
-        return f"PyLoxone ({host})"
-
-
-# SchemaConfigFlowHandler.__init_subclass__ forcibly sets
-# async_get_options_flow from the options_flow class attribute.
-# Override it after class creation to use our custom OptionsFlow.
-@callback
-def _loxone_get_options_flow(config_entry: ConfigEntry) -> LoxoneOptionsFlowHandler:
-    return LoxoneOptionsFlowHandler(config_entry)
-
-
-LoxoneFlowHandler.async_get_options_flow = _loxone_get_options_flow  # type: ignore[method-assign]
-
-
-@classmethod  # type: ignore[misc]
-@callback
-def _loxone_supports_options_flow(cls, config_entry: ConfigEntry) -> bool:
-    return True
-
-
-LoxoneFlowHandler.async_supports_options_flow = _loxone_supports_options_flow  # type: ignore[method-assign]

@@ -13,6 +13,9 @@ from .lights.switch import LoxoneLightSwitch
 from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
+
+PARALLEL_UPDATES = 0
+
 DEFAULT_NAME = "Loxone Light Controller V2"
 DEFAULT_FORCE_UPDATE = False
 

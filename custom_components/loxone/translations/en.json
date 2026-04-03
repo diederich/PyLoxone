@@ -3,12 +3,26 @@
     "error": {
       "cannot_connect": "Cannot connect to the Miniserver. Check the host, port, and network.",
       "invalid_auth": "Invalid username or password.",
+      "username_not_latin1": "Username contains characters that are not latin-1 compatible.",
+      "password_not_latin1": "Password contains characters that are not latin-1 compatible.",
       "unknown": "An unexpected error occurred."
     },
     "abort": {
-      "single_instance_allowed": "Already configured. Only a single configuration possible."
+      "single_instance_allowed": "Already configured. Only a single configuration possible.",
+      "already_configured": "This Miniserver is already configured.",
+      "reauth_successful": "Credentials updated successfully."
     },
     "step": {
+      "reauth_confirm": {
+        "title": "Re-authenticate Loxone",
+        "description": "The Miniserver rejected your credentials. Please enter valid credentials.",
+        "data": {
+          "username": "User",
+          "password": "Password",
+          "host": "Miniserver IP",
+          "port": "Port"
+        }
+      },
       "user": {
         "title": "Set up Loxone",
         "description": "Configure your Loxone Miniserver connection",

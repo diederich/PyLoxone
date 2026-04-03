@@ -5,7 +5,9 @@ from homeassistant.components.cover import CoverDeviceClass
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -86,7 +88,7 @@ async def test_jalousie_position_fully_open(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Loxone position 0.0 (fully open) should map to HA 100 (fully open)."""
-    hass.bus.async_fire(EVENT, {BLIND_POS_UUID: 0.0})
+    fire_loxone_event(hass, {BLIND_POS_UUID: 0.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -97,7 +99,7 @@ async def test_jalousie_position_fully_closed(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Loxone position 1.0 (fully closed) should map to HA 0 (closed)."""
-    hass.bus.async_fire(EVENT, {BLIND_POS_UUID: 1.0})
+    fire_loxone_event(hass, {BLIND_POS_UUID: 1.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -109,7 +111,7 @@ async def test_jalousie_position_halfway(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Loxone 0.5 (50% closed) should map to HA 50."""
-    hass.bus.async_fire(EVENT, {BLIND_POS_UUID: 0.5})
+    fire_loxone_event(hass, {BLIND_POS_UUID: 0.5})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -123,7 +125,7 @@ async def test_blind_tilt_position(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Shade position should be inverted like the main position."""
-    hass.bus.async_fire(EVENT, {BLIND_SHADE_UUID: 0.0})
+    fire_loxone_event(hass, {BLIND_SHADE_UUID: 0.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -137,7 +139,7 @@ async def test_jalousie_opening_state(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """up=True should report is_opening."""
-    hass.bus.async_fire(EVENT, {BLIND_UP_UUID: True})
+    fire_loxone_event(hass, {BLIND_UP_UUID: True})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -148,7 +150,7 @@ async def test_jalousie_closing_state(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """down=True should report is_closing."""
-    hass.bus.async_fire(EVENT, {BLIND_DOWN_UUID: True})
+    fire_loxone_event(hass, {BLIND_DOWN_UUID: True})
     await hass.async_block_till_done()
 
     state = hass.states.get(BLIND_ENTITY_ID)
@@ -162,7 +164,7 @@ async def test_gate_position_scales(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Gate position is Loxone 0-1 scaled to HA 0-100 (no inversion)."""
-    hass.bus.async_fire(EVENT, {GATE_POS_UUID: 0.75})
+    fire_loxone_event(hass, {GATE_POS_UUID: 0.75})
     await hass.async_block_till_done()
 
     state = hass.states.get(GATE_ENTITY_ID)
@@ -173,7 +175,7 @@ async def test_gate_direction_opening(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Gate active=1 means opening."""
-    hass.bus.async_fire(EVENT, {GATE_ACTIVE_UUID: 1})
+    fire_loxone_event(hass, {GATE_ACTIVE_UUID: 1})
     await hass.async_block_till_done()
 
     state = hass.states.get(GATE_ENTITY_ID)
@@ -184,7 +186,7 @@ async def test_gate_direction_closing(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Gate active=-1 means closing."""
-    hass.bus.async_fire(EVENT, {GATE_ACTIVE_UUID: -1})
+    fire_loxone_event(hass, {GATE_ACTIVE_UUID: -1})
     await hass.async_block_till_done()
 
     state = hass.states.get(GATE_ENTITY_ID)
@@ -198,7 +200,7 @@ async def test_window_position(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Window position: Loxone 0.5 → HA 50."""
-    hass.bus.async_fire(EVENT, {WINDOW_POS_UUID: 0.5})
+    fire_loxone_event(hass, {WINDOW_POS_UUID: 0.5})
     await hass.async_block_till_done()
 
     state = hass.states.get(WINDOW_ENTITY_ID)
@@ -209,7 +211,7 @@ async def test_window_direction_opening(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Window direction=1 means opening."""
-    hass.bus.async_fire(EVENT, {WINDOW_DIR_UUID: 1})
+    fire_loxone_event(hass, {WINDOW_DIR_UUID: 1})
     await hass.async_block_till_done()
 
     state = hass.states.get(WINDOW_ENTITY_ID)
@@ -241,7 +243,7 @@ async def test_jalousie_close_sends_fulldown(
 ) -> None:
     """Closing a jalousie should send 'FullDown'."""
     # Give it a non-zero position so close isn't a no-op
-    hass.bus.async_fire(EVENT, {BLIND_POS_UUID: 0.5})
+    fire_loxone_event(hass, {BLIND_POS_UUID: 0.5})
     await hass.async_block_till_done()
 
     events = []

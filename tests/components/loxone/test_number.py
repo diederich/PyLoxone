@@ -4,7 +4,9 @@ import pytest
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -44,7 +46,7 @@ async def test_number_state_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Firing the uuidAction should update native_value."""
-    hass.bus.async_fire(EVENT, {NUMBER_ACTION_UUID: 42.0})
+    fire_loxone_event(hass, {NUMBER_ACTION_UUID: 42.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(NUMBER_ENTITY_ID)
@@ -55,10 +57,10 @@ async def test_number_ignores_unrelated_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Unrelated UUID should not change state."""
-    hass.bus.async_fire(EVENT, {NUMBER_ACTION_UUID: 10.0})
+    fire_loxone_event(hass, {NUMBER_ACTION_UUID: 10.0})
     await hass.async_block_till_done()
 
-    hass.bus.async_fire(EVENT, {"unrelated-uuid": 99.0})
+    fire_loxone_event(hass, {"unrelated-uuid": 99.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(NUMBER_ENTITY_ID)

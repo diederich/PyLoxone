@@ -7,6 +7,8 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, State
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from tests.components.loxone.conftest import fire_loxone_event
+
 from custom_components.loxone.bridge import (
     BridgeRuntime,
     DeviceBridge,
@@ -21,7 +23,7 @@ from custom_components.loxone.bridge_mappers import (
     SwitchMapper,
     get_mapper,
 )
-from custom_components.loxone.const import DOMAIN, EVENT
+from custom_components.loxone.const import DOMAIN
 
 
 def _mock_hass():
@@ -525,7 +527,7 @@ class TestBridgeRuntime:
         with patch.object(
             ab.mapper, "loxone_value_to_ha", new_callable=AsyncMock
         ) as mock_lox:
-            hass.bus.async_fire(EVENT, {"pos-uuid": 75.0})
+            fire_loxone_event(hass, {"pos-uuid": 75.0})
             await hass.async_block_till_done()
 
             mock_lox.assert_called_once_with(hass, "pos-uuid", 75.0)

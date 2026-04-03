@@ -27,9 +27,10 @@ from homeassistant.core import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_track_state_change_event, async_call_later
 
-from .const import DOMAIN, EVENT
+from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -256,9 +257,14 @@ class BridgeRuntime:
                 self._process_ha_state(ab, state)
 
         if mapper.subscribe_supported and mapper.subscribe_uuids:
-            ab.cancel_lox_listener = self.hass.bus.async_listen(
-                EVENT, self._make_lox_listener(ab)
-            )
+            listener = self._make_lox_listener(ab)
+            cancel_fns = [
+                async_dispatcher_connect(
+                    self.hass, f"loxone_uuid_{uuid}", listener
+                )
+                for uuid in mapper.subscribe_uuids
+            ]
+            ab.cancel_lox_listener = lambda fns=cancel_fns: [fn() for fn in fns]
 
         _LOGGER.info(
             "Bridge activated: %s <-> %s (%s) [expose=%s, subscribe=%s]",
@@ -350,11 +356,11 @@ class BridgeRuntime:
         watch = ab.mapper.subscribe_uuids
 
         @callback
-        def _listener(event: Event) -> None:
+        def _listener(message: dict) -> None:
             for uuid in watch:
-                if uuid not in event.data:
+                if uuid not in message:
                     continue
-                value = event.data[uuid]
+                value = message[uuid]
 
                 if ab._echo_suppress:
                     ab._echo_suppress = False

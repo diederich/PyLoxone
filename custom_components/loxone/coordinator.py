@@ -10,7 +10,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import EVENT
+from homeassistant.helpers.dispatcher import async_dispatcher_send
+
 from .miniserver import MiniServer
 from .pyloxone_api.connection import LoxoneConnection, LoxoneException
 from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
@@ -105,9 +106,12 @@ class LoxoneCoordinator(DataUpdateCoordinator):
     # -- Connection lifecycle --------------------------------------------------
 
     async def _message_callback(self, message):
-        """Fire message on the HA event bus."""
+        """Dispatch state updates per-UUID for O(1) entity routing."""
         _LOGGER.debug(f"{message}")
-        self.hass.bus.async_fire(EVENT, message)
+        for uuid in message:
+            async_dispatcher_send(
+                self.hass, f"loxone_uuid_{uuid}", message
+            )
 
     def _handle_task_result(self, task: asyncio.Task) -> None:
         """Done-callback for the listening task — triggers reconnect on error."""

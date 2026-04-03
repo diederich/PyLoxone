@@ -21,21 +21,21 @@ The largest file in the integration layer. Handles:
 ```python
 async_setup(hass, config)
     │
-    ├── hass.data[DOMAIN] = {}
+    ├── hass.data[DOMAIN] = {}       ← marker only, coordinator stored in runtime_data
     ├── _async_register_services(hass)      ← domain-level services (lazy coordinator lookup)
     │     event_websocket_command
     │     event_secured_websocket_command
     │     sync_areas, sync_device_names, reload
     └── return True
 
-async_setup_entry(hass, config_entry)
+async_setup_entry(hass, config_entry: LoxoneConfigEntry)
     │
     ├── Create LoxoneCoordinator
     ├── coordinator.async_config_entry_first_refresh()
     │     └── api.open() → HTTP setup, structure file
     │
     ├── Build MiniServer from structure file
-    ├── Store coordinator in hass.data[DOMAIN][entry_id]
+    ├── config_entry.runtime_data = coordinator    ← typed via LoxoneConfigEntry
     │
     ├── async_forward_entry_setups(LOXONE_PLATFORMS)    ← loads platforms
     ├── async_load_platform() for sensor + binary_sensor ← YAML custom entity escape hatch
@@ -155,17 +155,20 @@ class MiniServer:
 
 `ConfigDataClass` is a dict-like wrapper that provides attribute-style access.
 
-**Issue:** `get_miniserver_from_hass()` assumes at least one entry exists:
+`get_miniserver_from_hass()` iterates config entries and returns the first available:
 
 ```python
 def get_miniserver_from_hass(hass):
-    for k, v in hass.data[DOMAIN].items():
-        return v.miniserver    # Returns first one found
+    for entry in hass.config_entries.async_entries(DOMAIN):
+        coordinator = getattr(entry, "runtime_data", None)
+        if coordinator is not None and coordinator.miniserver is not None:
+            return coordinator.miniserver
+    return None
 ```
 
 ## Config Flow (`config_flow.py`)
 
-Uses `SchemaConfigFlowHandler` — a declarative approach:
+Uses standard `ConfigFlow` with live connection validation, serial-based `unique_id`, and `async_step_reauth`:
 
 ```python
 CONFIG_FLOW = {

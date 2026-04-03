@@ -58,7 +58,7 @@ async def test_connectivity_sensor_always_available(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Connectivity sensor should report available=True even when disconnected."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     coordinator.async_set_update_error(
         LoxoneConnectionError("Disconnected from Miniserver")
@@ -74,7 +74,7 @@ async def test_connectivity_sensor_reflects_reconnect(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Connectivity sensor should toggle off on disconnect, on after reconnect."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     coordinator.async_set_update_error(
         LoxoneConnectionError("Disconnected")
@@ -94,7 +94,7 @@ async def test_initial_connection_state(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """After setup the coordinator should be in CONNECTED state."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
     assert coordinator.connection_state == ConnectionState.CONNECTED
     assert coordinator.last_update_success is True
 
@@ -103,7 +103,7 @@ async def test_disconnect_sets_state(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Simulating a disconnect sets state to DISCONNECTED and last_update_success False."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     coordinator.connection_state = ConnectionState.DISCONNECTED
     coordinator.async_set_update_error(
@@ -122,7 +122,7 @@ async def test_handle_task_result_triggers_reconnect(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """When the listening task fails, _handle_task_result should start reconnect."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock) as mock_reconnect:
         failed_task = asyncio.Future()
@@ -141,7 +141,7 @@ async def test_handle_task_result_clears_token_on_token_error(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """LoxoneTokenError should trigger reconnect with clear_token=True."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock) as mock_reconnect:
         failed_task = asyncio.Future()
@@ -157,7 +157,7 @@ async def test_handle_task_result_skips_reconnect_when_cancelled(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """CancelledError (from cleanup) should not trigger reconnect."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock) as mock_reconnect:
         cancelled_task = asyncio.Future()
@@ -176,7 +176,7 @@ async def test_handle_task_result_skips_when_shutting_down(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """No reconnect if the coordinator is shutting down."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
     coordinator._shutting_down = True
 
     with patch.object(coordinator, "_async_reconnect", new_callable=AsyncMock) as mock_reconnect:
@@ -194,7 +194,7 @@ async def test_reconnect_creates_new_api(
     mock_loxone_connection: MagicMock,
 ) -> None:
     """_async_reconnect should create a new LoxoneConnection and start listening."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     with patch.object(coordinator, "async_start_listening", new_callable=AsyncMock):
         await coordinator._async_reconnect()
@@ -208,7 +208,7 @@ async def test_reconnect_clears_token_when_requested(
     mock_loxone_connection: MagicMock,
 ) -> None:
     """_async_reconnect with clear_token=True should clear token from config entry."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     hass.config_entries.async_update_entry(
         init_integration,
@@ -229,7 +229,7 @@ async def test_entity_goes_unavailable_on_disconnect(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """LoxoneEntity-based entities should go unavailable when coordinator disconnects."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     state = hass.states.get("binary_sensor.door_contact")
     assert state is not None
@@ -247,7 +247,7 @@ async def test_entity_recovers_on_reconnect(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """LoxoneEntity-based entities should recover when coordinator reconnects."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     coordinator.async_set_update_error(
         LoxoneConnectionError("Disconnected")
@@ -269,7 +269,7 @@ async def test_cleanup_cancels_reconnect_task(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """async_cleanup should cancel an in-flight reconnect task."""
-    coordinator: LoxoneCoordinator = hass.data[DOMAIN][init_integration.entry_id]
+    coordinator: LoxoneCoordinator = init_integration.runtime_data
 
     reconnect_started = asyncio.Event()
 

@@ -7,7 +7,9 @@ from homeassistant.components.climate import ATTR_TEMPERATURE
 from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import EVENT, SENDDOMAIN
+from tests.components.loxone.conftest import fire_loxone_event
+
+from custom_components.loxone.const import SENDDOMAIN
 
 
 @pytest.fixture
@@ -73,7 +75,7 @@ async def test_current_temperature_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Temperature state update should reflect in current_temperature."""
-    hass.bus.async_fire(EVENT, {AC_TEMP_UUID: 23.5})
+    fire_loxone_event(hass, {AC_TEMP_UUID: 23.5})
     await hass.async_block_till_done()
 
     state = hass.states.get(AC_ENTITY_ID)
@@ -84,7 +86,7 @@ async def test_target_temperature_from_event(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """Target temperature state update should reflect in target_temperature."""
-    hass.bus.async_fire(EVENT, {AC_TARGET_UUID: 21.0})
+    fire_loxone_event(hass, {AC_TARGET_UUID: 21.0})
     await hass.async_block_till_done()
 
     state = hass.states.get(AC_ENTITY_ID)
@@ -98,7 +100,7 @@ async def test_hvac_mode_off_when_status_falsy(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """When status is 0/falsy, hvac_mode should be off."""
-    hass.bus.async_fire(EVENT, {AC_STATUS_UUID: 0})
+    fire_loxone_event(hass, {AC_STATUS_UUID: 0})
     await hass.async_block_till_done()
 
     state = hass.states.get(AC_ENTITY_ID)
@@ -109,7 +111,7 @@ async def test_hvac_mode_heat(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """status=1 + mode=2 → heat."""
-    hass.bus.async_fire(EVENT, {AC_STATUS_UUID: 1, AC_MODE_UUID: 2})
+    fire_loxone_event(hass, {AC_STATUS_UUID: 1, AC_MODE_UUID: 2})
     await hass.async_block_till_done()
 
     state = hass.states.get(AC_ENTITY_ID)
@@ -120,7 +122,7 @@ async def test_hvac_mode_cool(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """status=1 + mode=3 → cool."""
-    hass.bus.async_fire(EVENT, {AC_STATUS_UUID: 1, AC_MODE_UUID: 3})
+    fire_loxone_event(hass, {AC_STATUS_UUID: 1, AC_MODE_UUID: 3})
     await hass.async_block_till_done()
 
     state = hass.states.get(AC_ENTITY_ID)
@@ -146,7 +148,7 @@ async def test_room_controller_v2_current_temp(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """tempActual event should update current_temperature."""
-    hass.bus.async_fire(EVENT, {RC_TEMP_ACTUAL_UUID: 21.5})
+    fire_loxone_event(hass, {RC_TEMP_ACTUAL_UUID: 21.5})
     await hass.async_block_till_done()
 
     state = hass.states.get(RC_ENTITY_ID)
@@ -160,7 +162,7 @@ async def test_is_overridden_false_when_empty(
     hass: HomeAssistant, init_integration: MockConfigEntry
 ) -> None:
     """is_overridden should be False when overrideEntries is an empty list."""
-    hass.bus.async_fire(EVENT, {RC_OVERRIDE_UUID: "[]"})
+    fire_loxone_event(hass, {RC_OVERRIDE_UUID: "[]"})
     await hass.async_block_till_done()
 
     state = hass.states.get(RC_ENTITY_ID)
@@ -172,7 +174,7 @@ async def test_is_overridden_true_with_entries(
 ) -> None:
     """is_overridden should be True when overrideEntries has items (JSON with true/false)."""
     entries = json.dumps([{"from": 1000, "to": 2000, "value": 22.0, "active": True}])
-    hass.bus.async_fire(EVENT, {RC_OVERRIDE_UUID: entries})
+    fire_loxone_event(hass, {RC_OVERRIDE_UUID: entries})
     await hass.async_block_till_done()
 
     state = hass.states.get(RC_ENTITY_ID)

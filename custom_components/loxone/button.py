@@ -22,6 +22,8 @@ from .miniserver import get_miniserver_from_hass
 
 _LOGGER = logging.getLogger(__name__)
 
+PARALLEL_UPDATES = 0
+
 
 async def async_setup_entry(
     hass: HomeAssistant,
