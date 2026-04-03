@@ -94,7 +94,7 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
 | `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool); IRoomControllerV2 creation, `is_overridden` JSON parsing |
 | `test_init.py`                    | Setup, unload, services registered in `async_setup` (survive unload, raise when no coordinator), `sync_device_names` service (update/skip/ignore non-Loxone)         |
-| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalNeg), version + keep-alive sensors |
+| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalReturned), energy dashboard attrs (device_class/state_class on totals + actual), fallback classification from details.type, version + keep-alive sensors |
 | `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
 | `test_alarm_control_panel.py`     | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
 | `test_fan.py`                     | Ventilation entity creation, supported features, preset modes, speed/mode events, set_percentage command                                                             |
@@ -516,6 +516,10 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 ### ARCH-006: Add config entry migration tests
 
 `async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
+
+### ARCH-008: Firmware update entity (`UpdateEntity`)
+
+Surface the Miniserver firmware version as an HA `UpdateEntity` (Settings > Updates). `installed_version` is already available from the API key response. The blocker is `latest_version` — Loxone has no stable public API for checking available firmware. Options: scrape the changelog page (brittle), poll `update.loxone.com` (undocumented), or wait for Loxone to expose an API. Revisit when a reliable source for latest firmware version becomes available.
 
 ---
 

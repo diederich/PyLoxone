@@ -4,6 +4,27 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Energy dashboard integration for Loxone meters
+
+### Decisions
+
+- Meter subsensors now get guaranteed `device_class` + `state_class` classification based on `details["type"]` from the Loxone structure file ("energy", "water", "gas"), not just the format string. This makes them reliably visible in HA's Energy, Water, and Gas dashboards even if the Loxone format string doesn't exactly match known units.
+- Renamed "Total Neg" subsensor to "Total Returned" — clearer for energy dashboard configuration where it represents returned/exported energy.
+- The format-string-based detection (from `SENSOR_TYPES`) takes priority when it matches. The new `_METER_CLASSIFICATION` fallback only kicks in when the format string doesn't produce a match, ensuring no regressions for existing setups.
+- Fallback also provides a canonical unit (e.g. kWh, W, L) when `_clean_unit` can't parse one from the format string.
+
+### Changes
+
+- **`sensor.py`:** Added `_METER_CLASSIFICATION` mapping (energy/water/gas × actual/total/totalNeg/storage → device_class + state_class + fallback unit). `LoxoneMeterSensor.__init__` applies classification when `entity_description` wasn't assigned by format matching. Meter setup loop passes `meter_type` and `meter_state_key` to each subsensor. `totalNeg` suffix renamed "Total Neg" → "Total Returned". Added `UnitOfVolume` import.
+- **`test_sensor.py`:** Added 4 new tests: `test_meter_total_energy_dashboard_attrs`, `test_meter_total_returned_energy_dashboard_attrs`, `test_meter_actual_state_class`, `test_meter_fallback_classification_from_type`. Updated entity ID reference for renamed Total Returned subsensor.
+
+### Testplan
+
+- `python -m pytest tests/ -v` — 363 passed, 3 warnings.
+- Deploy and verify meter sensors appear in HA Energy Dashboard config as eligible energy sources.
+
+---
+
 ## 2026-04-03 — Phase 7: Multi-Miniserver hardening + panel
 
 ### Decisions

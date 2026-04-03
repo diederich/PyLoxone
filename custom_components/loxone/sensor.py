@@ -23,7 +23,8 @@ from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
                                  CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
                                  EntityCategory, LIGHT_LUX, PERCENTAGE,
                                  STATE_UNKNOWN, UnitOfEnergy, UnitOfPower,
-                                 UnitOfSpeed, UnitOfTemperature)
+                                 UnitOfSpeed, UnitOfTemperature,
+                                 UnitOfVolume)
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -151,6 +152,31 @@ SENSOR_TYPES: tuple[LoxoneEntityDescription, ...] = (
 )
 
 SENSOR_FORMATS = [desc.loxone_format_string for desc in SENSOR_TYPES]
+
+
+# Meter type → (state_key → (device_class, state_class, fallback_unit))
+# Used when the format string doesn't match a known SENSOR_FORMAT, so the
+# meter subsensor still gets the right classification for HA energy dashboard.
+_METER_CLASSIFICATION: dict[
+    str, dict[str, tuple[SensorDeviceClass, SensorStateClass, str]]
+] = {
+    "energy": {
+        "actual": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT),
+        "total": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
+        "totalNeg": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
+        "storage": (SensorDeviceClass.ENERGY, SensorStateClass.MEASUREMENT, UnitOfEnergy.KILO_WATT_HOUR),
+    },
+    "water": {
+        "actual": (SensorDeviceClass.VOLUME_FLOW_RATE, SensorStateClass.MEASUREMENT, "L/min"),
+        "total": (SensorDeviceClass.WATER, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.LITERS),
+        "totalNeg": (SensorDeviceClass.WATER, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.LITERS),
+    },
+    "gas": {
+        "actual": (SensorDeviceClass.GAS, SensorStateClass.MEASUREMENT, UnitOfVolume.CUBIC_METERS),
+        "total": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
+        "totalNeg": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -303,11 +329,12 @@ async def async_setup_entry(
         _LOGGER.info("Found Meter: %s", sensor)
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
         device_info = LoxoneMeterSensor.create_DeviceInfo_from_sensor(sensor)
+        meter_type = sensor.get("details", {}).get("type", "").lower()
 
         for state_key, suffix, format_key in [
             ("actual", "Actual", "actualFormat"),
             ("total", "Total", "totalFormat"),
-            ("totalNeg", "Total Neg", "totalFormat"),
+            ("totalNeg", "Total Returned", "totalFormat"),
             ("storage", "Level", "storageFormat"),
         ]:
             if state_key in sensor["states"]:
@@ -321,6 +348,8 @@ async def async_setup_entry(
                     "name": sensor["name"],
                     "name_suffix": suffix,
                     "details": {"format": sensor["details"][format_key]},
+                    "meter_type": meter_type,
+                    "meter_state_key": state_key,
                     "async_add_devices": async_add_entities,
                     "config_entry": config_entry,
                     "coordinator": coordinator,
@@ -561,12 +590,26 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
 class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
     def __init__(self, **kwargs):
         name_suffix = kwargs.pop("name_suffix", None)
+        meter_type = kwargs.pop("meter_type", "")
+        meter_state_key = kwargs.pop("meter_state_key", "")
         super().__init__(**kwargs)
         device_info = kwargs.get("device_info", None)
         if device_info:
             self._attr_device_info = device_info
         if name_suffix:
             self._attr_name = name_suffix
+
+        # If the format-based detection in LoxoneSensor didn't assign a
+        # device_class, fall back to the meter type classification so the
+        # entity is compatible with HA's energy/water/gas dashboards.
+        if not hasattr(self, "entity_description") and meter_type in _METER_CLASSIFICATION:
+            cls_map = _METER_CLASSIFICATION[meter_type]
+            if meter_state_key in cls_map:
+                dev_cls, state_cls, fallback_unit = cls_map[meter_state_key]
+                self._attr_device_class = dev_cls
+                self._attr_state_class = state_cls
+                if not self._attr_native_unit_of_measurement:
+                    self._attr_native_unit_of_measurement = fallback_unit
 
     @staticmethod
     def create_DeviceInfo_from_sensor(sensor) -> DeviceInfo:

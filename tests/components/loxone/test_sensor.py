@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 import pytest
-from homeassistant.components.sensor import SensorDeviceClass
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
@@ -268,11 +268,11 @@ async def test_meter_creates_subsensors(
     """One Meter control should produce Actual, Total, and TotalNeg child sensors."""
     actual = hass.states.get("sensor.energy_meter_actual")
     total = hass.states.get("sensor.energy_meter_total")
-    total_neg = hass.states.get("sensor.energy_meter_total_neg")
+    total_returned = hass.states.get("sensor.energy_meter_total_returned")
 
     assert actual is not None, "Actual subsensor missing"
     assert total is not None, "Total subsensor missing"
-    assert total_neg is not None, "TotalNeg subsensor missing"
+    assert total_returned is not None, "Total Returned subsensor missing"
 
 
 async def test_meter_actual_state_from_event(
@@ -304,3 +304,53 @@ async def test_meter_actual_unit(
     state = hass.states.get("sensor.energy_meter_actual")
     assert state.attributes.get("unit_of_measurement") == "W"
     assert state.attributes.get("device_class") == SensorDeviceClass.POWER
+
+
+async def test_meter_total_energy_dashboard_attrs(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Total subsensor should be ENERGY/TOTAL_INCREASING for the energy dashboard."""
+    state = hass.states.get("sensor.energy_meter_total")
+    assert state.attributes.get("device_class") == SensorDeviceClass.ENERGY
+    assert state.attributes.get("state_class") == SensorStateClass.TOTAL_INCREASING
+    assert state.attributes.get("unit_of_measurement") == "kWh"
+
+
+async def test_meter_total_returned_energy_dashboard_attrs(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Total Returned subsensor should also be ENERGY/TOTAL_INCREASING."""
+    state = hass.states.get("sensor.energy_meter_total_returned")
+    assert state.attributes.get("device_class") == SensorDeviceClass.ENERGY
+    assert state.attributes.get("state_class") == SensorStateClass.TOTAL_INCREASING
+    assert state.attributes.get("unit_of_measurement") == "kWh"
+
+
+async def test_meter_actual_state_class(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Actual (power) subsensor should be POWER/MEASUREMENT."""
+    state = hass.states.get("sensor.energy_meter_actual")
+    assert state.attributes.get("state_class") == SensorStateClass.MEASUREMENT
+
+
+async def test_meter_fallback_classification_from_type(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """When the format string has no recognisable unit, details.type forces classification."""
+    fixture = json.loads((FIXTURE_DIR / "structure_sensors.json").read_text())
+    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"][
+        "totalFormat"
+    ] = "%.2f units"
+    mock_loxone_connection.structure_file = fixture
+
+    mock_config_entry.add_to_hass(hass)
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    total = hass.states.get("sensor.energy_meter_total")
+    assert total is not None
+    assert total.attributes.get("device_class") == SensorDeviceClass.ENERGY
+    assert total.attributes.get("state_class") == SensorStateClass.TOTAL_INCREASING
