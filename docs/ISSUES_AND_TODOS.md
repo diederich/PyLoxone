@@ -9,16 +9,14 @@
 
 These will cause crashes or incorrect behavior for users.
 
-### BUG-013: Ventilation sub-entities collide on unique_id with the fan entity
+### BUG-013: Ventilation presence sub-entity collides on unique_id with the fan entity
 
-**File:** `fan.py` (lines 68-136)
-**Impact:** When a Ventilation control has sub-entities (presence, humidity, air quality, temperature), all of them get their `uuidAction` overwritten to the parent fan's UUID via `parent_id`. Since `LoxoneEntity.unique_id` returns `self.uuidAction`, every sub-entity shares the same unique_id as the main fan entity. HA's entity registry rejects duplicates, so the **main fan entity is silently dropped** — only the sub-entities survive.
+**File:** `fan.py`, `binary_sensor.py`
+**Impact:** When a Ventilation control has a presence sub-entity, `LoxoneDigitalSensor.__init__` (binary_sensor.py ~line 144) overwrites `self.uuidAction = self._parent_id`, making its `unique_id` identical to the parent fan entity. HA's entity registry rejects the duplicate, so the **main fan entity is silently dropped**.
 
-The root cause is twofold:
-1. `LoxoneDigitalSensor.__init__` and `LoxoneSensor.__init__` both do `if self._parent_id: self.uuidAction = self._parent_id`, overwriting the originally distinct UUID
-2. All entities (fan + sub-entities) are added through the fan platform's `async_add_entities` in a single list, so they share the same unique_id namespace
+Note: the analog sub-entities (humidity, air quality, temperature) use `LoxoneSensor`, which does **not** overwrite `uuidAction` — only the presence `LoxoneDigitalSensor` is affected.
 
-**Fix:** Sub-entities should use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`) or keep their original `uuidAction` as the unique_id and store `parent_id` separately for device grouping only.
+**Fix:** `LoxoneDigitalSensor` should store `parent_id` separately for device grouping and keep the original `uuidAction` (state UUID) as the unique_id, or use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`).
 
 ---
 
@@ -64,7 +62,7 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 ### MED-013: `send_websocket_command` has no connection state check
 
-**File:** `pyloxone_api/connection.py` (`send_websocket_command`, line ~1099)
+**File:** `pyloxone_api/connection.py` (`send_websocket_command`, line ~271)
 **Impact:** Commands queue silently during disconnects; may flood Miniserver on reconnect
 
 `send_websocket_command` validates the UUID parameter but does not check whether the WebSocket is connected before calling `_message_queue.put_nowait()`. During a disconnect, commands accumulate in the queue. When `_send_text_command` processes them, it logs a warning and attempts `self.connection.send()` anyway, which raises on a closed connection. The exception is caught, but the stale command is lost.
@@ -77,7 +75,7 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 | #       | Issue                                                        | File                                             |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| LOW-009 | Deprecated `DeviceInfo` import path                          | lights/dimmer.py, lights/lightcontroller.py      |
+| LOW-009 | Deprecated `DeviceInfo` import path                          | lights/dimmer.py                                 |
 | LOW-010 | Inconsistent command casing `"on"`/`"off"` vs `"On"`/`"Off"` | lights/switch.py vs lights/dimmer.py             |
 
 ---
@@ -535,11 +533,7 @@ Tasks that can be done in under 30 minutes each:
 
 | #   | Task                                                                                         | Impact                                           |
 | --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 1   | Fix `kwargs["targetTemperature"]` → `kwargs[ATTR_TEMPERATURE]` in climate.py                 | Fixes AC temperature control                     |
-| 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS`                                                    | Enables text platform                            |
-| 7   | Add `None` guard for `_last_header` in websocket_protocol.py                                 | Prevent crash                                    |
-| 9   | Replace `eval()` with `ast.literal_eval()` where possible                                    | Security hardening                               |
+| 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS` (or delete dead `text.py`)                         | Resolve dead code (see also MED-000)             |
 | 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |
-| 11  | Remove unused imports (`cast`, `ToggleEntity`)                                               | Code hygiene                                     |
-| 12  | Remove dead files (`helper.py`, `api.py`)                                                    | Reduce confusion                                 |
-| 14  | Add missing `name`/`description` to all services in `services.yaml`                          | Proper service metadata for HA action validation |
+
+Previously listed quick wins #1, #7, #9, #11, #12, #14 have been verified as fixed or no longer applicable (2026-04-03 audit).
