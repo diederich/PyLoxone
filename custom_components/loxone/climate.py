@@ -12,14 +12,13 @@ from abc import ABC
 from homeassistant.components.climate import ATTR_TEMPERATURE, PLATFORM_SCHEMA, ClimateEntity
 from homeassistant.components.climate.const import (ClimateEntityFeature,
                                                     HVACAction, HVACMode)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from voluptuous import All, Optional, Range
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import CONF_HVAC_AUTO_MODE, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
@@ -57,7 +56,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up LoxoneRoomControllerV2."""

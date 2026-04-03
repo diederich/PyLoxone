@@ -12,14 +12,13 @@ from typing import Any
 from homeassistant.components.cover import (ATTR_POSITION, ATTR_TILT_POSITION,
                                             CoverDeviceClass, CoverEntity,
                                             CoverEntityFeature)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_OFF, STATE_ON
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import (SENDDOMAIN, SERVICE_DISABLE_SUN_AUTOMATION,
                     SERVICE_ENABLE_SUN_AUTOMATION, SERVICE_QUICK_SHADE,
                     SUPPORT_QUICK_SHADE, SUPPORT_SUN_AUTOMATION)
@@ -35,7 +34,7 @@ NEW_COVERS = "covers"
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set Loxone covers."""

@@ -10,12 +10,11 @@ from functools import cached_property
 from typing import final
 
 from homeassistant.components.button import ButtonEntity
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import DOMAIN, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
@@ -27,7 +26,7 @@ PARALLEL_UPDATES = 0
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""

@@ -4,6 +4,42 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-03 — Gold/Platinum quality scale push
+
+### Decisions
+- EntityCategory.CONFIG is not needed — no entities represent Loxone configuration settings
+- DHCP discovery (MAC prefix 50:4F:94) chosen over SSDP as it's simpler and more reliable
+- Stale device removal now validates against the current structure file before allowing removal
+- `token_expired` repair issue made fixable with a RepairsFlow that triggers reauth
+
+### Changes
+- **Config flow: reconfigure step** — added `async_step_reconfigure` so users can update connection settings from the integration "..." menu without removing/re-adding
+- **Config flow: DHCP discovery** — added `async_step_dhcp` and `dhcp` manifest entry for automatic discovery of Loxone Miniservers on the network via their MAC prefix
+- **Options flow error keys** — replaced hardcoded English error strings with translation keys (`username_not_latin1`, `password_not_latin1`)
+- **Fixable repair issue** — `token_expired` is now `is_fixable=True` with a `RepairsFlow` in new `repairs.py` that triggers reauth when the user clicks "Fix"
+- **Stale device cleanup** — `async_remove_config_entry_device` now checks whether the device's identifiers match active Loxone controls before allowing removal
+- **Scene hardening** — `LoxoneLightScene` now has `device_info` (linked via Miniserver serial) and scopes `SENDDOMAIN` events with `miniserver` entry_id for multi-entry safety
+- **LoxoneConfigEntry typing** — all 14 platform files, `__init__.py`, and `diagnostics.py` now use `LoxoneConfigEntry` instead of bare `ConfigEntry`
+- **Config flow test coverage** — added 11 new tests: reauth success/failure, reconfigure success/failure, duplicate serial abort, HTTP 500, options latin-1 username/password, bridge unknown control, DHCP discovery, DHCP already-configured abort
+
+### Test results
+- 376 tests pass (was 365)
+
+---
+
+## 2026-04-03 — Type `LoxoneConfigEntry` on platform setup and core hooks
+
+### Changes
+
+- **`__init__.py`:** `async_setup_entry` and `async_remove_config_entry_device` now annotate `config_entry` as `LoxoneConfigEntry`; `async_setup_entry` adds `hass` / return type annotations.
+- **Platform modules + `diagnostics.py`:** Import `LoxoneConfigEntry` from the package and use it for `async_setup_entry` (or `async_get_config_entry_diagnostics` in diagnostics). Removed unused `ConfigEntry` imports where only the setup signature used it.
+
+### Testplan
+
+- `python -m pytest tests/ -q` — 365 passed.
+
+---
+
 ## 2026-04-03 — Panel: structure diff in status view
 
 ### Decisions

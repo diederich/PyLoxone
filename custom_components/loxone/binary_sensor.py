@@ -11,7 +11,6 @@ from homeassistant.components.binary_sensor import (PLATFORM_SCHEMA,
                                                     BinarySensorDeviceClass,
                                                     BinarySensorEntity)
 from homeassistant.components.sensor import CONF_STATE_CLASS
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
                                  CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
                                  EntityCategory, STATE_OFF, STATE_ON,
@@ -23,7 +22,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
@@ -65,7 +64,7 @@ async def async_setup_platform(
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""

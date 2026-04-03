@@ -8,11 +8,10 @@ from homeassistant.components.media_player import (MediaPlayerDeviceClass,
                                                    MediaPlayerEntity,
                                                    MediaPlayerEntityFeature,
                                                    MediaPlayerState)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import DEFAULT_AUDIO_ZONE_V2_PLAY_STATE, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
@@ -37,7 +36,7 @@ SUPPORT_LOXONE_AUDIO_ZONE = (
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Load Loxone Audio zones based on a config entry."""

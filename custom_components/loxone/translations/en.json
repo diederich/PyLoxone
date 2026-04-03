@@ -10,9 +10,20 @@
     "abort": {
       "single_instance_allowed": "Already configured. Only a single configuration possible.",
       "already_configured": "This Miniserver is already configured.",
-      "reauth_successful": "Credentials updated successfully."
+      "reauth_successful": "Credentials updated successfully.",
+      "reconfigure_successful": "Connection updated successfully."
     },
     "step": {
+      "reconfigure": {
+        "title": "Reconfigure Loxone",
+        "description": "Update the connection settings for this Miniserver.",
+        "data": {
+          "username": "User",
+          "password": "Password",
+          "host": "Miniserver IP",
+          "port": "Port"
+        }
+      },
       "reauth_confirm": {
         "title": "Re-authenticate Loxone",
         "description": "The Miniserver rejected your credentials. Please enter valid credentials.",
@@ -95,7 +106,15 @@
   "issues": {
     "token_expired": {
       "title": "Loxone authentication failed",
-      "description": "The Miniserver rejected the stored credentials. This usually means the password was changed in Loxone Config. Go to **Settings → Devices & Services → Loxone** and re-enter your credentials."
+      "description": "The Miniserver rejected the stored credentials. This usually means the password was changed in Loxone Config.",
+      "fix_flow": {
+        "step": {
+          "confirm": {
+            "title": "Re-authenticate with the Miniserver",
+            "description": "Click submit to open the re-authentication flow and enter your updated credentials."
+          }
+        }
+      }
     },
     "persistent_disconnect": {
       "title": "Cannot reach Loxone Miniserver",

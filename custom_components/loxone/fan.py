@@ -5,14 +5,13 @@ from __future__ import annotations
 import logging
 
 from homeassistant.components.fan import FanEntity, FanEntityFeature
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from voluptuous import Any, Optional
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .binary_sensor import LoxoneDigitalSensor
 from .const import SENDDOMAIN
 from .coordinator import LoxoneCoordinator
@@ -36,7 +35,7 @@ STR_TO_VENTILATION_PROFILE_SETTABLE = {
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entry."""

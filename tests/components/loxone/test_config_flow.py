@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 import aiohttp
-from homeassistant.config_entries import SOURCE_USER
+from homeassistant.config_entries import SOURCE_USER, SOURCE_REAUTH, SOURCE_RECONFIGURE
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -489,3 +489,329 @@ async def test_bridge_done_preserves_settings(
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     assert entry.options["host"] == original_host
+
+
+# ---------------------------------------------------------------------------
+# Config flow — duplicate serial detection
+# ---------------------------------------------------------------------------
+
+
+async def test_user_flow_aborts_duplicate_serial(hass: HomeAssistant) -> None:
+    """Second entry with same serial should abort."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="AABBCCDDEEFF",
+        options=VALID_USER_INPUT,
+    ).add_to_hass(hass)
+
+    with patch(
+        "custom_components.loxone.config_flow._async_fetch_serial",
+        return_value="AABBCCDDEEFF",
+    ):
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=VALID_USER_INPUT,
+        )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"
+
+
+# ---------------------------------------------------------------------------
+# Config flow — HTTP 500 from Miniserver
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.no_auto_mock_connection
+async def test_user_flow_rejects_server_error(hass: HomeAssistant) -> None:
+    """HTTP 500 should show cannot_connect."""
+    async def _mock_get(*args, **kwargs):
+        return _mock_response(500)
+
+    with patch(
+        "custom_components.loxone.config_flow.async_get_clientsession"
+    ) as mock_session_fn:
+        session = MagicMock()
+        session.get = _mock_get
+        mock_session_fn.return_value = session
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN, context={"source": SOURCE_USER}
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input=VALID_USER_INPUT,
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"]["base"] == "cannot_connect"
+
+
+# ---------------------------------------------------------------------------
+# Reauth flow
+# ---------------------------------------------------------------------------
+
+
+async def test_reauth_flow_updates_credentials(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Successful reauth should update the entry and reload."""
+    entry = init_integration
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id},
+        data=entry.options,
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reauth_confirm"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "username": "new_admin",
+            "password": "new_secret",
+            "host": entry.options["host"],
+            "port": entry.options["port"],
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reauth_successful"
+    assert entry.options["username"] == "new_admin"
+
+
+@pytest.mark.no_auto_mock_connection
+async def test_reauth_flow_rejects_invalid_auth(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Reauth with bad credentials should show error."""
+    entry = init_integration
+
+    async def _mock_get(*args, **kwargs):
+        return _mock_response(401)
+
+    with patch(
+        "custom_components.loxone.config_flow.async_get_clientsession"
+    ) as mock_session_fn:
+        session = MagicMock()
+        session.get = _mock_get
+        mock_session_fn.return_value = session
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id},
+            data=entry.options,
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                "username": "wrong",
+                "password": "wrong",
+                "host": entry.options["host"],
+                "port": entry.options["port"],
+            },
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"]["base"] == "invalid_auth"
+
+
+# ---------------------------------------------------------------------------
+# Reconfigure flow
+# ---------------------------------------------------------------------------
+
+
+async def test_reconfigure_flow_updates_connection(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Reconfigure should update the entry with new connection settings."""
+    entry = init_integration
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "reconfigure"
+
+    result = await hass.config_entries.flow.async_configure(
+        result["flow_id"],
+        user_input={
+            "username": "admin",
+            "password": "new_pass",
+            "host": "10.0.0.99",
+            "port": 7777,
+        },
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "reconfigure_successful"
+    assert entry.options["host"] == "10.0.0.99"
+    assert entry.options["port"] == 7777
+
+
+@pytest.mark.no_auto_mock_connection
+async def test_reconfigure_flow_rejects_bad_credentials(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Reconfigure with bad credentials should show error."""
+    entry = init_integration
+
+    async def _mock_get(*args, **kwargs):
+        return _mock_response(401)
+
+    with patch(
+        "custom_components.loxone.config_flow.async_get_clientsession"
+    ) as mock_session_fn:
+        session = MagicMock()
+        session.get = _mock_get
+        mock_session_fn.return_value = session
+
+        result = await hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id},
+        )
+        result = await hass.config_entries.flow.async_configure(
+            result["flow_id"],
+            user_input={
+                "username": "admin",
+                "password": "wrong",
+                "host": "10.0.0.99",
+                "port": 7777,
+            },
+        )
+        assert result["type"] is FlowResultType.FORM
+        assert result["errors"]["base"] == "invalid_auth"
+
+
+# ---------------------------------------------------------------------------
+# Options flow — latin-1 validation
+# ---------------------------------------------------------------------------
+
+
+async def test_options_settings_rejects_non_latin1_username(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Options settings should reject non-latin-1 username with translation key."""
+    entry = init_integration
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "settings"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={**VALID_USER_INPUT, "username": "user\u4e16"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"]["base"] == "username_not_latin1"
+
+
+async def test_options_settings_rejects_non_latin1_password(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """Options settings should reject non-latin-1 password with translation key."""
+    entry = init_integration
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "settings"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={**VALID_USER_INPUT, "password": "p\u00e4ss\u4e16"},
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["errors"]["base"] == "password_not_latin1"
+
+
+# ---------------------------------------------------------------------------
+# Bridge flow — control not found
+# ---------------------------------------------------------------------------
+
+
+async def test_bridge_add_rejects_unknown_control(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+    mock_loxone_connection,
+) -> None:
+    """Adding a bridge with a UUID not in the structure file should be rejected."""
+    from homeassistant.data_entry_flow import InvalidData
+
+    entry = init_integration
+    mock_loxone_connection.structure_file = {
+        "rooms": {},
+        "controls": {},
+    }
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_menu"},
+    )
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"],
+        user_input={"next_step_id": "bridge_add"},
+    )
+
+    hass.states.async_set("light.test_light", "on")
+    await hass.async_block_till_done()
+
+    # The SelectSelector rejects values not in its options list
+    with pytest.raises(InvalidData):
+        await hass.config_entries.options.async_configure(
+            result["flow_id"],
+            user_input={
+                "entity_id": "light.test_light",
+                "loxone_control": "nonexistent-uuid",
+                "cooldown": 1.0,
+            },
+        )
+
+
+# ---------------------------------------------------------------------------
+# DHCP discovery
+# ---------------------------------------------------------------------------
+
+DHCP_DISCOVERY = MagicMock(
+    ip="192.168.1.77",
+    hostname="loxone",
+    macaddress="504F94A0FEA2",
+)
+
+
+async def test_dhcp_discovery_creates_flow(hass: HomeAssistant) -> None:
+    """DHCP discovery should show the user form with the host pre-filled."""
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "dhcp"},
+        data=DHCP_DISCOVERY,
+    )
+    assert result["type"] is FlowResultType.FORM
+    assert result["step_id"] == "user"
+
+
+async def test_dhcp_discovery_aborts_if_already_configured(
+    hass: HomeAssistant,
+) -> None:
+    """DHCP discovery should abort if the Miniserver is already set up."""
+    MockConfigEntry(
+        domain=DOMAIN,
+        unique_id="504F94A0FEA2",
+        options=VALID_USER_INPUT,
+    ).add_to_hass(hass)
+
+    result = await hass.config_entries.flow.async_init(
+        DOMAIN,
+        context={"source": "dhcp"},
+        data=DHCP_DISCOVERY,
+    )
+    assert result["type"] is FlowResultType.ABORT
+    assert result["reason"] == "already_configured"

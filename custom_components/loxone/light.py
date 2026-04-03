@@ -1,10 +1,10 @@
 import logging
 from enum import StrEnum
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
+from . import LoxoneConfigEntry
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 from .lights.colorpickers import LumiTech, RGBColorPicker, TunableWhiteLight
@@ -42,7 +42,7 @@ class DimmerTypes(StrEnum):
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Loxone Light Controller."""

@@ -241,7 +241,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                     self.hass,
                     DOMAIN,
                     f"token_expired_{self.config_entry.entry_id}",
-                    is_fixable=False,
+                    is_fixable=True,
                     is_persistent=True,
                     severity=ir.IssueSeverity.ERROR,
                     translation_key="token_expired",

@@ -408,7 +408,9 @@ async def create_group_for_loxone_entities(hass, entities, name, object_id):
         )
 
 
-async def async_setup_entry(hass, config_entry):
+async def async_setup_entry(
+    hass: HomeAssistant, config_entry: LoxoneConfigEntry
+) -> bool:
     if not config_entry.options:
         await async_set_options(hass, config_entry)
 
@@ -720,9 +722,29 @@ async def async_setup_entry(hass, config_entry):
 
 
 async def async_remove_config_entry_device(
-    hass: HomeAssistant, config_entry: ConfigEntry, device_entry: DeviceEntry
+    hass: HomeAssistant, config_entry: LoxoneConfigEntry, device_entry: DeviceEntry
 ) -> bool:
-    """Remove a config entry from a device."""
+    """Allow removal only for devices not backed by a current Loxone control."""
+    coordinator: LoxoneCoordinator | None = getattr(config_entry, "runtime_data", None)
+    if coordinator is None or coordinator.api is None:
+        return True
+
+    structure = coordinator.api.structure_file or {}
+    controls = structure.get("controls", {})
+
+    # Collect all UUIDs that still exist in the Loxone structure
+    active_uuids: set[str] = set()
+    for uuid, ctrl in controls.items():
+        active_uuids.add(uuid)
+        active_uuids.add(ctrl.get("uuidAction", ""))
+        for sc in ctrl.get("subControls", {}).values():
+            active_uuids.add(sc.get("uuidAction", ""))
+
+    # Allow removal only if the device's identifiers don't match any active control
+    for _, identifier in device_entry.identifiers:
+        if identifier in active_uuids:
+            return False
+
     return True
 
 

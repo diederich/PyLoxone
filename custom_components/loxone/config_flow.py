@@ -4,9 +4,14 @@ Supports initial setup with live connection test, reauth on credential
 failure, and an options flow for settings + device bridges.
 """
 
+from __future__ import annotations
+
 import asyncio
 import logging
-from typing import Any
+from typing import Any, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from homeassistant.components.dhcp import DhcpServiceInfo
 
 import aiohttp
 import voluptuous as vol
@@ -175,6 +180,7 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
     def __init__(self) -> None:
         super().__init__()
         self._reauth_entry: ConfigEntry | None = None
+        self._discovered_host: str | None = None
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -211,11 +217,29 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
                     title=title, data={}, options=user_input
                 )
 
+        defaults = {}
+        if self._discovered_host:
+            defaults[CONF_HOST] = self._discovered_host
         return self.async_show_form(
             step_id="user",
-            data_schema=_setup_schema(),
+            data_schema=_setup_schema(defaults),
             errors=errors,
         )
+
+    # -- DHCP discovery --------------------------------------------------------
+
+    async def async_step_dhcp(
+        self, discovery_info: DhcpServiceInfo
+    ) -> Any:
+        """Handle DHCP discovery of a Loxone Miniserver."""
+        mac = discovery_info.macaddress.upper()
+        serial = mac.replace(":", "").replace("-", "")
+        await self.async_set_unique_id(serial)
+        self._abort_if_unique_id_configured(updates={CONF_HOST: discovery_info.ip})
+
+        self.context["title_placeholders"] = {"host": discovery_info.ip}
+        self._discovered_host = discovery_info.ip
+        return await self.async_step_user()
 
     # -- Reauth flow -----------------------------------------------------------
 
@@ -302,6 +326,77 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
+    # -- Reconfigure flow -----------------------------------------------------
+
+    async def async_step_reconfigure(
+        self, user_input: dict[str, Any] | None = None
+    ) -> Any:
+        """Allow the user to change connection settings from the integration menu."""
+        errors: dict[str, str] = {}
+        entry = self.hass.config_entries.async_get_entry(
+            self.context["entry_id"]
+        )
+        assert entry is not None
+
+        if user_input is not None:
+            if CONF_PORT in user_input:
+                user_input[CONF_PORT] = int(user_input[CONF_PORT])
+
+            session = async_get_clientsession(self.hass)
+            try:
+                serial = await _async_validate_credentials(
+                    session,
+                    user_input[CONF_HOST],
+                    user_input[CONF_PORT],
+                    user_input[CONF_USERNAME],
+                    user_input[CONF_PASSWORD],
+                )
+            except ValueError as err:
+                errors["base"] = str(err)
+            else:
+                if serial:
+                    await self.async_set_unique_id(serial)
+                    self._abort_if_unique_id_configured()
+
+                updated = {**entry.options, **user_input}
+                self.hass.config_entries.async_update_entry(
+                    entry, options=updated
+                )
+                await self.hass.config_entries.async_reload(entry.entry_id)
+                return self.async_abort(reason="reconfigure_successful")
+
+        defaults = {
+            CONF_USERNAME: entry.options.get(CONF_USERNAME, ""),
+            CONF_PASSWORD: "",
+            CONF_HOST: entry.options.get(CONF_HOST, ""),
+            CONF_PORT: entry.options.get(CONF_PORT, DEFAULT_PORT),
+        }
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_USERNAME, default=defaults[CONF_USERNAME]
+                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(CONF_PASSWORD, default=""): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.PASSWORD)
+                ),
+                vol.Required(
+                    CONF_HOST, default=defaults[CONF_HOST]
+                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(
+                    CONF_PORT, default=defaults[CONF_PORT]
+                ): NumberSelector(
+                    NumberSelectorConfig(
+                        mode=NumberSelectorMode.BOX, min=1, max=65535
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=schema,
+            errors=errors,
+        )
+
     @staticmethod
     @callback
     def async_get_options_flow(config_entry: ConfigEntry) -> "LoxoneOptionsFlowHandler":
@@ -369,9 +464,7 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                 return self.async_show_form(
                     step_id="settings",
                     data_schema=self._settings_schema(),
-                    errors={
-                        "base": "Username contains characters that are not latin-1 compatible"
-                    },
+                    errors={"base": "username_not_latin1"},
                 )
             try:
                 user_input[CONF_PASSWORD].encode("latin-1")
@@ -379,9 +472,7 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                 return self.async_show_form(
                     step_id="settings",
                     data_schema=self._settings_schema(),
-                    errors={
-                        "base": "Password contains characters that are not latin-1 compatible"
-                    },
+                    errors={"base": "password_not_latin1"},
                 )
 
             if CONF_PORT in user_input:

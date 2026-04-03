@@ -9,13 +9,12 @@ from homeassistant.components.alarm_control_panel import (
     PLATFORM_SCHEMA, AlarmControlPanelEntity, AlarmControlPanelState)
 from homeassistant.components.alarm_control_panel.const import (
     AlarmControlPanelEntityFeature, CodeFormat)
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (CONF_CODE, CONF_NAME, CONF_PASSWORD,
                                  CONF_USERNAME)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from . import LoxoneEntity
+from . import LoxoneConfigEntry, LoxoneEntity
 from .const import DOMAIN, SECUREDSENDDOMAIN, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
@@ -39,7 +38,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    config_entry: ConfigEntry,
+    config_entry: LoxoneConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Loxone Alarms."""
