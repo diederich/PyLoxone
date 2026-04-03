@@ -69,6 +69,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         self._structure_last_modified: str | None = None
         self._shutting_down = False
         self.connection_state = ConnectionState.DISCONNECTED
+        self.reconnect_count: int = 0
 
     # -- Bootstrap / first connect ---------------------------------------------
 
@@ -136,6 +137,33 @@ class LoxoneCoordinator(DataUpdateCoordinator):
         for uuid in message:
             async_dispatcher_send(self.hass, f"{prefix}{uuid}", message)
         async_dispatcher_send(self.hass, self.monitor_signal, message)
+
+        self._fire_device_trigger_events(message)
+
+    def _fire_device_trigger_events(self, message: dict) -> None:
+        """Fire HA bus events for device triggers.
+
+        Maps each UUID in the message to its device_id so device triggers
+        can match.  The UUID-to-device_id mapping is built lazily.
+        """
+        from .device_trigger import EVENT_LOXONE_STATE_CHANGE
+        from homeassistant.helpers import device_registry as dr
+
+        dr_registry = dr.async_get(self.hass)
+        for uuid in message:
+            device = dr_registry.async_get_device(identifiers={(DOMAIN, uuid)})
+            if device is None:
+                continue
+            self.hass.bus.async_fire(
+                EVENT_LOXONE_STATE_CHANGE,
+                {
+                    "device_id": device.id,
+                    "uuid": uuid,
+                    "values": {
+                        k: v for k, v in message.items() if k == uuid
+                    },
+                },
+            )
 
     def _handle_task_result(self, task: asyncio.Task) -> None:
         """Done-callback for the listening task — triggers reconnect on error."""
@@ -225,6 +253,7 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 await self.async_start_listening()
 
                 self.connection_state = ConnectionState.CONNECTED
+                self.reconnect_count += 1
                 self.async_set_updated_data({"connected": True})
                 _eid = self.config_entry.entry_id
                 ir.async_delete_issue(self.hass, DOMAIN, f"token_expired_{_eid}")
