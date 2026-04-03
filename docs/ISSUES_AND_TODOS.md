@@ -9,23 +9,11 @@
 
 No open critical bugs.
 
-### ~~BUG-013~~: Ventilation presence unique_id collision (FIXED 2026-04-03)
-
-**File:** `fan.py`, `binary_sensor.py`
-**Impact:** When a Ventilation control has a presence sub-entity, `LoxoneDigitalSensor.__init__` (binary_sensor.py ~line 144) overwrites `self.uuidAction = self._parent_id`, making its `unique_id` identical to the parent fan entity. HA's entity registry rejects the duplicate, so the **main fan entity is silently dropped**.
-
-Note: the analog sub-entities (humidity, air quality, temperature) use `LoxoneSensor`, which does **not** overwrite `uuidAction` — only the presence `LoxoneDigitalSensor` is affected.
-
-**Fix:** `LoxoneDigitalSensor` should store `parent_id` separately for device grouping and keep the original `uuidAction` (state UUID) as the unique_id, or use a composite unique_id (e.g. `f"{parent_uuid}_{suffix}"`).
-
 ---
 
 ## High-Priority Improvements
 
-### ~~IMP-007~~: scene.py call_later (FIXED 2026-04-03)
-
-`hass.loop.call_later()` replaced with `async_call_later()`. Sync `hass.bus.fire()` in entity service methods remains intentionally synchronous.
-
+No open high-priority improvements.
 
 ---
 
@@ -42,10 +30,6 @@ Note: the analog sub-entities (humidity, air quality, temperature) use `LoxoneSe
 **File:** `light.py`
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
-
-### ~~MED-006~~: `LoxoneAlarm.code_arm_required` side-effect (FIXED 2026-04-03)
-
-Removed mutation from property getter; now returns `self.isSecured` without touching `self._code`.
 
 ### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
 
@@ -66,10 +50,7 @@ Removed mutation from property getter; now returns `self.isSecured` without touc
 
 ## Low-Priority / Cosmetic
 
-| #       | Issue                                                        | File                                             |
-| ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| ~~LOW-009~~ | ~~Deprecated `DeviceInfo` import path~~ (FIXED 2026-04-03) | ~~lights/dimmer.py~~ |
-| ~~LOW-010~~ | ~~Inconsistent command casing~~ (FIXED 2026-04-03) | ~~lights/dimmer.py~~ |
+No open low-priority issues.
 
 ---
 
@@ -522,11 +503,7 @@ Surface the Miniserver firmware version as an HA `UpdateEntity` (Settings > Upda
 
 ## Quick Wins
 
-Tasks that can be done in under 30 minutes each:
-
 | #   | Task                                                                                         | Impact                                           |
 | --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
 | 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS` (or delete dead `text.py`)                         | Resolve dead code (see also MED-000)             |
 | 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |
-
-Previously listed quick wins #1, #7, #9, #11, #12, #14 have been verified as fixed or no longer applicable (2026-04-03 audit).
