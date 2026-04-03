@@ -81,11 +81,6 @@ class LoxoneAlarm(LoxoneEntity, AlarmControlPanelEntity):
     @property
     def code_arm_required(self):
         """Whether the code is required for arm actions."""
-        self._code = "required"
-        if self.isSecured:
-            self._code = "required"
-        else:
-            self._code = None
         return self.isSecured
 
     async def event_handler(self, e):

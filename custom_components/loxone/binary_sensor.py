@@ -141,9 +141,6 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
         self._off_state = STATE_OFF
         self._attr_available = True
 
-        if self._parent_id:
-            self.uuidAction = self._parent_id
-
         if self._from_loxone_config:
             self._attr_extra_state_attributes.update(
                 {

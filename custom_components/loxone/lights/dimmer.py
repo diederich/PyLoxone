@@ -3,7 +3,7 @@ from functools import cached_property
 from homeassistant.components.light import (ATTR_BRIGHTNESS, ColorMode,
                                             LightEntity)
 from homeassistant.const import STATE_UNKNOWN
-from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo
 
 from .. import LoxoneEntity
 from ..const import DOMAIN, SENDDOMAIN
@@ -84,11 +84,11 @@ class LoxoneDimmer(LoxoneEntity, LightEntity):
                 ),
             )
         else:
-            self.hass.bus.async_fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="On"))
+            self.hass.bus.async_fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="on"))
         self.async_schedule_update_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
-        self.hass.bus.async_fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="Off"))
+        self.hass.bus.async_fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="off"))
         self.async_schedule_update_ha_state()
 
     async def event_handler(self, e):

@@ -11,6 +11,7 @@ from homeassistant.components.scene import Scene
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_call_later
 
 from . import LoxoneConfigEntry
 from .const import (CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE,
@@ -81,7 +82,7 @@ async def async_setup_entry(
         else:
             _LOGGER.warning("No scenes generated")
 
-    hass.loop.call_later(delay_scene, lambda: hass.async_create_task(gen_scenes()))
+    async_call_later(hass, delay_scene, lambda _now: hass.async_create_task(gen_scenes()))
 
 
 class LoxoneLightScene(Scene):

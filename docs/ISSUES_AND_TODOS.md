@@ -7,9 +7,9 @@
 
 ## Critical Bugs
 
-These will cause crashes or incorrect behavior for users.
+No open critical bugs.
 
-### BUG-013: Ventilation presence sub-entity collides on unique_id with the fan entity
+### ~~BUG-013~~: Ventilation presence unique_id collision (FIXED 2026-04-03)
 
 **File:** `fan.py`, `binary_sensor.py`
 **Impact:** When a Ventilation control has a presence sub-entity, `LoxoneDigitalSensor.__init__` (binary_sensor.py ~line 144) overwrites `self.uuidAction = self._parent_id`, making its `unique_id` identical to the parent fan entity. HA's entity registry rejects the duplicate, so the **main fan entity is silently dropped**.
@@ -22,15 +22,10 @@ Note: the analog sub-entities (humidity, air quality, temperature) use `LoxoneSe
 
 ## High-Priority Improvements
 
-### IMP-007: Fix sync/async inconsistencies
+### ~~IMP-007~~: scene.py call_later (FIXED 2026-04-03)
 
-`hass.bus.fire()` is still used from entity service methods (`turn_on`, `turn_off`, etc.); this was **intentionally kept synchronous** where those paths can run on the executor or from sync contexts — `async_fire()` is not a safe wholesale replacement without per-call-site analysis. Remaining actionable item: `hass.loop.call_later()` in `scene.py` should become `async_call_later()` / `async_create_task()` when on the event loop.
+`hass.loop.call_later()` replaced with `async_call_later()`. Sync `hass.bus.fire()` in entity service methods remains intentionally synchronous.
 
-**scene.py:** Scenes now expose `device_info` and are tied to the config entry via `entry_id` scoping. (Broader platform notes live in [HA_INTEGRATION.md](HA_INTEGRATION.md); that doc’s older “no LoxoneEntity / no device_info” bullets are stale for scenes.)
-
-| Current (sync)               | Replace with (async)                          | Files                          |
-| ---------------------------- | --------------------------------------------- | ------------------------------ |
-| `hass.loop.call_later()`     | `async_call_later()` or `async_create_task()` | scene.py                       |
 
 ---
 
@@ -48,11 +43,9 @@ Note: the analog sub-entities (humidity, air quality, temperature) use `LoxoneSe
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
 
-### MED-006: `LoxoneAlarm.code_arm_required` — Side effect in property
+### ~~MED-006~~: `LoxoneAlarm.code_arm_required` side-effect (FIXED 2026-04-03)
 
-**File:** `alarm_control_panel.py`
-
-The property getter mutates `self._code`. Properties should be side-effect-free.
+Removed mutation from property getter; now returns `self.isSecured` without touching `self._code`.
 
 ### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
 
@@ -75,8 +68,8 @@ The property getter mutates `self._code`. Properties should be side-effect-free.
 
 | #       | Issue                                                        | File                                             |
 | ------- | ------------------------------------------------------------ | ------------------------------------------------ |
-| LOW-009 | Deprecated `DeviceInfo` import path                          | lights/dimmer.py                                 |
-| LOW-010 | Inconsistent command casing `"on"`/`"off"` vs `"On"`/`"Off"` | lights/switch.py vs lights/dimmer.py             |
+| ~~LOW-009~~ | ~~Deprecated `DeviceInfo` import path~~ (FIXED 2026-04-03) | ~~lights/dimmer.py~~ |
+| ~~LOW-010~~ | ~~Inconsistent command casing~~ (FIXED 2026-04-03) | ~~lights/dimmer.py~~ |
 
 ---
 
