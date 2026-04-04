@@ -4,6 +4,29 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-04 — Panel accessibility (tabs, focus, labels)
+
+### Decisions
+
+- Use the WAI-ARIA tabs pattern with native `button` tabs: `role="tablist"`, `role="tab"`, `aria-selected`, roving `tabindex` (0 on the active tab, −1 on others), and `aria-controls` / `role="tabpanel"` linking.
+- Arrow Left/Right (and Up/Down), Home, and End move focus and activate the target tab; `aria-labelledby` on the panel tracks the active tab for screen readers.
+
+### Changes
+
+- **`frontend/src/loxone-panel.ts`** — Replaced clickable `div` tabs with accessible buttons; keyboard navigation; labeled tablist (`aria-label="Loxone sections"`), miniserver `select` (`aria-label="Miniserver"`), refresh button (`aria-label="Refresh current view"`); `:focus-visible` outlines on tabs and refresh.
+- **`frontend/src/devices-view.ts`** — `aria-label` (+ `type="button"`) on entity enable/disable toggles and drawer close control.
+- **`frontend/src/logs-view.ts`**, **`frontend/src/monitor-view.ts`** — `aria-pressed` and `aria-label` on pause/resume; `type="button"` on toolbar buttons.
+- **`frontend/test/api.test.ts`** — `mockHass` includes `connection.subscribeMessage` so `tsc` matches `HomeAssistant`.
+- **`frontend/package.json`** — `esbuild` range aligned with `package-lock.json` (`^0.27.4`) so `npm ci` is valid.
+- **`frontend/loxone-panel.js`** — Rebuilt bundle.
+
+### Testplan
+
+- `npm ci` → `npm run typecheck` → `npm test` → `node build.mjs` in `custom_components/loxone/frontend` (Linux arm64).
+- Manual: open Loxone panel → Tab to tab bar → Arrow keys switch tabs; refresh and miniserver select expose correct names in screen reader / accessibility tree.
+
+---
+
 ## 2026-04-03 — Frontend feature gap closure + DHCP fix
 
 ### Decisions

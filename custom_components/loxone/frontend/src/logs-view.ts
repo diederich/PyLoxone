@@ -196,10 +196,16 @@ export class LogsView extends LitElement {
     return html`
       <div class="toolbar">
         <span class="status-dot ${this._connected ? "on" : "off"}"></span>
-        <button class="${this._paused ? "active" : ""}" @click=${this._togglePause}>
+        <button
+          type="button"
+          class="${this._paused ? "active" : ""}"
+          aria-pressed=${this._paused ? "true" : "false"}
+          aria-label=${this._paused ? "Resume log streaming" : "Pause log streaming"}
+          @click=${this._togglePause}
+        >
           ${this._paused ? "▶ Resume" : "⏸ Pause"}
         </button>
-        <button @click=${this._clear}>Clear</button>
+        <button type="button" @click=${this._clear}>Clear</button>
         <input type="text" placeholder="Filter…" .value=${this._filter}
           @input=${(e: Event) => { this._filter = (e.target as HTMLInputElement).value; }} />
         <select .value=${this._levelFilter}

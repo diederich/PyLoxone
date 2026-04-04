@@ -461,8 +461,12 @@ export class DevicesView extends LitElement {
                           >
                             ${ent.entity_id}
                             <button
+                              type="button"
                               class="toggle-btn"
                               title=${ent.disabled_by ? "Enable" : "Disable"}
+                              aria-label=${ent.disabled_by
+                                ? `Enable ${ent.entity_id}`
+                                : `Disable ${ent.entity_id}`}
                               @click=${(ev: Event) => {
                                 ev.stopPropagation();
                                 this._toggleEntity(ent.entity_id, !!ent.disabled_by);
@@ -489,7 +493,14 @@ export class DevicesView extends LitElement {
     return html`
       <div class="drawer-overlay" @click=${this._closeDetail}></div>
       <div class="drawer" @click=${(e: Event) => e.stopPropagation()}>
-        <button class="close-btn" @click=${this._closeDetail}>✕</button>
+        <button
+          type="button"
+          class="close-btn"
+          aria-label="Close control details"
+          @click=${this._closeDetail}
+        >
+          ✕
+        </button>
         <h2>${d.name}</h2>
         <div class="sub-title">
           <span class="badge">${d.type}</span>

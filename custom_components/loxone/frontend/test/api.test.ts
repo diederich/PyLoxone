@@ -11,6 +11,9 @@ function mockHass(
   return {
     callWS: vi.fn().mockResolvedValue(wsResponse),
     callService: vi.fn().mockResolvedValue(undefined),
+    connection: {
+      subscribeMessage: vi.fn().mockResolvedValue(() => {}),
+    },
     language: "en",
     states: {},
   };

@@ -13,7 +13,7 @@ KNOWN_CONTROL_TYPES: dict[str, str] = {
     "PresenceDetector": "binary_sensor",
     "SmokeAlarm": "binary_sensor",
     "InfoOnlyAnalog": "sensor",
-    "TextInput": "sensor",
+    "TextInput": "text",
     "Meter": "sensor",
     "Switch": "switch",
     "TimedSwitch": "switch",

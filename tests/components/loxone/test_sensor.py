@@ -29,8 +29,6 @@ TEMP_ACTION_UUID = "sen10000-0000-0000-0000000000000000"
 
 WIND_ENTITY_ID = "sensor.wind_speed"
 
-TEXT_ENTITY_ID = "sensor.status_display"
-TEXT_STATE_UUID = "txt10000-0000-0000-0000000000000001"
 
 METER_ACTUAL_UUID = "mtr10000-0000-0000-0000000000000010"
 METER_TOTAL_UUID = "mtr10000-0000-0000-0000000000000011"
@@ -235,28 +233,6 @@ async def test_sensor_ignores_unrelated_event(
 
     state = hass.states.get(TEMP_ENTITY_ID)
     assert float(state.state) == pytest.approx(20.0)
-
-
-# -- TextInput (LoxoneTextSensor) --------------------------------------------
-
-
-async def test_text_sensor_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """TextInput should create a sensor entity."""
-    state = hass.states.get(TEXT_ENTITY_ID)
-    assert state is not None
-
-
-async def test_text_sensor_state_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """Firing the text state UUID should update the sensor."""
-    fire_loxone_event(hass, {TEXT_STATE_UUID: "All systems normal"})
-    await hass.async_block_till_done()
-
-    state = hass.states.get(TEXT_ENTITY_ID)
-    assert state.state == "All systems normal"
 
 
 # -- Meter (LoxoneMeterSensor subsensors) ------------------------------------

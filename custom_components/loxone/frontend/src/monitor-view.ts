@@ -252,10 +252,16 @@ export class MonitorView extends LitElement {
     return html`
       <div class="toolbar">
         <span class="status-dot ${this._connected ? "on" : "off"}"></span>
-        <button class="${this._paused ? "active" : ""}" @click=${this._togglePause}>
+        <button
+          type="button"
+          class="${this._paused ? "active" : ""}"
+          aria-pressed=${this._paused ? "true" : "false"}
+          aria-label=${this._paused ? "Resume event stream" : "Pause event stream"}
+          @click=${this._togglePause}
+        >
           ${this._paused ? "▶ Resume" : "⏸ Pause"}
         </button>
-        <button @click=${this._clear}>Clear</button>
+        <button type="button" @click=${this._clear}>Clear</button>
         <input
           type="text"
           placeholder="Filter by name, room, UUID…"

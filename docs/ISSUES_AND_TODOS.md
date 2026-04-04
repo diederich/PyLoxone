@@ -19,23 +19,11 @@ No open high-priority improvements.
 
 ## Medium-Priority Issues
 
-### MED-000: Text platform never loaded (dead code)
-
-**File:** `const.py`, `text.py`
-
-`Platform.TEXT` is missing from `LOXONE_PLATFORMS`. The `text.py` platform file exists but is never loaded. `LoxoneTextSensor` in `sensor.py` already handles TextInput, so this is dead code with a working alternative. Decide whether to wire up `text.py` (and remove the sensor overlap) or delete it.
-
 ### MED-002: Standalone `ColorPickerV2` never discovered
 
 **File:** `light.py`
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
-
-### MED-010: `LoxoneAudioZoneV2` — `async_media_stop` sends pause
-
-**File:** `media_player.py`
-
-`async_media_stop()` sends `"pause"` instead of an actual stop command. If Loxone has a distinct stop command, it should be used.
 
 ### MED-013: `send_websocket_command` has no connection state check
 
@@ -68,7 +56,8 @@ Test harness is in place using `pytest-homeassistant-custom-component==0.13.314`
 | `test_cover.py`                   | Device class mapping (blind/curtain/garage/window), position inversion, tilt, opening/closing state, gate direction, commands (FullUp/FullDown/stop/manualPosition) |
 | `test_climate.py`                 | AC entity creation, attributes, set temperature command, current/target temp events, HVAC mode mapping (off/heat/cool); IRoomControllerV2 creation, `is_overridden` JSON parsing |
 | `test_init.py`                    | Setup, unload, services registered in `async_setup` (survive unload, raise when no coordinator), `sync_device_names` service (update/skip/ignore non-Loxone)         |
-| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), TextInput state, Meter subsensors (actual/total/totalReturned), energy dashboard attrs (device_class/state_class on totals + actual), fallback classification from details.type, version + keep-alive sensors, meter unit mismatch repair issue creation, matching unit no-repair |
+| `test_sensor.py`                  | InfoOnlyAnalog (creation, unit/format parsing, device_class matching, event updates), Meter subsensors (actual/total/totalReturned), energy dashboard attrs (device_class/state_class on totals + actual), fallback classification from details.type, version + keep-alive sensors, meter unit mismatch repair issue creation, matching unit no-repair |
+| `test_text.py`                    | TextInput entity creation, event→state update, set_value command dispatch                                                                                                                                                                                                                                                                                            |
 | `test_binary_sensor.py`           | InfoOnlyDigital, PresenceDetector, SmokeAlarm entity creation; event state updates; correct `_state_uuid` selection per type                                         |
 | `test_alarm_control_panel.py`     | Entity creation, alarm_state branching (disarmed/armed_away/armed_home/arming/triggered), priority logic, arm/disarm command dispatch, extra state attributes        |
 | `test_fan.py`                     | Ventilation entity creation, supported features, preset modes, speed/mode events, set_percentage command                                                             |
@@ -505,5 +494,4 @@ Surface the Miniserver firmware version as an HA `UpdateEntity` (Settings > Upda
 
 | #   | Task                                                                                         | Impact                                           |
 | --- | -------------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| 2   | Add `Platform.TEXT` to `LOXONE_PLATFORMS` (or delete dead `text.py`)                         | Resolve dead code (see also MED-000)             |
 | 10  | Fix copy-paste docstrings                                                                    | Code hygiene                                     |

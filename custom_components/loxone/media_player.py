@@ -131,7 +131,8 @@ class LoxoneAudioZoneV2(LoxoneEntity, MediaPlayerEntity):
         self.async_schedule_update_ha_state()
 
     async def async_media_stop(self) -> None:
-        """Send stop command to device."""
+        """Send stop command. Loxone AudioZoneV2 has no distinct stop command;
+        the only options per the Structure File spec are "play" and "Pause"."""
         self.hass.bus.async_fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="pause"))
         self.async_schedule_update_ha_state()
 

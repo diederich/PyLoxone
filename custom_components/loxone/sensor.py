@@ -327,11 +327,6 @@ async def async_setup_entry(
         sensor.update({"type": "analog", "coordinator": coordinator})
         entities.append(LoxoneSensor(**sensor))
 
-    for sensor in get_all(loxconfig, "TextInput"):
-        sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        sensor["coordinator"] = coordinator
-        entities.append(LoxoneTextSensor(**sensor))
-
     for sensor in get_all(loxconfig, "Meter"):
         _LOGGER.info("Found Meter: %s", sensor)
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
@@ -519,47 +514,6 @@ class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
         if self._serial:
             return DeviceInfo(identifiers={(DOMAIN, self._serial)})
         return None
-
-
-class LoxoneTextSensor(LoxoneEntity, SensorEntity):
-    """Representation of a Text Sensor."""
-
-    _attr_has_entity_name = True
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self._attr_name = None
-        self._state = STATE_UNKNOWN
-
-    async def event_handler(self, e):
-        if self.states["text"] in e:
-            self._state = str(e[self.states["text"]])
-            self.async_schedule_update_ha_state()
-
-    @property
-    def device_class(self):
-        """Return the class of this device, from component DEVICE_CLASSES."""
-        return self.type
-
-    @property
-    def native_value(self):
-        """Return the state of the sensor."""
-        return self._state
-
-    async def async_set_value(self, value):
-        """Set new value."""
-        self.hass.bus.async_fire(
-            SENDDOMAIN, dict(uuid=self.uuidAction, value="{}".format(value))
-        )
-        self.async_schedule_update_ha_state()
-
-    @property
-    def extra_state_attributes(self):
-        """Return device specific state attributes."""
-        return {
-            **self._attr_extra_state_attributes,
-            "device_type": self.type,
-        }
 
 
 class LoxoneSensor(LoxoneEntity, SensorEntity):
