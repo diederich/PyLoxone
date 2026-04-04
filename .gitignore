@@ -5,6 +5,8 @@
 deps
 tts
 venv
+.venv
+/venv/
 
 hass.py
 
@@ -20,11 +22,9 @@ hass.py
 *.db
 *.log
 !hacs.json
-/venv/
 
 __pycache__
 custom_components/loxone/homeassistant
-.vscode
 ha_data_folder/
 *.py_tmp
 

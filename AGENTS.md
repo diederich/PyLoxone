@@ -43,19 +43,10 @@ To deploy, run `scripts/deploy` from the repo root (or from anywhere — it auto
 
 ## Testing
 
-Tests use `pytest-homeassistant-custom-component` and live in `tests/components/loxone/`. Run them from the repo root:
+Tests use `pytest-homeassistant-custom-component` and live in `tests/components/loxone/`. Run from the repo root:
 
 ```bash
-source .venv/bin/activate   # if not already active
 python -m pytest tests/ -v
-```
-
-To install the test venv from scratch:
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt -r requirements_test.txt
 ```
 
 ## Rules
