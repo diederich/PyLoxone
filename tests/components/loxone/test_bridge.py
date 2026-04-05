@@ -10,6 +10,7 @@ from custom_components.loxone.bridge_mappers import (
     AnalogExposeMapper,
     BinarySensorExposeMapper,
     ColorPickerMapper,
+    CoverMapper,
     DimmerMapper,
     LightSwitchMapper,
     SwitchMapper,
@@ -639,3 +640,164 @@ async def test_bridged_entity_is_disabled_not_removed(
     assert ent_entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION, (
         "Bridged entity should be disabled by integration"
     )
+
+
+# ---------------------------------------------------------------------------
+# CoverMapper
+# ---------------------------------------------------------------------------
+
+
+class TestCoverMapper:
+    """Tests for the compound cover VI/VO bridge mapper."""
+
+    def _make(self, details=None, loxone_uuid="vi-pos-uuid"):
+        bridge = DeviceBridge(
+            entity_id="cover.velux_bedroom_blind",
+            loxone_uuid=loxone_uuid,
+            loxone_type="cover",
+            loxone_states={},
+            details=details or {},
+        )
+        return CoverMapper(bridge)
+
+    # -- factory --
+
+    def test_get_mapper_cover(self):
+        bridge = DeviceBridge(
+            entity_id="cover.velux_test",
+            loxone_uuid="vi-uuid",
+            loxone_type="cover",
+            loxone_states={},
+        )
+        m = get_mapper(bridge, "cover")
+        assert isinstance(m, CoverMapper)
+
+    # -- expose direction (HA -> Loxone position VI) --------------------------
+
+    def test_expose_supported_with_uuid(self):
+        assert self._make().expose_supported is True
+
+    def test_expose_not_supported_without_uuid(self):
+        m = self._make(loxone_uuid="")
+        assert m.expose_supported is False
+
+    def test_ha_state_with_position(self):
+        m = self._make()
+        state = State("cover.velux_bedroom_blind", "open", {"current_cover_position": 75})
+        cmd = m.ha_state_to_command(state)
+        assert cmd == ("vi-pos-uuid", 75.0)
+
+    def test_ha_state_open_no_position(self):
+        m = self._make()
+        state = State("cover.velux_bedroom_blind", "open")
+        cmd = m.ha_state_to_command(state)
+        assert cmd == ("vi-pos-uuid", 100.0)
+
+    def test_ha_state_closed_no_position(self):
+        m = self._make()
+        state = State("cover.velux_bedroom_blind", "closed")
+        cmd = m.ha_state_to_command(state)
+        assert cmd == ("vi-pos-uuid", 0.0)
+
+    def test_ha_state_opening_returns_none(self):
+        """Mid-travel states without a settled position should not update the VI."""
+        m = self._make()
+        state = State("cover.velux_bedroom_blind", "opening")
+        assert m.ha_state_to_command(state) is None
+
+    def test_ha_state_closing_returns_none(self):
+        m = self._make()
+        state = State("cover.velux_bedroom_blind", "closing")
+        assert m.ha_state_to_command(state) is None
+
+    # -- subscribe direction (Loxone VO -> HA) --------------------------------
+
+    def test_subscribe_supported_with_vos(self):
+        m = self._make({"uuid_up_vo": "up-uuid", "uuid_target_vo": "tgt-uuid"})
+        assert m.subscribe_supported is True
+        assert m.subscribe_uuids == {"up-uuid", "tgt-uuid"}
+
+    def test_subscribe_not_supported_without_vos(self):
+        m = self._make()
+        assert m.subscribe_supported is False
+        assert m.subscribe_uuids == set()
+
+    @pytest.mark.asyncio
+    async def test_up_vo_triggers_open(self):
+        m = self._make({"uuid_up_vo": "up-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "up-uuid", 1)
+        hass.services.async_call.assert_called_once_with(
+            "cover", "open_cover", {"entity_id": "cover.velux_bedroom_blind"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_up_vo_false_value_ignored(self):
+        """Going back to 0 (motion stopped) should NOT trigger another open."""
+        m = self._make({"uuid_up_vo": "up-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "up-uuid", 0)
+        hass.services.async_call.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_down_vo_triggers_close(self):
+        m = self._make({"uuid_down_vo": "dn-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "dn-uuid", 1)
+        hass.services.async_call.assert_called_once_with(
+            "cover", "close_cover", {"entity_id": "cover.velux_bedroom_blind"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_target_vo_intermediate_position(self):
+        m = self._make({"uuid_target_vo": "tgt-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "tgt-uuid", 60.0)
+        hass.services.async_call.assert_called_once_with(
+            "cover", "set_cover_position", {"entity_id": "cover.velux_bedroom_blind", "position": 60}
+        )
+
+    @pytest.mark.asyncio
+    async def test_target_vo_100_calls_open(self):
+        m = self._make({"uuid_target_vo": "tgt-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "tgt-uuid", 100.0)
+        hass.services.async_call.assert_called_once_with(
+            "cover", "open_cover", {"entity_id": "cover.velux_bedroom_blind"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_target_vo_0_calls_close(self):
+        m = self._make({"uuid_target_vo": "tgt-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "tgt-uuid", 0.0)
+        hass.services.async_call.assert_called_once_with(
+            "cover", "close_cover", {"entity_id": "cover.velux_bedroom_blind"}
+        )
+
+    @pytest.mark.asyncio
+    async def test_target_vo_invalid_value_ignored(self):
+        m = self._make({"uuid_target_vo": "tgt-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "tgt-uuid", "not-a-number")
+        hass.services.async_call.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_unknown_uuid_ignored(self):
+        """A message for an unregistered UUID should not trigger any service call."""
+        m = self._make({"uuid_up_vo": "up-uuid"})
+        hass = _mock_hass()
+        await m.loxone_value_to_ha(hass, "some-other-uuid", 1)
+        hass.services.async_call.assert_not_called()
+
+    # -- description --
+
+    def test_description_lists_configured_vos(self):
+        m = self._make({"uuid_up_vo": "up-uuid", "uuid_down_vo": "dn-uuid"})
+        desc = m.description
+        assert "up" in desc
+        assert "down" in desc
+
+    def test_description_position_only(self):
+        m = self._make()
+        assert "position-only" in m.description

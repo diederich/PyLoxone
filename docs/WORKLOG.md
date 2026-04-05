@@ -4,6 +4,33 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-05 — Velux cover bridge: compound VI/VO bridge for HA cover entities
+
+Added `CoverMapper` — a compound bridge type that maps a HA `cover.*` entity (e.g. Velux shades via KLF200) to up to four Loxone VI/VO controls: one Slider VI for position feedback and up to three optional VOs (move-up, move-down, target position). The bridge panel gains cover-specific UX: a multi-picker form, a collapsible Loxone setup guide with naming suggestions, and a "Scan Loxone" button that auto-fills UUID fields by name-convention matching against the loaded structure file.
+
+### Decisions
+
+- **Compound bridge via `details` dict** — extra VO UUIDs stored in `DeviceBridge.details` (already `dict[str, Any]`, already persisted as JSON). No schema migration needed; backwards-compatible.
+- **`loxone_type = "cover"` sentinel** — since there is no native Loxone "cover" control type for the bridge, the WS handler sets this sentinel when the entity domain is `cover` and the UUID lookup returns no type.
+- **Position convention** — HA position 0–100 (0 = closed, 100 = open) mapped directly to the Slider VI value. No inversion needed (unlike native Loxone Jalousie which uses an inverted scale).
+- **Up/down VOs trigger on rising edge only** — `loxone_value_to_ha` ignores the VO going back to 0 (motion-stopped signal) to avoid double-calling open/close.
+- **HTTP template generation dropped** — VI_ polling has unacceptable lag for shade position feedback; the WebSocket bridge is strictly better.
+
+### Changes
+
+- `custom_components/loxone/bridge_mappers.py` — new `CoverMapper` class + `_COVER_VO_KEYS` constant; added `"cover"` to `_SUPPORTED_DOMAINS`; factory wired in `get_mapper`.
+- `custom_components/loxone/bridge.py` — `bridged_uuids` property extended to include cover VO UUIDs; `unregister_bridge` re-enables all cover UUIDs on removal.
+- `custom_components/loxone/websocket.py` — `ws_add_bridge` handler accepts optional `details: {str: str}` in voluptuous schema; passes it to `DeviceBridge`; sets `loxone_type = "cover"` sentinel for cover entities.
+- `custom_components/loxone/frontend/src/api.ts` — `addBridge` accepts optional `details` param; forwards non-empty details to WS message.
+- `custom_components/loxone/frontend/src/bridges-view.ts` — added `"cover"` to `BRIDGEABLE_DOMAINS`; cover-specific state + helpers (`_coverVoUuids`, `_isCoverEntity`, `_coverNamePrefix`, `_scanLoxoneForCover`); cover VO section renders when cover entity selected; Setup Guide collapsible; Scan button; `_addBridge` passes `details` for covers.
+- `tests/components/loxone/test_bridge.py` — 20 new tests in `TestCoverMapper`.
+- `docs/HA_INTEGRATION.md` — updated supported-mappings table; added cover bridge section with VI/VO layout table.
+
+### Investigations
+
+- Velux HA integration (KLF200): each KLF200 node is a separate HA device/entity. Window openers and blinds are always separate. `Blind` type supports tilt (slat angle); `Awning`/`RollerShutter` do not. Rain sensor is on `Window` type nodes, disabled by default, polled every 5 minutes.
+- Loxone template format: VI_/VO_ XML templates are for HTTP/UDP virtual devices only — not for programming-block VIs (Slider/Switch type). Template download feature dropped in favour of the in-panel setup guide.
+
 --
 
 ## 2026-04-05 — Fix devices view detail panel immediately closing

@@ -445,6 +445,92 @@ class InputBooleanMapper(BridgeMapper):
 
 
 # ---------------------------------------------------------------------------
+# Cover — compound VI/VO bridge (bidirectional)
+# ---------------------------------------------------------------------------
+
+_COVER_VO_KEYS = ("uuid_up_vo", "uuid_down_vo", "uuid_target_vo")
+
+
+class CoverMapper(BridgeMapper):
+    """Maps HA cover <-> compound set of Loxone VI/VO controls.
+
+    Loxone side layout (all optional except the position VI):
+      - ``bridge.loxone_uuid``         — Slider VI; PyLoxone writes actual position (0–100)
+      - ``details["uuid_up_vo"]``      — Switch VO; Loxone drives high when moving up   → open_cover
+      - ``details["uuid_down_vo"]``    — Switch VO; Loxone drives high when moving down → close_cover
+      - ``details["uuid_target_vo"]``  — Slider VO; Loxone writes target position        → set_cover_position
+
+    Any VO field omitted from ``details`` is simply not subscribed to.
+    """
+
+    def _vo_uuids(self) -> dict[str, str]:
+        """Return a mapping of role key → state UUID for every configured VO."""
+        return {k: v for k in _COVER_VO_KEYS if (v := self.bridge.details.get(k))}
+
+    @property
+    def expose_supported(self) -> bool:
+        """Return the expose supported."""
+        return bool(self.bridge.loxone_uuid)
+
+    @property
+    def subscribe_supported(self) -> bool:
+        """Return the subscribe supported."""
+        return bool(self._vo_uuids())
+
+    @property
+    def subscribe_uuids(self) -> set[str]:
+        """Return the subscribe uuids."""
+        return set(self._vo_uuids().values())
+
+    def ha_state_to_command(self, state: State) -> tuple[str, Any] | None:
+        """Write actual cover position back to the Loxone position VI."""
+        pos = state.attributes.get("current_cover_position")
+        if pos is not None:
+            return (self.bridge.loxone_uuid, float(pos))
+        if state.state == "open":
+            return (self.bridge.loxone_uuid, 100.0)
+        if state.state == "closed":
+            return (self.bridge.loxone_uuid, 0.0)
+        # opening / closing / stopped mid-travel — no meaningful position yet
+        return None
+
+    async def loxone_value_to_ha(self, hass: HomeAssistant, uuid: str, value: Any) -> None:
+        """Translate a VO state change into the appropriate cover service call."""
+        vo = self._vo_uuids()
+        entity_id = self.bridge.entity_id
+
+        if uuid == vo.get("uuid_up_vo"):
+            if _loxone_to_bool(value):
+                await hass.services.async_call("cover", "open_cover", {"entity_id": entity_id})
+        elif uuid == vo.get("uuid_down_vo"):
+            if _loxone_to_bool(value):
+                await hass.services.async_call("cover", "close_cover", {"entity_id": entity_id})
+        elif uuid == vo.get("uuid_target_vo"):
+            try:
+                pos = max(0, min(100, round(float(value))))
+            except (ValueError, TypeError):
+                _LOGGER.warning("Cannot convert Loxone value '%s' to position for cover bridge", value)
+                return
+            if pos >= 100:
+                await hass.services.async_call("cover", "open_cover", {"entity_id": entity_id})
+            elif pos <= 0:
+                await hass.services.async_call("cover", "close_cover", {"entity_id": entity_id})
+            else:
+                await hass.services.async_call(
+                    "cover",
+                    "set_cover_position",
+                    {"entity_id": entity_id, "position": pos},
+                )
+
+    @property
+    def description(self) -> str:
+        """Return the description."""
+        configured = [k.replace("uuid_", "").replace("_vo", "") for k in self._vo_uuids()]
+        vo_desc = ", ".join(configured) if configured else "position-only"
+        return f"Cover bridge: position VI + VOs [{vo_desc}], bidirectional"
+
+
+# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -452,6 +538,7 @@ _LIGHT_CIRCUIT_TYPES = {"Dimmer", "EIBDimmer", "Switch", "ColorPickerV2"}
 
 _SUPPORTED_DOMAINS = frozenset(
     {
+        "cover",
         "light",
         "switch",
         "binary_sensor",
@@ -489,5 +576,8 @@ def get_mapper(bridge: DeviceBridge, entity_domain: str) -> BridgeMapper:
 
     if entity_domain == "input_boolean":
         return InputBooleanMapper(bridge)
+
+    if entity_domain == "cover":
+        return CoverMapper(bridge)
 
     raise ValueError(f"No mapper for entity domain '{entity_domain}' with Loxone type '{lox_type}'")

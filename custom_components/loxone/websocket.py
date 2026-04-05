@@ -378,6 +378,7 @@ def ws_get_bridges(
         vol.Required("entity_id"): str,
         vol.Required("loxone_uuid"): str,
         vol.Optional("miniserver"): str,
+        vol.Optional("details"): {str: str},
     }
 )
 @websocket_api.async_response
@@ -399,6 +400,7 @@ async def ws_add_bridge(
 
     entity_id: str = msg["entity_id"]
     loxone_uuid: str = msg["loxone_uuid"]
+    extra_details: dict[str, str] = msg.get("details", {})
 
     for ab in bridge_runtime.active_bridges:
         if ab.bridge.entity_id == entity_id:
@@ -429,12 +431,19 @@ async def ws_add_bridge(
                 break
 
     entity_domain = entity_id.split(".", maxsplit=1)[0]
+
+    # For cover entities the loxone_type sentinel is "cover"; the actual
+    # control types (Slider VIs, VOs) are carried in details.
+    if entity_domain == "cover" and not loxone_type:
+        loxone_type = "cover"
+
     bridge = DeviceBridge(
         entity_id=entity_id,
         loxone_uuid=loxone_uuid,
         loxone_type=loxone_type,
         loxone_name=loxone_name,
         loxone_states=loxone_states,
+        details=extra_details,
     )
 
     try:
@@ -741,27 +750,59 @@ def ws_get_control_detail(
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
 
-    api = coordinator.api
-    controls = api.controls if api else {}
+    structure = coordinator.api.structure_file or {}
+    controls_raw = structure.get("controls", {})
+    rooms = structure.get("rooms", {})
+    cats = structure.get("cats", {})
+
     uuid = msg["uuid"]
-    ctrl = controls.get(uuid)
+
+    # Build a flat lookup keyed by uuidAction (the UUID exposed to the frontend),
+    # including sub-controls.  ws_get_devices uses uuidAction as the device UUID,
+    # so we must resolve the same way here.
+    ctrl: dict | None = None
+    parent_ctrl: dict | None = None
+
+    for raw_uuid, top_ctrl in controls_raw.items():
+        top_action = top_ctrl.get("uuidAction", raw_uuid)
+        if top_action == uuid or raw_uuid == uuid:
+            ctrl = top_ctrl
+            break
+        for sc_key, sc in top_ctrl.get("subControls", {}).items():
+            sc_action = sc.get("uuidAction", sc_key)
+            if sc_action == uuid or sc_key == uuid:
+                ctrl = sc
+                parent_ctrl = top_ctrl
+                break
+        if ctrl is not None:
+            break
+
     if ctrl is None:
         connection.send_error(msg["id"], "not_found", f"Control {uuid} not found")
         return
-
-    rooms = api.rooms if api else {}
-    cats = api.categories if api else {}
 
     room_uuid = ctrl.get("room", "")
     cat_uuid = ctrl.get("cat", "")
     room_name = rooms.get(room_uuid, {}).get("name", "") if room_uuid else ""
     cat_name = cats.get(cat_uuid, {}).get("name", "") if cat_uuid else ""
-    parent_uuid = ctrl.get("parentUuid")
+
+    # Determine parent info (sub-controls carry a "parentUuid" key in the raw structure;
+    # we also track it via parent_ctrl found above).
     parent_name = None
     is_sub = False
-    if parent_uuid and parent_uuid in controls:
-        parent_name = controls[parent_uuid].get("name", parent_uuid)
+    if parent_ctrl is not None:
+        parent_name = parent_ctrl.get("name", "")
         is_sub = True
+    elif ctrl.get("parentUuid"):
+        parent_uuid = ctrl["parentUuid"]
+        for top_ctrl in controls_raw.values():
+            if (
+                top_ctrl.get("uuidAction", "") == parent_uuid
+                or top_ctrl.get("uuidAction", top_ctrl.get("name")) == parent_uuid
+            ):
+                parent_name = top_ctrl.get("name", parent_uuid)
+                is_sub = True
+                break
 
     states_raw = ctrl.get("states", {})
     state_map: dict[str, dict] = {}
@@ -789,7 +830,7 @@ def ws_get_control_detail(
                 }
             )
 
-    safe_keys = {"name", "type", "room", "cat", "states", "parentUuid"}
+    safe_keys = {"name", "type", "room", "cat", "states", "parentUuid", "uuidAction", "subControls"}
     details = {k: v for k, v in ctrl.items() if k not in safe_keys and not k.startswith("_")}
 
     connection.send_result(
@@ -833,25 +874,27 @@ def ws_get_structure(
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
         return
 
-    api = coordinator.api
-    controls = api.controls if api else {}
-    rooms = api.rooms if api else {}
-    cats = api.categories if api else {}
+    structure = coordinator.api.structure_file or {}
+    controls = structure.get("controls", {})
+    rooms = structure.get("rooms", {})
+    cats = structure.get("cats", {})
 
     room_list = [{"uuid": k, "name": v.get("name", k)} for k, v in rooms.items()]
     cat_list = [{"uuid": k, "name": v.get("name", k)} for k, v in cats.items()]
 
     ctrl_list = []
-    for uuid, c in controls.items():
+    for raw_uuid, c in controls.items():
         if c.get("parentUuid"):
             continue
+        uuid_action = c.get("uuidAction", raw_uuid)
         state_names = list((c.get("states") or {}).keys())
         subs = []
-        for suuid, sc in c.get("subControls", {}).items():
+        for sc_key, sc in c.get("subControls", {}).items():
+            sc_uuid_action = sc.get("uuidAction", sc_key)
             subs.append(
                 {
-                    "uuid": suuid,
-                    "name": sc.get("name", suuid),
+                    "uuid": sc_uuid_action,
+                    "name": sc.get("name", sc_key),
                     "type": sc.get("type", ""),
                     "states": list((sc.get("states") or {}).keys()),
                 }
@@ -860,8 +903,8 @@ def ws_get_structure(
         cat_uuid = c.get("cat", "")
         ctrl_list.append(
             {
-                "uuid": uuid,
-                "name": c.get("name", uuid),
+                "uuid": uuid_action,
+                "name": c.get("name", uuid_action),
                 "type": c.get("type", ""),
                 "room": rooms.get(room_uuid, {}).get("name", "") if room_uuid else "",
                 "category": cats.get(cat_uuid, {}).get("name", "") if cat_uuid else "",

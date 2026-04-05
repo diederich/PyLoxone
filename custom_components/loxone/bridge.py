@@ -29,7 +29,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
-from .bridge_mappers import get_mapper
+from .bridge_mappers import _COVER_VO_KEYS, get_mapper
 from .bridge_types import DEFAULT_COOLDOWN, VALUE_EPSILON, BridgeMapper, DeviceBridge
 from .const import DOMAIN
 
@@ -91,8 +91,19 @@ class BridgeRuntime:
 
     @property
     def bridged_uuids(self) -> set[str]:
-        """Loxone ``uuidAction`` values currently used by a bridge."""
-        return {ab.bridge.loxone_uuid for ab in self._active}
+        """Loxone ``uuidAction`` values currently used by a bridge.
+
+        Includes VO state UUIDs from cover bridges so that those controls
+        are also tracked for entity disable/re-enable bookkeeping.
+        """
+        uuids: set[str] = set()
+        for ab in self._active:
+            uuids.add(ab.bridge.loxone_uuid)
+            for k in _COVER_VO_KEYS:
+                vo_uuid = ab.bridge.details.get(k, "")
+                if vo_uuid:
+                    uuids.add(vo_uuid)
+        return uuids
 
     async def async_setup(self) -> None:
         """Restore persisted bridges and start listeners."""
@@ -173,10 +184,14 @@ class BridgeRuntime:
 
     def unregister_bridge(self, ab: _ActiveBridge) -> None:
         """Tear down a bridge, re-enable native entities, and save options."""
-        removed_uuid = ab.bridge.loxone_uuid
+        removed_uuids = {ab.bridge.loxone_uuid}
+        for k in _COVER_VO_KEYS:
+            vo_uuid = ab.bridge.details.get(k, "")
+            if vo_uuid:
+                removed_uuids.add(vo_uuid)
         self._deactivate(ab)
         self._active.remove(ab)
-        self._reenable_entities({removed_uuid})
+        self._reenable_entities(removed_uuids)
         self._persist()
 
     def _activate(self, bridge: DeviceBridge) -> None:

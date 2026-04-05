@@ -97,23 +97,43 @@ Maps a single HA entity (e.g. a Hue light, EP One sensor) to a single Loxone con
 
 ### Supported mappings
 
-| HA Domain        | Loxone Type      | Behaviour                                       |
-| ---------------- | ---------------- | ----------------------------------------------- |
-| `light`          | `ColorPickerV2`  | Brightness + HS color + color temp, bidirectional. Protocol: `hsv(h,s,v)` / `temp(brightness,kelvin)` |
+| HA Domain        | Loxone Type          | Behaviour                                       |
+| ---------------- | -------------------- | ----------------------------------------------- |
+| `light`          | `ColorPickerV2`      | Brightness + HS color + color temp, bidirectional. Protocol: `hsv(h,s,v)` / `temp(brightness,kelvin)` |
 | `light`          | `Dimmer`/`EIBDimmer` | Brightness (0-255 ↔ 0-100) + on/off, bidirectional |
-| `light`          | `Switch`         | On/off only, bidirectional                      |
-| `switch`         | `Switch`         | On/off, bidirectional                           |
-| `binary_sensor`  | `Switch` (VI)    | Expose only (HA state → 0/1)                   |
-| `sensor`         | `Slider` (VI)    | Expose only (HA state → float)                 |
+| `light`          | `Switch`             | On/off only, bidirectional                      |
+| `switch`         | `Switch`             | On/off, bidirectional                           |
+| `binary_sensor`  | `Switch` (VI)        | Expose only (HA state → 0/1)                   |
+| `sensor`         | `Slider` (VI)        | Expose only (HA state → float)                 |
+| `number` / `input_number` | `Slider` (VI) | Bidirectional float value, no scaling          |
+| `input_boolean`  | `Switch` (VI)        | On/off, bidirectional                           |
+| `cover`          | compound VI + VOs    | Bidirectional position bridge — see below       |
+
+#### Cover bridge (`CoverMapper`)
+
+A cover bridge is **compound**: one entry maps to multiple Loxone controls. All VO fields are optional.
+
+| Field in `DeviceBridge.details` | Loxone block | Role |
+| ------------------------------- | ------------ | ---- |
+| `loxone_uuid` (primary)         | Slider VI    | Position feedback — PyLoxone writes actual position (0–100) here so Loxone always knows where the shade is |
+| `details["uuid_up_vo"]`         | Switch VO    | Drives high when moving up → `cover.open_cover` |
+| `details["uuid_down_vo"]`       | Switch VO    | Drives high when moving down → `cover.close_cover` |
+| `details["uuid_target_vo"]`     | Slider VO    | Target position (0–100) → `cover.set_cover_position` (or open/close at 100/0) |
+
+The bridge panel shows a **Setup Guide** (collapsible) with recommended block names and wiring instructions, and a **Scan Loxone** button that searches the structure file for controls matching a naming convention derived from the entity ID and pre-fills the UUID fields.
+
+Typical Loxone wiring for Velux: a Jalousie block with its up/down/manualPosition outputs connected to VOs, and the Slider VI fed back as the position input. The Jalousie block gives the Loxone app a proper shade tile with up/down/stop UI.
+
+Rain sensors (`binary_sensor.*_rain`) are bridged separately using the existing `BinarySensorExposeMapper` → Switch VI.
 
 ### Key concepts
 
-- **DeviceBridge** — persisted in `config_entry.options["bridges"]`, maps an `entity_id` to a Loxone `uuidAction` + control type + state UUIDs. No manual sync_type, direction, or attribute fields — all derived from the entity domain and control type.
-- **BridgeMapper** — abstract base class with concrete implementations per Loxone control type (`ColorPickerMapper`, `DimmerMapper`, `SwitchMapper`, etc.). Each mapper implements `ha_state_to_command()` (HA → Loxone) and `loxone_value_to_ha()` (Loxone → HA).
+- **DeviceBridge** — persisted in `config_entry.options["bridges"]`, maps an `entity_id` to a Loxone `uuidAction` + control type + state UUIDs. The `details` dict carries extra configuration (e.g. VO UUIDs for cover bridges). All fields derived at bridge creation time from the HA domain and Loxone structure.
+- **BridgeMapper** — abstract base class with concrete implementations per HA domain/Loxone type (`ColorPickerMapper`, `DimmerMapper`, `SwitchMapper`, `CoverMapper`, etc.). Each mapper implements `ha_state_to_command()` (HA → Loxone) and `loxone_value_to_ha()` (Loxone → HA).
 - **BridgeRuntime** — manages bridge lifecycle: activates listeners on HA state changes and Loxone events, applies cooldown (trailing-edge debounce) and echo protection (suppress round-trip loops in bidirectional bridges).
-- **Entity suppression** — when a Loxone sub-control is used in a bridge, the integration skips creating the native HA entity for it, preventing duplicates.
-- **Options Flow UI** — menu-based: Settings / Device Bridges, with Add Bridge (entity selector + Loxone control picker) / Remove Bridge / Done steps. The control picker shows both top-level controls and LightControllerV2 sub-controls from the structure file.
-- **Direction auto-detection** — derived from the Loxone control type and available state UUIDs. Sub-controls with feedback states (e.g. `position` for Dimmer, `color` for ColorPickerV2) are bidirectional; top-level VIs without feedback are expose-only.
+- **Entity suppression** — when a Loxone control is used in a bridge, the integration disables the native HA entity for it, preventing duplicates. All UUIDs (including cover VO UUIDs) are tracked in `bridged_uuids` for this purpose.
+- **Options Flow UI** — menu-based: Settings / Device Bridges, with Add Bridge (entity selector + Loxone control picker) / Remove Bridge / Done steps. Cover bridges show additional VO pickers, a setup guide, and a Scan button.
+- **Direction auto-detection** — derived from the Loxone control type and available state UUIDs. Sub-controls with feedback states are bidirectional; top-level VIs without feedback are expose-only. Cover bridges derive directionality from which VO fields are populated.
 
 ## Coordinator (`coordinator.py`)
 
