@@ -1,5 +1,7 @@
-import logging
+"""Loxone integration — light."""
+
 from enum import StrEnum
+import logging
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -30,12 +32,16 @@ class LoxoneLights(StrEnum):
 
 
 class ColorPickerTypes(StrEnum):
+    """Represent color picker types."""
+
     RGB = "Rgb"
     LUMITECH = "Lumitech"
     TUNABLEWHITE = "TunableWhite"
 
 
 class DimmerTypes(StrEnum):
+    """Represent dimmer types."""
+
     DIMMER = "Dimmer"
     EIBDIMMER = "EIBDimmer"
 
@@ -47,9 +53,7 @@ async def async_setup_entry(
 ) -> None:
     """Set up Loxone Light Controller."""
     coordinator: LoxoneCoordinator = config_entry.runtime_data
-    generate_subcontrols = config_entry.options.get(
-        "generate_lightcontroller_subcontrols", False
-    )
+    generate_subcontrols = config_entry.options.get("generate_lightcontroller_subcontrols", False)
     loxconfig = coordinator.api.structure_file
     entities = []
     dimmers_without_light_controller = get_all(loxconfig, ["Dimmer", "EIBDimmer"])
@@ -94,7 +98,7 @@ async def async_setup_entry(
                     color_pickers.append(sub_control)
 
                 else:
-                    _LOGGER.debug(f"Not supported type found {sub_control['type']}")
+                    _LOGGER.debug("Not supported type found %s", sub_control["type"])
 
     for switch in switches:
         new_switch = LoxoneLightSwitch(**switch)
@@ -117,7 +121,7 @@ async def async_setup_entry(
             new_eib_dimmer = EIBDimmer(**dimmer)
             entities.append(new_eib_dimmer)
         else:
-            _LOGGER.error(f"Not implemented Dimmer Type {dimmer['type']}")
+            _LOGGER.error("Not implemented Dimmer Type %s", dimmer["type"])
 
     for color_picker in color_pickers:
         if color_picker.get("details", None):
@@ -134,9 +138,11 @@ async def async_setup_entry(
                     entities.append(new_tunablewhite_picker)
                 else:
                     _LOGGER.error(
-                        f"Not implemented Colorpicker Type {picker_type} for {color_picker}"
+                        "Not implemented Colorpicker Type %s for %s",
+                        picker_type,
+                        color_picker,
                     )
             else:
-                _LOGGER.error(f"Could not read picker_type of colorpicker")
+                _LOGGER.error("Could not read picker_type of colorpicker")
 
     async_add_entities(entities)

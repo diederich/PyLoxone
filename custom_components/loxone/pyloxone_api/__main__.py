@@ -1,5 +1,4 @@
-"""
-A quick test of the pyloxone_api module
+"""A quick test of the pyloxone_api module.
 
 From the command line, run:
 
@@ -23,10 +22,11 @@ _LOGGER.addHandler(logging.StreamHandler())
 
 
 async def call_back_loxone(data) -> None:
-    print("call_back_loxone", data)
+    """Call back loxone."""
 
 
 async def main() -> None:
+    """Main."""
     api = LoxoneConnection(
         host=sys.argv[1],
         port=int(sys.argv[2]),

@@ -7,17 +7,14 @@ Requires LOXONE_HOST, LOXONE_USERNAME, LOXONE_PASSWORD env vars (or .env).
 """
 
 import asyncio
-import json
 from collections import Counter
-from datetime import datetime
-from pathlib import Path
+import contextlib
+from datetime import UTC, datetime
+import json
 
 import pytest
 
-from tests.components.loxone.known_types import (
-    KNOWN_CONTROL_TYPES,
-    KNOWN_SUBCONTROL_TYPES,
-)
+from tests.components.loxone.known_types import KNOWN_CONTROL_TYPES, KNOWN_SUBCONTROL_TYPES
 
 
 class TestConnection:
@@ -70,10 +67,7 @@ class TestControlTypeCoverage:
 
         if unhandled:
             total_unhandled = sum(type_counter[t] for t in unhandled)
-            print(
-                f"\n=== Unhandled Control Types: "
-                f"{len(unhandled)} types, {total_unhandled} controls total ==="
-            )
+            print(f"\n=== Unhandled Control Types: {len(unhandled)} types, {total_unhandled} controls total ===")
             for ctype in unhandled:
                 print(f"\n--- {ctype} ({type_counter[ctype]} instances) — example: ---")
                 print(json.dumps(examples[ctype], indent=2, ensure_ascii=False))
@@ -108,10 +102,7 @@ class TestControlTypeCoverage:
 
         if unhandled:
             total_unhandled = sum(sub_counter[t] for t in unhandled)
-            print(
-                f"\n=== Unhandled SubControl Types: "
-                f"{len(unhandled)} types, {total_unhandled} total ==="
-            )
+            print(f"\n=== Unhandled SubControl Types: {len(unhandled)} types, {total_unhandled} total ===")
             for stype in unhandled:
                 print(f"\n--- {stype} ({sub_counter[stype]} instances) — example: ---")
                 print(json.dumps(sub_examples[stype], indent=2, ensure_ascii=False))
@@ -154,9 +145,7 @@ class TestStructureIntegrity:
         stateless = []
         for uuid, control in controls.items():
             if "states" not in control or not control["states"]:
-                stateless.append(
-                    (control.get("name", uuid), control.get("type", "?"))
-                )
+                stateless.append((control.get("name", uuid), control.get("type", "?")))
 
         if stateless:
             print(f"\nControls without states ({len(stateless)}):")
@@ -175,9 +164,7 @@ class TestWebSocket:
         def callback(message):
             received.append(message)
 
-        listen_task = asyncio.create_task(
-            loxone_connection.start_listening(callback)
-        )
+        listen_task = asyncio.create_task(loxone_connection.start_listening(callback))
 
         try:
             for _ in range(30):
@@ -185,17 +172,12 @@ class TestWebSocket:
                 if received:
                     break
 
-            assert received, (
-                "No state updates received within 15 seconds. "
-                "Is the Miniserver actively sending data?"
-            )
+            assert received, "No state updates received within 15 seconds. Is the Miniserver actively sending data?"
             print(f"\nReceived {len(received)} message(s) from WebSocket.")
         finally:
             listen_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError, Exception):
                 await listen_task
-            except (asyncio.CancelledError, Exception):
-                pass
 
 
 class TestCommandRoundtrip:
@@ -215,9 +197,7 @@ class TestCommandRoundtrip:
         if not sensor_uuid:
             pytest.skip("No InfoOnlyAnalog sensor found to test against")
 
-        response = await loxone_connection.send_websocket_command(
-            sensor_uuid, "status"
-        )
+        response = await loxone_connection.send_websocket_command(sensor_uuid, "status")
         print(f"\nCommand roundtrip to '{sensor_name}' ({sensor_uuid}): response={response}")
 
 
@@ -227,11 +207,9 @@ class TestSnapshot:
     def test_save_structure_snapshot(self, structure_file, snapshot_dir, capsys):
         ms = structure_file.get("msInfo", {})
         serial = ms.get("serialNr", "UNKNOWN")
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now(UTC).strftime("%Y%m%d_%H%M%S")
         filename = f"{serial}_{timestamp}.json"
 
         path = snapshot_dir / filename
-        path.write_text(
-            json.dumps(structure_file, indent=2, ensure_ascii=False) + "\n"
-        )
+        path.write_text(json.dumps(structure_file, indent=2, ensure_ascii=False) + "\n")
         print(f"\nSnapshot saved: {path}")

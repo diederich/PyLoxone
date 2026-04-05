@@ -5,20 +5,16 @@ in RGBColorPicker.async_turn_on).
 """
 
 import json
-from copy import deepcopy
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pytest
-from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_HS_COLOR, ATTR_COLOR_TEMP_KELVIN
-from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from tests.components.loxone.conftest import fire_loxone_event
+from custom_components.loxone.const import CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, SENDDOMAIN
+from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_HS_COLOR
+from homeassistant.core import HomeAssistant
 
-from custom_components.loxone.const import (
-    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
-    SENDDOMAIN,
-)
+from .conftest import fire_loxone_event
 
 
 @pytest.fixture
@@ -39,17 +35,13 @@ DIMMER_POSITION_UUID = "dim10000-0000-0000-0000000000000001"
 # -- Entity creation ----------------------------------------------------------
 
 
-async def test_light_controller_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_light_controller_created(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """LightControllerV2 should create a light entity."""
     state = hass.states.get(LC_ENTITY_ID)
     assert state is not None
 
 
-async def test_dimmer_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_dimmer_created(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Standalone Dimmer should create a light entity."""
     state = hass.states.get(DIMMER_ENTITY_ID)
     assert state is not None
@@ -58,14 +50,14 @@ async def test_dimmer_created(
 # -- LightControllerV2: mood JSON parsing (BUG-008 regression) ---------------
 
 
-async def test_mood_list_parsed_from_json(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """moodList event (JSON with true/false) should parse via json.loads."""
-    mood_data = json.dumps([
-        {"id": 99, "name": "Default", "static": False, "used": True},
-        {"id": 100, "name": "Movie", "static": False, "used": True},
-    ])
+async def test_mood_list_parsed_from_json(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """MoodList event (JSON with true/false) should parse via json.loads."""
+    mood_data = json.dumps(
+        [
+            {"id": 99, "name": "Default", "static": False, "used": True},
+            {"id": 100, "name": "Movie", "static": False, "used": True},
+        ]
+    )
     fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
 
@@ -75,11 +67,10 @@ async def test_mood_list_parsed_from_json(
     assert "Movie" in effects
 
 
-async def test_mood_list_with_json_booleans(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_mood_list_with_json_booleans(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """JSON booleans (true/false) must parse correctly — old eval() code
-    required string replacement to Python True/False first."""
+    required string replacement to Python True/False first.
+    """
     raw_json = '[{"id":99,"name":"Bright","static":true,"used":false}]'
     fire_loxone_event(hass, {LC_MOOD_LIST_UUID: raw_json})
     await hass.async_block_till_done()
@@ -89,10 +80,8 @@ async def test_mood_list_with_json_booleans(
     assert "Bright" in effects
 
 
-async def test_active_moods_parsed_from_json(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """activeMoods event should parse a JSON integer array."""
+async def test_active_moods_parsed_from_json(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """ActiveMoods event should parse a JSON integer array."""
     mood_data = json.dumps([{"id": 99, "name": "Default"}, {"id": 100, "name": "Movie"}])
     fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
@@ -104,10 +93,8 @@ async def test_active_moods_parsed_from_json(
     assert state.attributes.get("effect") == "Default"
 
 
-async def test_additional_moods_parsed_from_json(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
-    """additionalMoods event should parse a JSON array without error."""
+async def test_additional_moods_parsed_from_json(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """AdditionalMoods event should parse a JSON array without error."""
     fire_loxone_event(hass, {LC_ADDITIONAL_MOODS_UUID: "[100, 101]"})
     await hass.async_block_till_done()
 
@@ -118,16 +105,12 @@ async def test_additional_moods_parsed_from_json(
 # -- LightControllerV2: turn on/off commands ----------------------------------
 
 
-async def test_light_controller_turn_off(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_light_controller_turn_off(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """turn_off should send changeTo/0."""
     events = []
     hass.bus.async_listen(SENDDOMAIN, lambda e: events.append(e))
 
-    await hass.services.async_call(
-        "light", "turn_off", {"entity_id": LC_ENTITY_ID}, blocking=True
-    )
+    await hass.services.async_call("light", "turn_off", {"entity_id": LC_ENTITY_ID}, blocking=True)
     await hass.async_block_till_done()
 
     assert len(events) == 1
@@ -135,14 +118,14 @@ async def test_light_controller_turn_off(
     assert events[0].data["value"] == "changeTo/0"
 
 
-async def test_light_controller_turn_on_with_effect(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_light_controller_turn_on_with_effect(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """turn_on with effect should send changeTo/<mood_id>."""
-    mood_data = json.dumps([
-        {"id": 99, "name": "Default"},
-        {"id": 100, "name": "Movie"},
-    ])
+    mood_data = json.dumps(
+        [
+            {"id": 99, "name": "Default"},
+            {"id": 100, "name": "Movie"},
+        ]
+    )
     fire_loxone_event(hass, {LC_MOOD_LIST_UUID: mood_data})
     await hass.async_block_till_done()
 
@@ -246,9 +229,7 @@ async def test_rgb_turn_on_without_prior_state(
     events = []
     hass.bus.async_listen(SENDDOMAIN, lambda e: events.append(e))
 
-    await hass.services.async_call(
-        "light", "turn_on", {"entity_id": RGB_ENTITY_ID}, blocking=True
-    )
+    await hass.services.async_call("light", "turn_on", {"entity_id": RGB_ENTITY_ID}, blocking=True)
     await hass.async_block_till_done()
 
     assert len(events) == 1

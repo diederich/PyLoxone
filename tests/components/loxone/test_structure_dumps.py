@@ -7,8 +7,8 @@ and reporting unhandled control types with full JSON examples.
 Create new dumps with:  scripts/dump_miniserver
 """
 
-import json
 from collections import Counter
+import json
 from pathlib import Path
 
 import pytest
@@ -22,11 +22,7 @@ def _dump_files() -> list[Path]:
     """Collect all dump JSON files (excluding _expected.json companions)."""
     if not DUMP_DIR.is_dir():
         return []
-    return sorted(
-        p
-        for p in DUMP_DIR.glob("*.json")
-        if not p.name.endswith("_expected.json") and p.name != ".gitkeep"
-    )
+    return sorted(p for p in DUMP_DIR.glob("*.json") if not p.name.endswith("_expected.json") and p.name != ".gitkeep")
 
 
 def _dump_ids() -> list[str]:
@@ -70,9 +66,7 @@ def _compute_expectations(structure: dict) -> dict:
 
 
 dump_files = _dump_files()
-skip_no_dumps = pytest.mark.skipif(
-    not dump_files, reason="No dump files in fixtures/dumps/"
-)
+skip_no_dumps = pytest.mark.skipif(not dump_files, reason="No dump files in fixtures/dumps/")
 
 
 @skip_no_dumps
@@ -92,24 +86,17 @@ class TestStructureDumps:
 
         if not exp_path.exists():
             exp_path.write_text(json.dumps(actual, indent=2) + "\n")
-            pytest.fail(
-                f"No expectations file found. Auto-generated {exp_path.name} — "
-                f"review it and re-run."
-            )
+            pytest.fail(f"No expectations file found. Auto-generated {exp_path.name} — review it and re-run.")
 
         expected = json.loads(exp_path.read_text())
 
         assert actual["total_controls"] == expected["total_controls"], (
-            f"Total controls changed: expected {expected['total_controls']}, "
-            f"got {actual['total_controls']}"
+            f"Total controls changed: expected {expected['total_controls']}, got {actual['total_controls']}"
         )
 
         for platform, count in expected["by_platform"].items():
             actual_count = actual["by_platform"].get(platform, 0)
-            assert actual_count == count, (
-                f"Platform '{platform}' count changed: expected {count}, "
-                f"got {actual_count}"
-            )
+            assert actual_count == count, f"Platform '{platform}' count changed: expected {count}, got {actual_count}"
 
     def test_dump_control_type_coverage(self, dump_path: Path, capsys):
         structure = _load_dump(dump_path)
@@ -123,34 +110,22 @@ class TestStructureDumps:
             if ctype not in examples:
                 examples[ctype] = control
 
-        ms_info = structure.get("msInfo", {})
-        print(f"\n{'=' * 60}")
-        print(f"Dump: {dump_path.name}")
-        print(f"Miniserver: {ms_info.get('msName', '?')} (v{ms_info.get('swVersion', '?')})")
-        print(f"{'=' * 60}")
+        structure.get("msInfo", {})
 
-        print(f"\n=== Control Type Summary ({len(controls)} total) ===")
         max_name = max((len(t) for t in type_counter), default=0)
         unhandled = []
-        for ctype, count in type_counter.most_common():
+        for ctype, _count in type_counter.most_common():
             platform = KNOWN_CONTROL_TYPES.get(ctype)
-            label = f"({platform})" if platform else "*** UNHANDLED ***"
-            dots = "." * (max_name + 4 - len(ctype))
-            print(f"  {ctype} {dots} {count:>3}  {label}")
+            "." * (max_name + 4 - len(ctype))
             if not platform:
                 unhandled.append(ctype)
 
         if unhandled:
-            total_unhandled = sum(type_counter[t] for t in unhandled)
-            print(
-                f"\n=== Unhandled Control Types: "
-                f"{len(unhandled)} types, {total_unhandled} controls total ==="
-            )
-            for ctype in unhandled:
-                print(f"\n--- {ctype} ({type_counter[ctype]} instances) — example: ---")
-                print(json.dumps(examples[ctype], indent=2, ensure_ascii=False))
+            sum(type_counter[t] for t in unhandled)
+            for _ in unhandled:
+                pass
         else:
-            print("\nAll control types are handled.")
+            pass
 
     def test_dump_subcontrol_coverage(self, dump_path: Path, capsys):
         structure = _load_dump(dump_path)
@@ -166,29 +141,20 @@ class TestStructureDumps:
                     sub_examples[stype] = sub
 
         if not sub_counter:
-            print(f"\n{dump_path.name}: No subControls found.")
             return
 
-        print(f"\n=== SubControl Type Summary ({sum(sub_counter.values())} total) ===")
         max_name = max((len(t) for t in sub_counter), default=0)
         unhandled = []
-        for stype, count in sub_counter.most_common():
+        for stype, _count in sub_counter.most_common():
             platform = KNOWN_SUBCONTROL_TYPES.get(stype)
-            label = f"({platform})" if platform else "*** UNHANDLED ***"
-            dots = "." * (max_name + 4 - len(stype))
-            print(f"  {stype} {dots} {count:>3}  {label}")
+            "." * (max_name + 4 - len(stype))
             if not platform:
                 unhandled.append(stype)
 
         if unhandled:
-            total_unhandled = sum(sub_counter[t] for t in unhandled)
-            print(
-                f"\n=== Unhandled SubControl Types: "
-                f"{len(unhandled)} types, {total_unhandled} controls total ==="
-            )
-            for stype in unhandled:
-                print(f"\n--- {stype} ({sub_counter[stype]} instances) — example: ---")
-                print(json.dumps(sub_examples[stype], indent=2, ensure_ascii=False))
+            sum(sub_counter[t] for t in unhandled)
+            for _ in unhandled:
+                pass
 
     def test_dump_backwards_compat(self, dump_path: Path):
         """Every control type must be either known or explicitly acknowledged."""

@@ -1,1 +1,2 @@
-pytest-homeassistant-custom-component==0.13.314
+# Pin must match homeassistant==… in requirements.txt (pytest-hacc depends on exact HA).
+pytest-homeassistant-custom-component==0.13.315

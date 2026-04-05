@@ -9,7 +9,6 @@ from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_USERNAME
 from homeassistant.core import HomeAssistant
 
 from . import LoxoneConfigEntry
-from .const import DOMAIN
 
 TO_REDACT_CONFIG = {CONF_USERNAME, CONF_PASSWORD, CONF_HOST, "token", "hash_alg"}
 TO_REDACT_STRUCTURE = {"msInfo", "users", "autopilot", "caller"}
@@ -25,13 +24,11 @@ def _redact_structure(structure: dict) -> dict:
             result[key] = _summarise_controls(value)
         elif key == "rooms":
             result[key] = {
-                uid: {"name": r.get("name", ""), "type": r.get("type", "")}
-                for uid, r in (value or {}).items()
+                uid: {"name": r.get("name", ""), "type": r.get("type", "")} for uid, r in (value or {}).items()
             }
         elif key == "cats":
             result[key] = {
-                uid: {"name": c.get("name", ""), "type": c.get("type", "")}
-                for uid, c in (value or {}).items()
+                uid: {"name": c.get("name", ""), "type": c.get("type", "")} for uid, c in (value or {}).items()
             }
         else:
             result[key] = value
@@ -65,9 +62,7 @@ def _summarise_controls(controls: dict | None) -> dict:
     return summary
 
 
-async def async_get_config_entry_diagnostics(
-    hass: HomeAssistant, config_entry: LoxoneConfigEntry
-) -> dict[str, Any]:
+async def async_get_config_entry_diagnostics(hass: HomeAssistant, config_entry: LoxoneConfigEntry) -> dict[str, Any]:
     """Return diagnostics for a config entry."""
     diag: dict[str, Any] = {
         "config_entry": async_redact_data(
@@ -93,9 +88,7 @@ async def async_get_config_entry_diagnostics(
             }
 
         if coordinator.api and coordinator.api.structure_file:
-            diag["structure"] = _redact_structure(
-                coordinator.api.structure_file
-            )
+            diag["structure"] = _redact_structure(coordinator.api.structure_file)
         else:
             diag["structure"] = None
 

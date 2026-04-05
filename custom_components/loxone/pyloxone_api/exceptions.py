@@ -39,10 +39,12 @@ class LoxoneCommandError(LoxoneException):
     """Command rejected by Miniserver."""
 
     def __init__(self, code: int, message: str) -> None:
+        """Initialize the LoxoneCommandError."""
         self.code = code
         self.message = message
 
     def __str__(self) -> str:
+        """Return str."""
         return f"{self.code}: {self.message}"
 
 

@@ -49,25 +49,26 @@ class LoxoneText(LoxoneEntity, TextEntity):
     _attr_name = None
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneText."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._attr_native_value = ""
         self.type = "TextInput"
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self.states["text"] in e:
             self._attr_native_value = str(e[self.states["text"]])
             self.async_schedule_update_ha_state()
 
     async def async_set_value(self, value: str) -> None:
         """Set new value."""
-        self.hass.bus.async_fire(
-            SENDDOMAIN, dict(uuid=self.uuidAction, value=value)
-        )
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": value})
         self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
+        """Return extra state attributes for this entity."""
         return {
             **self._attr_extra_state_attributes,
             "state_uuid": self.states["text"],

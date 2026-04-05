@@ -1,15 +1,10 @@
 """Tests for the loxone.sync_areas service."""
 
 import pytest
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import (
-    area_registry as ar,
-    device_registry as dr,
-    entity_registry as er,
-)
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import DOMAIN
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 
 pytestmark = pytest.mark.usefixtures("init_integration")
 
@@ -44,19 +39,13 @@ async def test_sync_areas_assigns_area_to_device(
     area = ar_registry.async_get_area_by_name("Living Room")
     assert area is not None
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
 
     for entity_id in ("switch.wall_switch", "switch.bathroom_fan"):
         device = _get_device_for_entity(hass, entity_id)
-        assert device.area_id == area.id, (
-            f"device for {entity_id} should be in Living Room"
-        )
+        assert device.area_id == area.id, f"device for {entity_id} should be in Living Room"
         entry = er_registry.async_get(entity_id)
-        assert entry.area_id is None, (
-            f"{entity_id} should have no entity-level area override"
-        )
+        assert entry.area_id is None, f"{entity_id} should have no entity-level area override"
 
 
 # -- Entity override cleanup --------------------------------------------------
@@ -66,7 +55,8 @@ async def test_sync_areas_clears_entity_level_area_overrides(
     hass: HomeAssistant,
 ) -> None:
     """sync_areas should clear stale entity-level area_id overrides
-    (left by the old upstream implementation) so entities inherit from device."""
+    (left by the old upstream implementation) so entities inherit from device.
+    """
     ar_registry = ar.async_get(hass)
     er_registry = er.async_get(hass)
 
@@ -77,9 +67,7 @@ async def test_sync_areas_clears_entity_level_area_overrides(
     entry = er_registry.async_get("switch.wall_switch")
     assert entry.area_id == area.id
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
 
     entry = er_registry.async_get("switch.wall_switch")
     assert entry.area_id is None, "entity-level override should be cleared"
@@ -100,9 +88,7 @@ async def test_sync_areas_create_areas_true_recreates_deleted_area(
     ar_registry.async_delete(area.id)
     assert ar_registry.async_get_area_by_name("Living Room") is None
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
 
     area = ar_registry.async_get_area_by_name("Living Room")
     assert area is not None, "Area should be recreated with create_areas=true"
@@ -119,9 +105,7 @@ async def test_sync_areas_create_areas_false_does_not_create(
     area = ar_registry.async_get_area_by_name("Living Room")
     ar_registry.async_delete(area.id)
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": False}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": False}, blocking=True)
 
     assert ar_registry.async_get_area_by_name("Living Room") is None
     device = _get_device_for_entity(hass, "switch.wall_switch")
@@ -153,9 +137,7 @@ async def test_sync_areas_reassigns_device_after_area_deleted(
     """After deleting an area, sync_areas should recreate and re-assign device."""
     ar_registry = ar.async_get(hass)
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
     area = ar_registry.async_get_area_by_name("Living Room")
     old_area_id = area.id
     device = _get_device_for_entity(hass, "switch.wall_switch")
@@ -165,9 +147,7 @@ async def test_sync_areas_reassigns_device_after_area_deleted(
     device = _get_device_for_entity(hass, "switch.wall_switch")
     assert device.area_id is None
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
 
     new_area = ar_registry.async_get_area_by_name("Living Room")
     assert new_area is not None
@@ -194,14 +174,10 @@ async def test_sync_areas_moves_device_from_wrong_area(
     device = dr_registry.async_get(device.id)
     assert device.area_id == wrong_area.id
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
 
     device = _get_device_for_entity(hass, "switch.wall_switch")
-    assert device.area_id == right_area.id, (
-        "Device should be moved from Kitchen to Living Room"
-    )
+    assert device.area_id == right_area.id, "Device should be moved from Kitchen to Living Room"
 
 
 # -- Idempotency --------------------------------------------------------------
@@ -214,16 +190,12 @@ async def test_sync_areas_is_idempotent(
     ar_registry = ar.async_get(hass)
     er_registry = er.async_get(hass)
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
     area = ar_registry.async_get_area_by_name("Living Room")
     device = _get_device_for_entity(hass, "switch.wall_switch")
     assert device.area_id == area.id
 
-    await hass.services.async_call(
-        DOMAIN, "sync_areas", {"create_areas": True}, blocking=True
-    )
+    await hass.services.async_call(DOMAIN, "sync_areas", {"create_areas": True}, blocking=True)
     device = _get_device_for_entity(hass, "switch.wall_switch")
     assert device.area_id == area.id
     entry = er_registry.async_get("switch.wall_switch")

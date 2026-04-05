@@ -11,21 +11,26 @@ coroutine registers both WS commands and the sidebar panel, called from
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import logging
 from pathlib import Path
 from typing import Any
 
 import voluptuous as vol
+
 from homeassistant.components import panel_custom, websocket_api
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.core import HomeAssistant, callback
-from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import area_registry as ar, device_registry as dr, entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.setup import async_setup_component
+from homeassistant.util import dt as dt_util
 
+from .bridge_mappers import get_mapper
+from .bridge_types import DeviceBridge
 from .const import DOMAIN
+from .coordinator import STRUCTURE_DIFF_KEY
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +42,7 @@ def _panel_js_hash() -> str:
     """Short hash of the bundled JS for cache-busting."""
     js_path = Path(PANEL_FRONTEND_PATH) / "loxone-panel.js"
     try:
-        return hashlib.md5(js_path.read_bytes()).hexdigest()[:8]
+        return hashlib.md5(js_path.read_bytes(), usedforsecurity=False).hexdigest()[:8]
     except OSError:
         return "0"
 
@@ -83,8 +88,6 @@ async def register_panel(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_subscribe_logs)
 
     if DOMAIN not in hass.data.get("frontend_panels", {}):
-        from homeassistant.setup import async_setup_component
-
         if not await async_setup_component(hass, "panel_custom", {}):
             _LOGGER.warning("panel_custom not available — Loxone sidebar panel disabled")
             return
@@ -248,18 +251,14 @@ def ws_set_entity_enabled(
         return
 
     if entry.platform != DOMAIN:
-        connection.send_error(
-            msg["id"], "not_loxone", f"Entity {entity_id} is not a Loxone entity"
-        )
+        connection.send_error(msg["id"], "not_loxone", f"Entity {entity_id} is not a Loxone entity")
         return
 
     if enabled:
         if entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION:
             registry.async_update_entity(entity_id, disabled_by=None)
     else:
-        registry.async_update_entity(
-            entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION
-        )
+        registry.async_update_entity(entity_id, disabled_by=er.RegistryEntryDisabler.INTEGRATION)
 
     updated = registry.async_get(entity_id)
     connection.send_result(
@@ -299,14 +298,9 @@ def ws_get_areas(
     area_reg = ar.async_get(hass)
     device_reg = dr.async_get(hass)
 
-    ha_areas = {
-        a.id: {"id": a.id, "name": a.name}
-        for a in area_reg.async_list_areas()
-    }
+    ha_areas = {a.id: {"id": a.id, "name": a.name} for a in area_reg.async_list_areas()}
 
-    ha_area_by_name: dict[str, str] = {
-        a.name.lower(): a.id for a in area_reg.async_list_areas()
-    }
+    ha_area_by_name: dict[str, str] = {a.name.lower(): a.id for a in area_reg.async_list_areas()}
 
     loxone_rooms: list[dict[str, Any]] = []
     for room_uuid, room in rooms.items():
@@ -372,7 +366,7 @@ def ws_get_bridges(
             "loxone_name": ab.bridge.loxone_name,
             "loxone_type": ab.bridge.loxone_type,
         }
-        for ab in bridge_runtime._active
+        for ab in bridge_runtime.active_bridges
     ]
     connection.send_result(msg["id"], {"bridges": bridges})
 
@@ -406,10 +400,11 @@ async def ws_add_bridge(
     entity_id: str = msg["entity_id"]
     loxone_uuid: str = msg["loxone_uuid"]
 
-    for ab in bridge_runtime._active:
+    for ab in bridge_runtime.active_bridges:
         if ab.bridge.entity_id == entity_id:
             connection.send_error(
-                msg["id"], "already_bridged",
+                msg["id"],
+                "already_bridged",
                 f"Entity {entity_id} already has a bridge",
             )
             return
@@ -433,10 +428,7 @@ async def ws_add_bridge(
                 loxone_states = sc.get("states", {})
                 break
 
-    from .bridge import DeviceBridge
-    from .bridge_mappers import get_mapper
-
-    entity_domain = entity_id.split(".")[0]
+    entity_domain = entity_id.split(".", maxsplit=1)[0]
     bridge = DeviceBridge(
         entity_id=entity_id,
         loxone_uuid=loxone_uuid,
@@ -452,9 +444,9 @@ async def ws_add_bridge(
         return
 
     try:
-        bridge_runtime._activate(bridge)
-        bridge_runtime._persist()
-    except Exception as exc:
+        bridge_runtime.register_bridge(bridge)
+        bridge_runtime.persist_bridge_options()
+    except Exception as exc:  # noqa: BLE001 — must catch-all to send WS error response
         connection.send_error(msg["id"], "bridge_error", str(exc))
         return
 
@@ -496,23 +488,20 @@ async def ws_remove_bridge(
 
     entity_id: str = msg["entity_id"]
     found = None
-    for ab in bridge_runtime._active:
+    for ab in bridge_runtime.active_bridges:
         if ab.bridge.entity_id == entity_id:
             found = ab
             break
 
     if found is None:
         connection.send_error(
-            msg["id"], "not_found",
+            msg["id"],
+            "not_found",
             f"No bridge found for entity {entity_id}",
         )
         return
 
-    removed_uuid = found.bridge.loxone_uuid
-    bridge_runtime._deactivate(found)
-    bridge_runtime._active.remove(found)
-    bridge_runtime._reenable_entities({removed_uuid})
-    bridge_runtime._persist()
+    bridge_runtime.unregister_bridge(found)
 
     connection.send_result(msg["id"], {"removed": entity_id})
 
@@ -552,18 +541,16 @@ def ws_get_status(
     loxone_entities = [e for e in entity_reg.entities.values() if e.platform == DOMAIN]
     enabled_entities = [e for e in loxone_entities if e.disabled_by is None]
     disabled_entities = [e for e in loxone_entities if e.disabled_by is not None]
-    entities_without_state = [
-        e.entity_id for e in enabled_entities if hass.states.get(e.entity_id) is None
-    ]
+    entities_without_state = [e.entity_id for e in enabled_entities if hass.states.get(e.entity_id) is None]
 
     bridge_runtime = getattr(coordinator, "bridge_runtime", None)
-    bridge_count = len(bridge_runtime._active) if bridge_runtime else 0
+    bridge_count = len(bridge_runtime.active_bridges) if bridge_runtime else 0
 
     connection.send_result(
         msg["id"],
         {
             "connection_state": coordinator.connection_state.value,
-            "host": f"{coordinator._host}:{coordinator._port}",
+            "host": coordinator.miniserver_addr,
             "miniserver_name": ms_info.get("msName", ""),
             "project_name": ms_info.get("projectName", ""),
             "location": ms_info.get("location", ""),
@@ -630,18 +617,12 @@ def ws_subscribe_events(
 
     @callback
     def _forward_event(message: dict) -> None:
-        from homeassistant.util import dt as dt_util
-
         ts = dt_util.utcnow().isoformat()
         events = []
         for uuid, value in message.items():
             name, room = uuid_to_info.get(uuid, ("", ""))
-            events.append(
-                {"uuid": uuid, "name": name, "room": room, "value": value, "timestamp": ts}
-            )
-        connection.send_message(
-            websocket_api.event_message(msg["id"], {"events": events})
-        )
+            events.append({"uuid": uuid, "name": name, "room": room, "value": value, "timestamp": ts})
+        connection.send_message(websocket_api.event_message(msg["id"], {"events": events}))
 
     unsub = async_dispatcher_connect(hass, coordinator.monitor_signal, _forward_event)
     connection.subscriptions[msg["id"]] = unsub
@@ -675,7 +656,7 @@ async def ws_send_command(
     try:
         await coordinator.api.send_websocket_command(msg["uuid"], msg["command"])
         connection.send_result(msg["id"], {"sent": True, "uuid": msg["uuid"], "command": msg["command"]})
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001 — must catch-all to send WS error response
         connection.send_error(msg["id"], "command_failed", str(exc))
 
 
@@ -696,8 +677,6 @@ def ws_get_structure_diff(
     msg: dict[str, Any],
 ) -> None:
     """Return the last structure diff for the given Miniserver."""
-    from .coordinator import STRUCTURE_DIFF_KEY
-
     coordinator = _get_coordinator(hass, msg.get("miniserver"))
     if coordinator is None:
         connection.send_error(msg["id"], "not_connected", "Loxone Miniserver not connected")
@@ -707,36 +686,40 @@ def ws_get_structure_diff(
     diff = diffs.get(coordinator.config_entry.entry_id)
 
     if diff is None or diff.get("timestamp") is None:
-        connection.send_result(msg["id"], {
-            "has_diff": False,
-            "timestamp": None,
-            "added": [],
-            "removed": [],
-            "changed": [],
-        })
+        connection.send_result(
+            msg["id"],
+            {
+                "has_diff": False,
+                "timestamp": None,
+                "added": [],
+                "removed": [],
+                "changed": [],
+            },
+        )
         return
 
     def _to_list(d: dict) -> list:
         return [{"uuid": k, **v} for k, v in d.items()]
 
     def _changed_to_list(d: dict) -> list:
-        return [
-            {"uuid": k, "old": v["old"], "new": v["new"]}
-            for k, v in d.items()
-        ]
+        return [{"uuid": k, "old": v["old"], "new": v["new"]} for k, v in d.items()]
 
-    connection.send_result(msg["id"], {
-        "has_diff": True,
-        "timestamp": diff["timestamp"],
-        "added": _to_list(diff.get("added", {})),
-        "removed": _to_list(diff.get("removed", {})),
-        "changed": _changed_to_list(diff.get("changed", {})),
-    })
+    connection.send_result(
+        msg["id"],
+        {
+            "has_diff": True,
+            "timestamp": diff["timestamp"],
+            "added": _to_list(diff.get("added", {})),
+            "removed": _to_list(diff.get("removed", {})),
+            "changed": _changed_to_list(diff.get("changed", {})),
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
 # Control detail
 # ---------------------------------------------------------------------------
+
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
@@ -796,34 +779,40 @@ def ws_get_control_detail(
     for e in entity_entries:
         if e.unique_id and uuid in e.unique_id:
             st = hass.states.get(e.entity_id)
-            ha_entities.append({
-                "entity_id": e.entity_id,
-                "domain": e.domain,
-                "disabled_by": e.disabled_by,
-                "state": st.state if st else None,
-                "last_changed": st.last_changed.isoformat() if st and st.last_changed else None,
-            })
+            ha_entities.append(
+                {
+                    "entity_id": e.entity_id,
+                    "domain": e.domain,
+                    "disabled_by": e.disabled_by,
+                    "state": st.state if st else None,
+                    "last_changed": st.last_changed.isoformat() if st and st.last_changed else None,
+                }
+            )
 
     safe_keys = {"name", "type", "room", "cat", "states", "parentUuid"}
     details = {k: v for k, v in ctrl.items() if k not in safe_keys and not k.startswith("_")}
 
-    connection.send_result(msg["id"], {
-        "uuid": uuid,
-        "name": ctrl.get("name", uuid),
-        "type": ctrl.get("type", ""),
-        "room": room_name,
-        "category": cat_name,
-        "is_sub_control": is_sub,
-        "parent_name": parent_name,
-        "states": state_map,
-        "ha_entities": ha_entities,
-        "details": details,
-    })
+    connection.send_result(
+        msg["id"],
+        {
+            "uuid": uuid,
+            "name": ctrl.get("name", uuid),
+            "type": ctrl.get("type", ""),
+            "room": room_name,
+            "category": cat_name,
+            "is_sub_control": is_sub,
+            "parent_name": parent_name,
+            "states": state_map,
+            "ha_entities": ha_entities,
+            "details": details,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
 # Structure tree
 # ---------------------------------------------------------------------------
+
 
 @websocket_api.require_admin
 @websocket_api.websocket_command(
@@ -859,60 +848,68 @@ def ws_get_structure(
         state_names = list((c.get("states") or {}).keys())
         subs = []
         for suuid, sc in c.get("subControls", {}).items():
-            subs.append({
-                "uuid": suuid,
-                "name": sc.get("name", suuid),
-                "type": sc.get("type", ""),
-                "states": list((sc.get("states") or {}).keys()),
-            })
+            subs.append(
+                {
+                    "uuid": suuid,
+                    "name": sc.get("name", suuid),
+                    "type": sc.get("type", ""),
+                    "states": list((sc.get("states") or {}).keys()),
+                }
+            )
         room_uuid = c.get("room", "")
         cat_uuid = c.get("cat", "")
-        ctrl_list.append({
-            "uuid": uuid,
-            "name": c.get("name", uuid),
-            "type": c.get("type", ""),
-            "room": rooms.get(room_uuid, {}).get("name", "") if room_uuid else "",
-            "category": cats.get(cat_uuid, {}).get("name", "") if cat_uuid else "",
-            "states": state_names,
-            "sub_controls": subs,
-        })
+        ctrl_list.append(
+            {
+                "uuid": uuid,
+                "name": c.get("name", uuid),
+                "type": c.get("type", ""),
+                "room": rooms.get(room_uuid, {}).get("name", "") if room_uuid else "",
+                "category": cats.get(cat_uuid, {}).get("name", "") if cat_uuid else "",
+                "states": state_names,
+                "sub_controls": subs,
+            }
+        )
 
     ctrl_list.sort(key=lambda x: (x["room"], x["name"]))
 
-    connection.send_result(msg["id"], {
-        "rooms": room_list,
-        "categories": cat_list,
-        "controls": ctrl_list,
-    })
+    connection.send_result(
+        msg["id"],
+        {
+            "rooms": room_list,
+            "categories": cat_list,
+            "controls": ctrl_list,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
 # Log viewer subscription
 # ---------------------------------------------------------------------------
 
+
 class _PanelLogHandler(logging.Handler):
     """Streams log records to a WS subscription."""
 
     def __init__(self, send_fn):
+        """Initialize the _PanelLogHandler."""
         super().__init__(logging.DEBUG)
         self._send = send_fn
 
     def emit(self, record: logging.LogRecord) -> None:
-        try:
-            self._send({
-                "name": record.name,
-                "level": record.levelname,
-                "message": self.format(record),
-                "timestamp": record.created,
-            })
-        except Exception:
-            pass
+        """Emit."""
+        with contextlib.suppress(Exception):
+            self._send(
+                {
+                    "name": record.name,
+                    "level": record.levelname,
+                    "message": self.format(record),
+                    "timestamp": record.created,
+                }
+            )
 
 
 @websocket_api.require_admin
-@websocket_api.websocket_command(
-    {vol.Required("type"): "loxone/subscribe_logs"}
-)
+@websocket_api.websocket_command({vol.Required("type"): "loxone/subscribe_logs"})
 @callback
 def ws_subscribe_logs(
     hass: HomeAssistant,
@@ -922,11 +919,7 @@ def ws_subscribe_logs(
     """Subscribe to live log output for the loxone integration."""
     logger = logging.getLogger("custom_components.loxone")
 
-    handler = _PanelLogHandler(
-        lambda event: connection.send_message(
-            websocket_api.event_message(msg["id"], event)
-        )
-    )
+    handler = _PanelLogHandler(lambda event: connection.send_message(websocket_api.event_message(msg["id"], event)))
     logger.addHandler(handler)
 
     def _unsubscribe() -> None:

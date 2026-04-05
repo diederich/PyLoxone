@@ -1,7 +1,5 @@
 """Tests for the pyloxone_api.structure module — typed structure file parsing."""
 
-import pytest
-
 from custom_components.loxone.pyloxone_api.structure import (
     LoxoneCategory,
     LoxoneControl,
@@ -9,7 +7,6 @@ from custom_components.loxone.pyloxone_api.structure import (
     LoxoneStructure,
     MsInfo,
 )
-
 
 SAMPLE_STRUCTURE = {
     "msInfo": {

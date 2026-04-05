@@ -1,5 +1,4 @@
-"""
-Loxone Switches
+"""Loxone Switches.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
@@ -36,7 +35,7 @@ async def async_setup_entry(
         switch_entity = add_room_and_cat_to_value_values(loxconfig, switch_entity)
         switch_entity["coordinator"] = coordinator
 
-        if switch_entity["type"] in ["Switch"]:
+        if switch_entity["type"] == "Switch":
             new_switch = LoxoneSwitch(**switch_entity)
             entities.append(new_switch)
 
@@ -53,9 +52,7 @@ async def async_setup_entry(
                     _ = add_room_and_cat_to_value_values(loxconfig, _)
                     _.update(
                         {
-                            "name": "{} - {}".format(
-                                switch_entity["name"], subcontrol["name"]
-                            ),
+                            "name": "{} - {}".format(switch_entity["name"], subcontrol["name"]),
                             "coordinator": coordinator,
                         }
                     )
@@ -74,6 +71,7 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
     _attr_assumed_state = False
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneTimedSwitch."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._state = STATE_UNKNOWN
@@ -91,17 +89,18 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
 
     def turn_on(self, **kwargs):
         """Turn the switch on."""
-        self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="pulse"))
+        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
         self._state = True
         self.schedule_update_ha_state()
 
     def turn_off(self, **kwargs):
         """Turn the device off."""
-        self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="off"))
+        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "off"})
         self._state = False
         self.schedule_update_ha_state()
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         should_update = False
         if self._deactivation_delay in e:
             if e[self._deactivation_delay] == 0.0:
@@ -151,6 +150,7 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
     _attr_assumed_state = False
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneSwitch."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._state = STATE_UNKNOWN
@@ -164,18 +164,19 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
     def turn_on(self, **kwargs):
         """Turn the switch on."""
         if not self._state:
-            self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="On"))
+            self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "On"})
             self._state = True
             self.schedule_update_ha_state()
 
     def turn_off(self, **kwargs):
         """Turn the device off."""
         if self._state:
-            self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="Off"))
+            self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "Off"})
             self._state = False
             self.schedule_update_ha_state()
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         if self.uuidAction in event or self.states["active"] in event:
             if self.states["active"] in event:
                 self._state = event[self.states["active"]]
@@ -198,14 +199,17 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
 
 
 class LoxoneIntercomSubControl(LoxoneSwitch):
+    """Represent loxone intercom sub control."""
+
     def __init__(self, **kwargs):
+        """Initialize the LoxoneIntercomSubControl."""
         LoxoneSwitch.__init__(self, **kwargs)
 
         self.type = "IntercomSubControl"
 
     def turn_on(self, **kwargs):
         """Turn the switch on."""
-        self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="on"))
+        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "on"})
         self._state = True
         self.schedule_update_ha_state()
 

@@ -9,13 +9,13 @@ binary_sensor test suites.
 """
 
 import pytest
-from homeassistant.components.fan import FanEntityFeature
-from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from tests.components.loxone.conftest import fire_loxone_event
-
 from custom_components.loxone.const import SENDDOMAIN
+from homeassistant.components.fan import FanEntityFeature
+from homeassistant.core import HomeAssistant
+
+from .conftest import fire_loxone_event
 
 
 @pytest.fixture
@@ -33,17 +33,13 @@ MODE_UUID = "fan10000-0000-0000-0000000000000011"
 # -- Entity creation ----------------------------------------------------------
 
 
-async def test_fan_entity_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_entity_created(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Ventilation control should create a fan entity."""
     state = hass.states.get(FAN_ENTITY_ID)
     assert state is not None
 
 
-async def test_fan_supported_features(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_supported_features(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Fan should support preset mode, set speed, turn on, and turn off."""
     state = hass.states.get(FAN_ENTITY_ID)
     features = state.attributes.get("supported_features")
@@ -53,9 +49,7 @@ async def test_fan_supported_features(
     assert features & FanEntityFeature.TURN_OFF
 
 
-async def test_fan_preset_modes(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_preset_modes(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Fan should expose ventilation preset modes."""
     state = hass.states.get(FAN_ENTITY_ID)
     preset_modes = state.attributes.get("preset_modes")
@@ -68,9 +62,7 @@ async def test_fan_preset_modes(
 # -- Event handling -----------------------------------------------------------
 
 
-async def test_fan_speed_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_speed_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Speed event should update percentage."""
     fire_loxone_event(hass, {SPEED_UUID: 75})
     await hass.async_block_till_done()
@@ -79,9 +71,7 @@ async def test_fan_speed_from_event(
     assert state.attributes.get("percentage") == 75
 
 
-async def test_fan_is_on_when_speed_nonzero(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_is_on_when_speed_nonzero(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Fan should report on when speed > 0."""
     fire_loxone_event(hass, {SPEED_UUID: 50})
     await hass.async_block_till_done()
@@ -90,9 +80,7 @@ async def test_fan_is_on_when_speed_nonzero(
     assert state.state == "on"
 
 
-async def test_fan_is_off_when_speed_zero(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_is_off_when_speed_zero(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Fan should report off when speed is 0."""
     fire_loxone_event(hass, {SPEED_UUID: 0})
     await hass.async_block_till_done()
@@ -101,9 +89,7 @@ async def test_fan_is_off_when_speed_zero(
     assert state.state == "off"
 
 
-async def test_fan_preset_mode_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_fan_preset_mode_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Mode event should update preset_mode."""
     fire_loxone_event(hass, {MODE_UUID: 5})
     await hass.async_block_till_done()
@@ -115,9 +101,7 @@ async def test_fan_preset_mode_from_event(
 # -- Commands -----------------------------------------------------------------
 
 
-async def test_set_percentage_sends_command(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_set_percentage_sends_command(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """set_percentage should fire a setTimer SENDDOMAIN event."""
     fire_loxone_event(hass, {MODE_UUID: 5})
     await hass.async_block_till_done()
@@ -126,7 +110,8 @@ async def test_set_percentage_sends_command(
     hass.bus.async_listen(SENDDOMAIN, lambda e: events.append(e))
 
     await hass.services.async_call(
-        "fan", "set_percentage",
+        "fan",
+        "set_percentage",
         {"entity_id": FAN_ENTITY_ID, "percentage": 60},
         blocking=True,
     )
@@ -138,9 +123,7 @@ async def test_set_percentage_sends_command(
     assert "/60/" in events[0].data["value"]
 
 
-async def test_set_percentage_zero_turns_off(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_set_percentage_zero_turns_off(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Setting speed to 0 should turn the fan off."""
     fire_loxone_event(hass, {SPEED_UUID: 50, MODE_UUID: 5})
     await hass.async_block_till_done()
@@ -149,7 +132,8 @@ async def test_set_percentage_zero_turns_off(
     hass.bus.async_listen(SENDDOMAIN, lambda e: events.append(e))
 
     await hass.services.async_call(
-        "fan", "set_percentage",
+        "fan",
+        "set_percentage",
         {"entity_id": FAN_ENTITY_ID, "percentage": 0},
         blocking=True,
     )

@@ -1,7 +1,5 @@
 """Tests for the pyloxone_api.crypto module — pure cryptographic functions."""
 
-import pytest
-
 from custom_components.loxone.pyloxone_api.crypto import (
     decrypt_command,
     encrypt_command,
@@ -11,7 +9,6 @@ from custom_components.loxone.pyloxone_api.crypto import (
     hash_credentials,
     hash_secure_command,
     hash_token,
-    make_session_key,
     new_salt_needed,
     parse_public_key,
     time_elapsed_in_seconds,
@@ -67,8 +64,9 @@ class TestAesRoundtrip:
         assert encrypted.startswith("jdev/sys/enc/")
 
         # Extract the encrypted part and decrypt
-        enc_part = encrypted[len("jdev/sys/enc/"):]
+        enc_part = encrypted[len("jdev/sys/enc/") :]
         from urllib.parse import unquote
+
         full_enc = f"jdev/sys/enc/{unquote(enc_part)}"
         decrypted = decrypt_command(key, iv, full_enc).decode("utf-8")
 
@@ -84,7 +82,8 @@ class TestAesRoundtrip:
         assert encrypted.startswith("jdev/sys/enc/")
 
         from urllib.parse import unquote
-        enc_part = encrypted[len("jdev/sys/enc/"):]
+
+        enc_part = encrypted[len("jdev/sys/enc/") :]
         full_enc = f"jdev/sys/enc/{unquote(enc_part)}"
         decrypted = decrypt_command(key, iv, full_enc).decode("utf-8")
 

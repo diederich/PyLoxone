@@ -45,7 +45,8 @@
       "single_instance_allowed": "Bereits konfiguriert.",
       "already_configured": "Dieser Miniserver ist bereits konfiguriert.",
       "reauth_successful": "Zugangsdaten erfolgreich aktualisiert.",
-      "reconfigure_successful": "Verbindung erfolgreich aktualisiert."
+      "reconfigure_successful": "Verbindung erfolgreich aktualisiert.",
+      "entry_not_found": "Dieser Konfigurationseintrag ist nicht mehr verfügbar."
     },
     "step": {
       "reconfigure": {

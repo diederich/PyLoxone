@@ -20,11 +20,10 @@ Configuration via environment variables (or .env in repo root):
   LOXONE_PASSWORD  (required)
 """
 
-import os
-import sys
-from pathlib import Path
 from collections.abc import Generator
-from typing import List
+import os
+from pathlib import Path
+import sys
 
 import pytest
 
@@ -48,7 +47,7 @@ def _load_env():
 _load_env()
 
 
-def pytest_collection_modifyitems(items: List[pytest.Item]) -> None:
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Mark all e2e tests with enable_socket so pytest-socket allows real sockets."""
     for item in items:
         item.add_marker(pytest.mark.enable_socket)
@@ -57,13 +56,15 @@ def pytest_collection_modifyitems(items: List[pytest.Item]) -> None:
 @pytest.fixture(autouse=True)
 def verify_cleanup() -> Generator[None]:
     """Override the HA plugin's verify_cleanup so it doesn't fail on
-    lingering timers from our long-lived WebSocket connection."""
-    yield
+    lingering timers from our long-lived WebSocket connection.
+    """
+    return
 
 
 # ---------------------------------------------------------------------------
 # Miniserver connection fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture(scope="session")
 def miniserver_config():
@@ -87,8 +88,7 @@ def miniserver_config():
     ]
     if missing:
         pytest.skip(
-            f"Miniserver credentials not configured: {', '.join(missing)}. "
-            f"Set them in env or .env at repo root."
+            f"Miniserver credentials not configured: {', '.join(missing)}. Set them in env or .env at repo root."
         )
 
     return {"host": host, "port": port, "username": username, "password": password}

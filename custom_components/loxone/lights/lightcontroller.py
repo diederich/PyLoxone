@@ -1,10 +1,10 @@
-import json
+"""Loxone integration — lightcontroller."""
+
 from collections import OrderedDict
 from functools import cached_property
+import json
 
-from homeassistant.components.light import (ATTR_BRIGHTNESS, ATTR_EFFECT,
-                                            ColorMode, LightEntity,
-                                            LightEntityFeature)
+from homeassistant.components.light import ATTR_BRIGHTNESS, ATTR_EFFECT, ColorMode, LightEntity, LightEntityFeature
 from homeassistant.const import STATE_UNKNOWN
 
 from .. import LoxoneEntity
@@ -21,6 +21,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
     _attr_supported_color_modes = {ColorMode.ONOFF}
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneLightControllerV2."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._state = STATE_UNKNOWN
@@ -51,9 +52,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
 
         if self._master_value:
             self._master_value_uuid = self._master_value.get("uuidAction")
-            self._master_position_uuid = self._master_value.get("states", {}).get(
-                "position"
-            )
+            self._master_position_uuid = self._master_value.get("states", {}).get("position")
             self._master_min_uuid = self._master_value.get("states", {}).get("min")
             self._master_max_uuid = self._master_value.get("states", {}).get("max")
             self._attr_color_mode = ColorMode.BRIGHTNESS
@@ -68,9 +67,11 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
 
     @property
     def mood_list_uuid(self):
+        """Return the mood list uuid."""
         return self.states["moodList"]
 
     def get_moodname_by_id(self, _id):
+        """Return moodname by id."""
         for mood in self._moodlist:
             if "id" in mood and "name" in mood:
                 if mood["id"] == _id:
@@ -78,6 +79,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
         return _id
 
     def get_id_by_moodname(self, _name):
+        """Return id by moodname."""
         for mood in self._moodlist:
             if "id" in mood and "name" in mood:
                 if mood["name"] == _name:
@@ -87,11 +89,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
     @property
     def effect_list(self):
         """Return the moods of light controller."""
-        moods = []
-        for mood in self._moodlist:
-            if "name" in mood:
-                moods.append(mood["name"])
-        return moods
+        return [mood["name"] for mood in self._moodlist if "name" in mood]
 
     @property
     def effect(self):
@@ -101,18 +99,17 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
         return None
 
     async def got_effect(self, **kwargs):
+        """Got effect."""
         effects = kwargs["effect"].split(",")
         if len(effects) == 1:
             mood_id = self.get_id_by_moodname(kwargs["effect"])
             if mood_id != kwargs["effect"]:
                 self.hass.bus.async_fire(
                     SENDDOMAIN,
-                    dict(uuid=self.uuidAction, value="changeTo/{}".format(mood_id)),
+                    {"uuid": self.uuidAction, "value": f"changeTo/{mood_id}"},
                 )
             else:
-                self.hass.bus.async_fire(
-                    SENDDOMAIN, dict(uuid=self.uuidAction, value="plus")
-                )
+                self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "plus"})
         else:
             effect_ids = []
             for _ in effects:
@@ -122,40 +119,39 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
 
             self.hass.bus.async_fire(
                 SENDDOMAIN,
-                dict(uuid=self.uuidAction, value="changeTo/{}".format(effect_ids[0])),
+                {"uuid": self.uuidAction, "value": f"changeTo/{effect_ids[0]}"},
             )
 
             for _ in effect_ids[1:]:
                 self.hass.bus.async_fire(
                     SENDDOMAIN,
-                    dict(uuid=self.uuidAction, value="addMood/{}".format(_)),
+                    {"uuid": self.uuidAction, "value": f"addMood/{_}"},
                 )
 
     async def async_turn_on(self, **kwargs) -> None:
+        """Turn on asynchronously."""
         if ATTR_EFFECT in kwargs:
             await self.got_effect(**kwargs)
         elif ATTR_BRIGHTNESS in kwargs and self._master_value_uuid:
             self.hass.bus.async_fire(
                 SENDDOMAIN,
-                dict(
-                    uuid=self._master_value_uuid,
-                    value=round(hass_to_lox(kwargs[ATTR_BRIGHTNESS])),
-                ),
+                {
+                    "uuid": self._master_value_uuid,
+                    "value": round(hass_to_lox(kwargs[ATTR_BRIGHTNESS])),
+                },
             )
         elif kwargs == {}:
             if self.state == STATE_OFF:
-                self.hass.bus.async_fire(
-                    SENDDOMAIN, dict(uuid=self.uuidAction, value="changeTo/99")
-                )
+                self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "changeTo/99"})
         self.async_schedule_update_ha_state()
 
     async def async_turn_off(self, **kwargs) -> None:
-        self.hass.bus.async_fire(
-            SENDDOMAIN, dict(uuid=self.uuidAction, value="changeTo/0")
-        )
+        """Turn off asynchronously."""
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "changeTo/0"})
         self.async_schedule_update_ha_state()
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         request_update = False
 
         if self.uuidAction in event:
@@ -183,9 +179,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
                     self._master_max,
                 )
             else:
-                self._attr_brightness = lox_to_hass(
-                    event[self._master_position_uuid]
-                )
+                self._attr_brightness = lox_to_hass(event[self._master_position_uuid])
             request_update = True
 
         if self.states["activeMoods"] in event:
@@ -205,10 +199,10 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
 
     @property
     def is_on(self) -> bool:
+        """Return whether is on."""
         if self._active_moods != [778]:
             return True
-        else:
-            return False
+        return False
 
     @property
     def extra_state_attributes(self):
@@ -219,9 +213,7 @@ class LoxoneLightControllerV2(LoxoneEntity, LightEntity):
         return {
             **self._attr_extra_state_attributes,
             "selected_scene": self.effect,
-            "selected_scenes": [
-                self.get_moodname_by_id(id) for id in self._active_moods
-            ],
+            "selected_scenes": [self.get_moodname_by_id(mood_id) for mood_id in self._active_moods],
             "device_type": self.type,
             "subcontrols": self._sub_controls,
         }

@@ -1,5 +1,4 @@
-"""
-Loxone Numbers
+"""Loxone Numbers.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
@@ -49,6 +48,7 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
     _attr_assumed_state = False
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneNumber."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._state = STATE_UNKNOWN
@@ -59,9 +59,11 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
 
     @property
     def native_value(self):
+        """Return the native value."""
         return self._state
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self.uuidAction in e:
             data = e[self.uuidAction]
             if isinstance(data, (list, dict)):
@@ -90,7 +92,5 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
 
     async def async_set_native_value(self, value: float):
         """Set new value."""
-        self.hass.bus.async_fire(
-            SENDDOMAIN, dict(uuid=self.uuidAction, value="{}".format(value))
-        )
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": f"{value}"})
         self.schedule_update_ha_state()

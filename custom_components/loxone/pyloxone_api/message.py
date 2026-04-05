@@ -1,10 +1,12 @@
-"""Loxone Miniserver message types and binary protocol parsing
+"""Loxone Miniserver message types and binary protocol parsing.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/pyloxone-api
 """
+
 from __future__ import annotations
 
+from enum import IntEnum
 import hashlib
 import json
 import logging
@@ -12,7 +14,6 @@ import math
 import re
 import struct
 import uuid
-from enum import IntEnum
 
 from .exceptions import LoxoneException
 
@@ -24,6 +25,7 @@ _DETECT_MAX_BYTES = 4096
 
 
 def detect_encoding(byte_string):
+    """Detect encoding."""
     encodings = [
         "utf-8",
         "iso-8859-1",
@@ -42,13 +44,15 @@ def detect_encoding(byte_string):
     for encoding in encodings:
         try:
             byte_string.decode(encoding)
-            return encoding
         except (UnicodeDecodeError, AttributeError):
             continue
+        else:
+            return encoding
     return None
 
 
 def check_and_decode_if_needed(message):
+    """Check and decode if needed."""
     if isinstance(message, str):
         return message
 
@@ -71,8 +75,8 @@ def check_and_decode_if_needed(message):
             return b.decode(enc)
         except UnicodeDecodeError:
             continue
-        except Exception:
-            # defensive: skip any unexpected errors from decoder
+        except Exception:  # noqa: BLE001 — third-party codecs may raise arbitrary errors
+            _LOGGER.debug("Unexpected decode error for enc=%s", enc, exc_info=True)
             continue
 
     # heavy detection: only for small messages, with a cache keyed on sample hash
@@ -83,14 +87,14 @@ def check_and_decode_if_needed(message):
         if enc is None and "detect_encoding" in globals():
             try:
                 enc = detect_encoding(sample)  # may be expensive
-            except Exception:
+            except Exception:  # noqa: BLE001 — chardet/charset-normalizer may raise anything
                 enc = None
             _encoding_cache[key] = enc  # cache even None to avoid repeated work
 
         if enc:
             try:
                 return b.decode(enc)
-            except Exception:
+            except Exception:  # noqa: BLE001 — unknown encoding, fallback is below
                 pass
 
     # last resort: replace invalid characters (fast and safe)
@@ -102,7 +106,7 @@ def check_and_decode_if_needed(message):
 
 
 class MessageType(IntEnum):
-    """The different types of message which the miniserver might send"""
+    """The different types of message which the miniserver might send."""
 
     TEXT = 0
     BINARY = 1
@@ -116,7 +120,7 @@ class MessageType(IntEnum):
 
 
 class LLResponse:
-    """A class for parsing LL Responses from the miniserver
+    """A class for parsing LL Responses from the miniserver.
 
     An LL Response is a json object often returned by a miniserver in response
     to a command. It begins "{"LL": {..." and has a control, code and value
@@ -131,20 +135,21 @@ class LLResponse:
     """
 
     def __init__(self, response: str | bytes):
+        """Initialize the LLResponse."""
         try:
             self._parsed: dict = json.loads(response)
             # Sometimes, Loxone uses "Code", and sometimes "code"
             self.code: int = int(
-                self._parsed.get("LL", {}).get("code", "")
-                or self._parsed.get("LL", {}).get("Code", "")
+                self._parsed.get("LL", {}).get("code", "") or self._parsed.get("LL", {}).get("Code", "")
             )
             self.control: str = self._parsed["LL"]["control"]
             self.value: str = str(self._parsed["LL"]["value"])
         except (ValueError, KeyError, TypeError) as exc:
-            raise ValueError(exc)
+            raise ValueError(str(exc)) from exc
 
     @property
     def value_as_dict(self) -> dict:
+        """Return the value as dict."""
         d = self._parsed["LL"]["value"]
         retval = {"value": self.value}
         if isinstance(d, dict):
@@ -153,6 +158,8 @@ class LLResponse:
 
 
 class MessageHeader:
+    """Represent message header."""
+
     def __init__(self, header: bytes):
         # From the Loxone API docs, the header is as follows
         # typedef struct {
@@ -162,14 +169,15 @@ class MessageHeader:
         #   BYTE cReserved;    // reserved
         #   UINT nLen;         // 32-Bit Unsigned Integer (little endian)
         # } PACKED WsBinHdr;
+        """Initialize the MessageHeader."""
         self.header = header
-        if not header[0] == 3:
+        if header[0] != 3:
             self.message_type = MessageType.UNKNOWN
         else:
             try:
                 unpacked_data = struct.unpack("<cBccI", header)
             except (struct.error, TypeError) as exc:
-                raise LoxoneException(f"Invalid header received: {exc} - {header}")
+                raise LoxoneException(f"Invalid header received: {exc} - {header}") from exc
 
             self.message_type: MessageType = MessageType(unpacked_data[1])
             # First bit indicates that length is only estimated
@@ -178,20 +186,22 @@ class MessageHeader:
 
 
 class BaseMessage:
-    """The base class for all messages from the miniserver"""
+    """The base class for all messages from the miniserver."""
 
     message_type = MessageType.UNKNOWN
 
     def __init__(self, message: bytes | str):
+        """Initialize the BaseMessage."""
         self.message = message
         # For the base class, the dict is the message
 
     def as_dict(self) -> dict:
-        """Return the contents of the message as a dict"""
+        """Return the contents of the message as a dict."""
         return {}
 
 
 def clean_up_control(control):
+    """Clean up control."""
     control = check_and_decode_if_needed(control)
     try:
         return re.sub(r"^salt/[0-9a-fA-F]+", "", control)
@@ -201,9 +211,12 @@ def clean_up_control(control):
 
 
 class TextMessage(BaseMessage):
+    """Represent text message."""
+
     message_type = MessageType.TEXT
 
     def __init__(self, message: bytes | str):
+        """Initialize the TextMessage."""
         super().__init__(message)
         message = check_and_decode_if_needed(message)
         ll_message = LLResponse(message)
@@ -213,20 +226,25 @@ class TextMessage(BaseMessage):
         self.value_as_dict = ll_message.value_as_dict
 
     def as_dict(self) -> dict:
-        """Return the contents of the message as a dict"""
+        """Return the contents of the message as a dict."""
         cleaned_control = clean_up_control(self.control)
         return {"control": cleaned_control, "value": self.value, "Code": self.code}
 
 
 class BinaryFile(BaseMessage):
+    """Represent binary file."""
+
     message_type = MessageType.BINARY
 
     # The message is a binary file. There is nothing parse
     def as_dict(self):
+        """As dict."""
         return {}
 
 
 class ValueStatesTable(BaseMessage):
+    """Represent value states table."""
+
     message_type = MessageType.VALUE_STATES
 
     # A value state is as follows:
@@ -236,6 +254,7 @@ class ValueStatesTable(BaseMessage):
     # } PACKED EvData;
 
     def as_dict(self):
+        """As dict."""
         event_dict = {}
         length = len(self.message)
         num = length / 24
@@ -254,6 +273,8 @@ class ValueStatesTable(BaseMessage):
 
 
 class TextStatesTable(BaseMessage):
+    """Represent text states table."""
+
     message_type = MessageType.TEXT_STATES
 
     # A text event state is as follows:
@@ -264,26 +285,21 @@ class TextStatesTable(BaseMessage):
     #     // text follows here
     #     } PACKED EvDataText;
     def as_dict(self):
+        """As dict."""
         event_dict = {}
         start = 0
 
         def get_text(message: bytes, start: int, offset: int) -> int:
             first = start
             second = start + offset
-            event_uuid = uuid.UUID(bytes_le=self.message[first:second])  # type: ignore
+            event_uuid = uuid.UUID(bytes_le=self.message[first:second])  # type: ignore[arg-type]
             first += offset
             second += offset
 
             icon_uuid_fields = event_uuid.urn.replace("urn:uuid:", "").split("-")
-            uuidstr = "{}-{}-{}-{}{}".format(
-                icon_uuid_fields[0],
-                icon_uuid_fields[1],
-                icon_uuid_fields[2],
-                icon_uuid_fields[3],
-                icon_uuid_fields[4],
-            )
+            uuidstr = f"{icon_uuid_fields[0]}-{icon_uuid_fields[1]}-{icon_uuid_fields[2]}-{icon_uuid_fields[3]}{icon_uuid_fields[4]}"
 
-            icon_uuid = uuid.UUID(bytes_le=self.message[first:second])  # type: ignore
+            icon_uuid = uuid.UUID(bytes_le=self.message[first:second])  # type: ignore[arg-type]
             icon_uuid_fields = icon_uuid.urn.replace("urn:uuid:", "").split("-")
 
             first = second
@@ -306,35 +322,47 @@ class TextStatesTable(BaseMessage):
 
 
 class DaytimerStatesTable(BaseMessage):
+    """Represent daytimer states table."""
+
     message_type = MessageType.DAYTIMER_STATES
 
     # We dont currently handle this.
     def as_dict(self):
+        """As dict."""
         return {}
 
 
 class OutOfServiceIndicator(BaseMessage):
+    """Represent out of service indicator."""
+
     message_type = MessageType.OUT_OF_SERVICE
     # There can be no such message. If an out-of-service header is sent, the
     # miniserver will close the connection before sending a message.
 
 
 class Keepalive(BaseMessage):
+    """Represent keepalive."""
+
     message_type = MessageType.KEEPALIVE
 
     # Nothing to do. The dict is the message (which is b'keepalive')
     def as_dict(self):
+        """As dict."""
         return {"keep_alive": "received"}
 
 
 class WeatherStatesTable(BaseMessage):
+    """Represent weather states table."""
+
     message_type = MessageType.WEATHER_STATES
 
     def as_dict(self):
+        """As dict."""
         return {}
 
 
 def parse_header(header: bytes) -> MessageHeader:
+    """Parse header."""
     return MessageHeader(header)
 
 
@@ -344,4 +372,3 @@ def parse_message(message: bytes | str, message_type: int | MessageType) -> Base
         if klass.message_type == message_type:
             return klass(message)
     raise LoxoneException(f"Unknown message type {message_type}")
-

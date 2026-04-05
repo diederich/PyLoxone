@@ -29,4 +29,4 @@ async def test_discover_directed(miniserver_config):
 
 async def test_discover_timeout_returns_none():
     """Zero timeout should return None immediately."""
-    assert await discover(timeout=0) is None
+    assert await discover(discovery_timeout=0) is None

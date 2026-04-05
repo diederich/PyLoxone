@@ -5,17 +5,24 @@ from __future__ import annotations
 import logging
 from typing import Literal, final
 
-import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.binary_sensor import (PLATFORM_SCHEMA,
-                                                    BinarySensorDeviceClass,
-                                                    BinarySensorEntity)
-from homeassistant.components.sensor import CONF_STATE_CLASS
-from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
-                                 CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
-                                 EntityCategory, STATE_OFF, STATE_ON,
-                                 STATE_UNKNOWN)
+
+from homeassistant.components.binary_sensor import (
+    PLATFORM_SCHEMA as BINARY_SENSOR_PLATFORM_SCHEMA,
+    BinarySensorDeviceClass,
+    BinarySensorEntity,
+)
+from homeassistant.const import (
+    CONF_DEVICE_CLASS,
+    CONF_NAME,
+    CONF_VALUE_TEMPLATE,
+    STATE_OFF,
+    STATE_ON,
+    STATE_UNKNOWN,
+    EntityCategory,
+)
 from homeassistant.core import HomeAssistant, callback
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -23,7 +30,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import LoxoneConfigEntry, LoxoneEntity
-from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN
+from .const import CONF_ACTIONID, DOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 
@@ -33,7 +40,7 @@ DEFAULT_NAME = "Loxone Binary Sensor"
 
 PARALLEL_UPDATES = 0
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+BINARY_SENSOR_PLATFORM_SCHEMA = BINARY_SENSOR_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_ACTIONID): cv.string,
         vol.Required(CONF_NAME): cv.string,
@@ -48,7 +55,7 @@ async def async_setup_platform(
     async_add_devices: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up Loxone Sensor from yaml"""
+    """Set up Loxone Sensor from yaml."""
     value_template = config.get(CONF_VALUE_TEMPLATE)
     if value_template is not None:
         value_template.hass = hass
@@ -89,11 +96,10 @@ async def async_setup_entry(
         entities.append(LoxoneDigitalSensor(**sensor))
 
     if miniserver and miniserver.serial:
-        entities.append(
-            LoxoneConnectivitySensor(coordinator, miniserver.serial)
-        )
+        entities.append(LoxoneConnectivitySensor(coordinator, miniserver.serial))
 
     if miniserver:
+
         @callback
         def async_add_binary_sensors(_):
             async_add_entities(_, True)
@@ -114,29 +120,23 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
     _attr_has_entity_name = True
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneDigitalSensor."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._from_loxone_config = False
 
-        if (
-            "type" in kwargs
-            and "room" in kwargs
-            and "cat" in kwargs
-            and hasattr(self, "states")
-        ):
+        if "type" in kwargs and "room" in kwargs and "cat" in kwargs and hasattr(self, "states"):
             self._from_loxone_config = True
             if self.type == "smoke":
                 self._state_uuid = self.states["areAlarmSignalsOff"]
-            elif self.type == "presence":
-                self._state_uuid = self.states["active"]
-            elif "active" in self.states:
+            elif self.type == "presence" or "active" in self.states:
                 self._state_uuid = self.states["active"]
         else:
             self._state_uuid = self.uuidAction
 
         self._state = STATE_UNKNOWN
         self._format = self._get_format(kwargs.get("details", {}).get("format", ""))
-        self._parent_id = kwargs.get("parent_id", None)
+        self._parent_id = kwargs.get("parent_id")
         self._on_state = STATE_ON
         self._off_state = STATE_OFF
         self._attr_available = True
@@ -157,32 +157,34 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
 
     @property
     def icon(self):
+        """Return the icon."""
         if self._from_loxone_config:
             if self.type == "presence":
                 """Return the sensor icon."""
                 return "mdi:motion-sensor"
-            elif self.type == "smoke":
+            if self.type == "smoke":
                 """Return the sensor icon."""
                 return "mdi:smoke-detector"
-            elif self.type == "digital":
+            if self.type == "digital":
                 """Return the sensor icon."""
                 return "mdi:checkbox-blank-circle-outline"
+        elif self.device_class:
+            if self.device_class == "presence":
+                """Return the sensor icon."""
+                return "mdi:motion-sensor"
+            if self.device_class == "smoke":
+                """Return the sensor icon."""
+                return "mdi:smoke-detector"
+            if self.device_class == "digital":
+                """Return the sensor icon."""
+                return "mdi:checkbox-blank-circle-outline"
+            """Return the sensor icon."""
         else:
-            if self.device_class:
-                if self.device_class == "presence":
-                    """Return the sensor icon."""
-                    return "mdi:motion-sensor"
-                elif self.device_class == "smoke":
-                    """Return the sensor icon."""
-                    return "mdi:smoke-detector"
-                elif self.device_class == "digital":
-                    """Return the sensor icon."""
-                    return "mdi:checkbox-blank-circle-outline"
-                """Return the sensor icon."""
-            else:
-                return "mdi:checkbox-blank-circle-outline"
+            return "mdi:checkbox-blank-circle-outline"
+        return None
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self._state_uuid in e:
             self._state = e[self._state_uuid]
             if self._state == 1.0:
@@ -206,16 +208,16 @@ class LoxoneDigitalSensor(LoxoneEntity, BinarySensorEntity):
 
 
 class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
+    """Represent loxone custom binary sensor."""
+
     def __init__(self, **kwargs):
+        """Initialize the LoxoneCustomBinarySensor."""
         super().__init__(**kwargs)
         self._state = STATE_UNKNOWN
         self._on_state = STATE_ON
         self._off_state = STATE_OFF
 
-        if "uuidAction" in kwargs:
-            self.uuidAction = kwargs["uuidAction"]
-        else:
-            self.uuidAction = ""
+        self.uuidAction = kwargs.get("uuidAction", "")
 
         if "device_class" in kwargs:
             self._attr_device_class = kwargs["device_class"]
@@ -233,6 +235,7 @@ class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
         return STATE_ON if is_on else STATE_OFF
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self.uuidAction in e:
             data = e[self.uuidAction]
             if data == 1.0:
@@ -251,18 +254,22 @@ class LoxoneConnectivitySensor(CoordinatorEntity[LoxoneCoordinator], BinarySenso
     _attr_name = "Connection"
 
     def __init__(self, coordinator: LoxoneCoordinator, serial: str) -> None:
+        """Initialize the LoxoneConnectivitySensor."""
         super().__init__(coordinator)
         self._serial = serial
         self._attr_unique_id = f"{serial}_connectivity"
 
     @property
     def is_on(self) -> bool:
+        """Return whether is on."""
         return self.coordinator.last_update_success
 
     @property
     def available(self) -> bool:
+        """Return whether the entity is available."""
         return True
 
     @property
     def device_info(self) -> DeviceInfo:
+        """Return device information."""
         return DeviceInfo(identifiers={(DOMAIN, self._serial)})

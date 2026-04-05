@@ -45,7 +45,8 @@
       "single_instance_allowed": "Already configured. Only a single configuration possible.",
       "already_configured": "This Miniserver is already configured.",
       "reauth_successful": "Credentials updated successfully.",
-      "reconfigure_successful": "Connection updated successfully."
+      "reconfigure_successful": "Connection updated successfully.",
+      "entry_not_found": "This configuration entry is no longer available."
     },
     "step": {
       "reconfigure": {

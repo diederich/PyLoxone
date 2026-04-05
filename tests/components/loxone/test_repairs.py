@@ -3,20 +3,13 @@
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers import issue_registry as ir
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import DOMAIN
-from custom_components.loxone.coordinator import (
-    ConnectionState,
-    LoxoneCoordinator,
-)
-from custom_components.loxone.pyloxone_api.exceptions import (
-    LoxoneTokenError,
-    LoxoneUnauthorisedError,
-)
+from custom_components.loxone.coordinator import ConnectionState, LoxoneCoordinator
+from custom_components.loxone.pyloxone_api.exceptions import LoxoneTokenError, LoxoneUnauthorisedError
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers import issue_registry as ir
 
 
 async def test_token_error_triggers_reconnect_with_clear_token(
@@ -49,12 +42,10 @@ async def test_auth_failure_creates_repair_and_triggers_reauth(
     eid = init_integration.entry_id
 
     saved_api = coordinator.api
-    with patch.object(
-        coordinator, "_create_api"
-    ), patch.object(
-        coordinator.config_entry, "async_start_reauth"
-    ) as mock_reauth, patch.object(
-        coordinator, "async_save_token", new_callable=AsyncMock
+    with (
+        patch.object(coordinator, "_create_api"),
+        patch.object(coordinator.config_entry, "async_start_reauth") as mock_reauth,
+        patch.object(coordinator, "async_save_token", new_callable=AsyncMock),
     ):
         mock_api = MagicMock()
         mock_api.open = AsyncMock(side_effect=LoxoneUnauthorisedError("401"))
@@ -79,14 +70,20 @@ async def test_successful_reconnect_clears_repair_issues(
     """On successful reconnect, repair issues should be cleared."""
     eid = init_integration.entry_id
     ir.async_create_issue(
-        hass, DOMAIN, f"token_expired_{eid}",
-        is_fixable=False, is_persistent=True,
+        hass,
+        DOMAIN,
+        f"token_expired_{eid}",
+        is_fixable=False,
+        is_persistent=True,
         severity=ir.IssueSeverity.ERROR,
         translation_key="token_expired",
     )
     ir.async_create_issue(
-        hass, DOMAIN, f"persistent_disconnect_{eid}",
-        is_fixable=False, is_persistent=False,
+        hass,
+        DOMAIN,
+        f"persistent_disconnect_{eid}",
+        is_fixable=False,
+        is_persistent=False,
         severity=ir.IssueSeverity.ERROR,
         translation_key="persistent_disconnect",
         translation_placeholders={"host": "192.168.1.100"},
@@ -98,21 +95,17 @@ async def test_successful_reconnect_clears_repair_issues(
 
     coordinator: LoxoneCoordinator = init_integration.runtime_data
 
-    with patch.object(
-        coordinator, "_create_api"
-    ), patch.object(
-        coordinator, "async_start_listening", new_callable=AsyncMock
-    ), patch.object(
-        coordinator, "async_save_token", new_callable=AsyncMock
+    with (
+        patch.object(coordinator, "_create_api"),
+        patch.object(coordinator, "async_start_listening", new_callable=AsyncMock),
+        patch.object(coordinator, "async_save_token", new_callable=AsyncMock),
     ):
         mock_api = MagicMock()
         mock_api.open = AsyncMock(return_value=MagicMock())
         mock_api.close = AsyncMock()
         mock_api.structure_file = coordinator.api.structure_file
         mock_api.connection = MagicMock()
-        mock_api.get_token_dict = MagicMock(
-            return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"}
-        )
+        mock_api.get_token_dict = MagicMock(return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"})
         coordinator.api = mock_api
 
         coordinator._shutting_down = False

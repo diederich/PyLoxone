@@ -1,5 +1,4 @@
-"""
-Component to create an interface to the Loxone Miniserver.
+"""Component to create an interface to the Loxone Miniserver.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/pyloxone-api
@@ -8,18 +7,17 @@ https://github.com/JoDehli/pyloxone-api
 from __future__ import annotations
 
 import asyncio
+from collections.abc import AsyncIterable, Iterable
 import logging
-from typing import AsyncIterable, Iterable, NoReturn, Union
 
 from websockets import ClientConnection
 
 from .exceptions import LoxoneException, LoxoneOutOfServiceException
-from .message import (BaseMessage, MessageType, check_and_decode_if_needed,
-                      parse_header, parse_message)
+from .message import BaseMessage, MessageType, check_and_decode_if_needed, parse_header, parse_message
 
 _LOGGER = logging.getLogger(__name__)
 
-Data = Union[str, bytes]
+Data = str | bytes
 """Types supported in a WebSocket message:
 :class:`str` for a Text_ frame, :class:`bytes` for a Binary_.
 
@@ -30,13 +28,17 @@ Data = Union[str, bytes]
 
 
 class LoxoneClientConnection(ClientConnection):
+    """Represent loxone client connection."""
+
     def __init__(self, *args, **kwargs):
+        """Initialize the LoxoneClientConnection."""
         super().__init__(*args, **kwargs)
         self._last_header = None
 
     async def recv(self, decode: bool | None = False) -> str | bytes:
+        """Recv."""
         result = await super().recv(decode)
-        _LOGGER.debug(f"Received: {result[:80]!r}")
+        _LOGGER.debug("Received: %r", result[:80])
         return result
 
     async def send(
@@ -44,20 +46,20 @@ class LoxoneClientConnection(ClientConnection):
         message: Data | Iterable[Data] | AsyncIterable[Data],
         text: bool | None = None,
     ) -> None:
-        _LOGGER.debug(f"Sent:{message}")
-        result = await super().send(message, text)
-        return result
+        """Send."""
+        _LOGGER.debug("Sent:%s", message)
+        return await super().send(message, text)
 
     async def recv_message(self) -> BaseMessage:
-        """Receive a header and message from the miniserver""
+        """Receive a header and message from the miniserver.
 
-        Return an instance of the appropriate message.BaseMessage subclass
+        Return an instance of the appropriate message.BaseMessage subclass.
         """
         # The Loxone API docs say:
         #
         # > As mentioned in the chapter on how to setup a connection, messages sent by
-        # > the Miniserver are always prequeled by a binary message that contains a
-        # > MessageHeader. So at ﬁrst you’ll receive the binary Message-Header and then
+        # > the Miniserver are always preceded by a binary message that contains a
+        # > MessageHeader. So at first you'll receive the binary Message-Header and then
         # > the payload follows in a separate message.
         #
         # But this is not quite right because the docs also say, for an out-of-service
@@ -82,14 +84,11 @@ class LoxoneClientConnection(ClientConnection):
         if len(header_data) != 8:
             if self._last_header is None:
                 raise LoxoneException("Received payload before any header")
-            message = parse_message(header_data, self._last_header.message_type)
-            return message
+            return parse_message(header_data, self._last_header.message_type)
 
         if not isinstance(header_data, bytes):
-            raise LoxoneException(
-                f"Expected a bytes header, but received {header_data}"
-            )
-        _LOGGER.debug(f"Parsing header {header_data[:80]!r}")
+            raise LoxoneException(f"Expected a bytes header, but received {header_data}")
+        _LOGGER.debug("Parsing header %r", header_data[:80])
         header = parse_header(header_data)
         self._last_header = header
         if header.message_type is MessageType.OUT_OF_SERVICE:
@@ -100,6 +99,5 @@ class LoxoneClientConnection(ClientConnection):
         if header.message_type == MessageType.TEXT:
             message_data = check_and_decode_if_needed(message_data)
 
-        _LOGGER.debug(f"Parsing message {message_data[:80]!r} ({header.message_type})")
-        message = parse_message(message_data, header.message_type)
-        return message
+        _LOGGER.debug("Parsing message %r (%s)", message_data[:80], header.message_type)
+        return parse_message(message_data, header.message_type)

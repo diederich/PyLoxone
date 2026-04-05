@@ -27,6 +27,7 @@ class MsInfo:
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> MsInfo:
+        """From dict."""
         return cls(
             serial_nr=raw.get("serialNr", ""),
             miniserver_type=raw.get("miniserverType", 0),
@@ -49,6 +50,7 @@ class LoxoneRoom:
 
     @classmethod
     def from_dict(cls, uuid: str, raw: dict[str, Any]) -> LoxoneRoom:
+        """From dict."""
         return cls(uuid=uuid, name=raw.get("name", ""))
 
 
@@ -61,6 +63,7 @@ class LoxoneCategory:
 
     @classmethod
     def from_dict(cls, uuid: str, raw: dict[str, Any]) -> LoxoneCategory:
+        """From dict."""
         return cls(uuid=uuid, name=raw.get("name", ""))
 
 
@@ -86,6 +89,7 @@ class LoxoneControl:
 
     @classmethod
     def from_dict(cls, uuid: str, raw: dict[str, Any]) -> LoxoneControl:
+        """From dict."""
         sub_controls: dict[str, LoxoneControl] = {}
         for sc_uuid, sc_raw in raw.get("subControls", {}).items():
             sub_controls[sc_uuid] = cls.from_dict(sc_uuid, sc_raw)
@@ -131,6 +135,7 @@ class LoxoneStructure:
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> LoxoneStructure:
+        """From dict."""
         ms_info = MsInfo.from_dict(raw.get("msInfo", {}))
 
         rooms: dict[str, LoxoneRoom] = {}
@@ -163,6 +168,7 @@ class LoxoneStructure:
 
     @property
     def software_version_str(self) -> str:
+        """Return the software version str."""
         return ".".join(str(x) for x in self.software_version)
 
     def room_name(self, room_uuid: str) -> str:
@@ -178,13 +184,11 @@ class LoxoneStructure:
     def controls_by_type(self, *control_types: str) -> list[LoxoneControl]:
         """Return all controls matching the given type(s)."""
         type_set = set(control_types)
-        return [
-            ctrl for ctrl in self.controls.values()
-            if ctrl.control_type in type_set
-        ]
+        return [ctrl for ctrl in self.controls.values() if ctrl.control_type in type_set]
 
 
 def _to_float(val: Any) -> float:
+    """Return to float."""
     try:
         return float(val)
     except (ValueError, TypeError):

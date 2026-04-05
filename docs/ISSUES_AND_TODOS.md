@@ -46,7 +46,7 @@ No open low-priority issues.
 
 ### Current State
 
-Test harness is in place using `pytest-homeassistant-custom-component==0.13.314` (HA 2026.2.1, Python >=3.13).
+Test harness is in place using `pytest-homeassistant-custom-component==0.13.315` (HA 2026.2.2, Python >=3.13). Version tracks `requirements_test.txt`; it must match the `homeassistant==…` pin in `requirements.txt` because pytest-hacc declares an exact HA dependency.
 
 | File (tests)                      | What's covered                                                                                                                                                      |
 | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import logging
 
+from voluptuous import Any, Optional
+
 from homeassistant.components.fan import FanEntity, FanEntityFeature
 from homeassistant.const import STATE_UNKNOWN
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-from voluptuous import Any, Optional
 
 from . import LoxoneConfigEntry, LoxoneEntity
 from .binary_sensor import LoxoneDigitalSensor
@@ -28,9 +28,7 @@ DEFAULT_FAN_SPEED_BOOST = 100
 
 VENTELATION_INT_TO_STR = {2: "Low", 3: "Medium", 4: "High", 5: "Auto", 6: "Away"}
 
-STR_TO_VENTILATION_PROFILE_SETTABLE = {
-    value: key for (key, value) in VENTELATION_INT_TO_STR.items()
-}
+STR_TO_VENTILATION_PROFILE_SETTABLE = {value: key for (key, value) in VENTELATION_INT_TO_STR.items()}
 
 
 async def async_setup_entry(
@@ -98,20 +96,6 @@ async def async_setup_entry(
                 "coordinator": coordinator,
             }
             entities.append(LoxoneSensor(**air_quality))
-        # if "temperatureIndoor" in fan["states"]:
-        #     temperature = {
-        #         "parent_id": fan["uuidAction"],
-        #         "uuidAction": fan["states"]["temperatureIndoor"],
-        #         "type": "analog",
-        #         "room": fan.get("room", ""),
-        #         "cat": fan.get("cat", ""),
-        #         "name": fan["name"] + " - Temperature",
-        #         "details": {
-        #             "format": "%.1f°C"
-        #         },
-        #         "async_add_devices": async_add_entities
-        #     }
-        #     entities.append(LoxoneSensor(**temperature))
         if "temperatureOutdoor" in fan["states"]:
             temperature = {
                 "parent_id": fan["uuidAction"],
@@ -176,6 +160,7 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         )
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         update = False
 
         for key in set(self._stateAttribUuids.values()) & event.keys():
@@ -184,8 +169,6 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
 
         if update:
             self.schedule_update_ha_state()
-
-        # _LOGGER.debug(f"State attribs after event handling: {self._stateAttribValues}")
 
     @property
     def icon(self):
@@ -197,16 +180,14 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         """Return the class of this device, from component DEVICE_CLASSES."""
         if not hasattr(self, "_device_class"):
             return None
-        else:
-            return self._device_class
+        return self._device_class
 
     @property
     def is_on(self) -> bool:
         """Return if device is on."""
         if self.percentage:
             return self.percentage > 0
-        else:
-            return False
+        return False
 
     @property
     def preset_modes(self) -> list[str]:
@@ -225,16 +206,16 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
 
     @device_class.setter
     def device_class(self, device_class):
+        """Device class."""
         if not hasattr(self, "_device_class"):
-            setattr(self, "_device_class", device_class)
+            self._device_class = device_class
         else:
             self._device_class = device_class
 
     def get_state_value(self, name):
+        """Return state value."""
         uuid = self._stateAttribUuids[name]
-        return (
-            self._stateAttribValues[uuid] if uuid in self._stateAttribValues else None
-        )
+        return self._stateAttribValues.get(uuid, None)
 
     def set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
@@ -244,10 +225,10 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         interval = 3600
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value=f'setTimer/{interval}/{percentage}/{VENTELATION_INT_TO_STR.get( self.get_state_value("mode") )}/-1',
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": f"setTimer/{interval}/{percentage}/{VENTELATION_INT_TO_STR.get(self.get_state_value('mode'))}/-1",
+            },
         )
 
     # def turn_on(self, speed: Optional[str] = None, percentage: Optional[int] = None, preset_mode: Optional[str] = None,
@@ -277,6 +258,5 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         """Turn the fan off."""
         if not self.is_on:
             return
-        else:
-            self.set_preset_mode("Auto")
-            self.set_percentage(0)
+        self.set_preset_mode("Auto")
+        self.set_percentage(0)

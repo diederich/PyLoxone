@@ -1,22 +1,20 @@
-"""
-Loxone climate
+"""Loxone climate.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
-import logging
-import json
 from abc import ABC
+import json
+import logging
 
-from homeassistant.components.climate import ATTR_TEMPERATURE, PLATFORM_SCHEMA, ClimateEntity
-from homeassistant.components.climate.const import (ClimateEntityFeature,
-                                                    HVACAction, HVACMode)
+from voluptuous import All, Optional, Range
+
+from homeassistant.components.climate import ATTR_TEMPERATURE, PLATFORM_SCHEMA as CLIMATE_PLATFORM_SCHEMA, ClimateEntity
+from homeassistant.components.climate.const import ClimateEntityFeature, HVACAction, HVACMode
 from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-from voluptuous import All, Optional, Range
 
 from . import LoxoneConfigEntry, LoxoneEntity
 from .const import CONF_HVAC_AUTO_MODE, SENDDOMAIN
@@ -47,7 +45,7 @@ OPMODETOLOXONE = {
 }
 
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+CLIMATE_PLATFORM_SCHEMA = CLIMATE_PLATFORM_SCHEMA.extend(
     {
         Optional(CONF_HVAC_AUTO_MODE, default=0): All(int, Range(min=0, max=2)),
     }
@@ -100,11 +98,12 @@ async def async_setup_entry(
 
 
 class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
-    """Loxone room controller (legacy, non-V2)"""
+    """Loxone room controller (legacy, non-V2)."""
 
     _attr_has_entity_name = True
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneRoomController."""
         super().__init__(**kwargs)
         self._attr_name = None
         self.hass = kwargs["hass"]
@@ -115,9 +114,7 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
 
         # Set supported features
         self._attr_supported_features = (
-            ClimateEntityFeature.TARGET_TEMPERATURE
-            | ClimateEntityFeature.TURN_OFF
-            | ClimateEntityFeature.TURN_ON
+            ClimateEntityFeature.TARGET_TEMPERATURE | ClimateEntityFeature.TURN_OFF | ClimateEntityFeature.TURN_ON
         )
 
         # Flatten UUID values - some might be lists (e.g., "temperatures")
@@ -129,6 +126,7 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
                 self._all_uuids.add(value)
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         update = False
 
         for key in self._all_uuids & event.keys():
@@ -139,19 +137,12 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
             self.async_write_ha_state()
 
     def get_state_value(self, name):
+        """Return state value."""
         uuid = self._stateAttribUuids.get(name)
         if isinstance(uuid, list):
             # For "temperatures" which is a list of UUIDs
-            return [
-                self._stateAttribValues.get(u)
-                for u in uuid
-                if u in self._stateAttribValues
-            ]
-        return (
-            self._stateAttribValues[uuid]
-            if uuid and uuid in self._stateAttribValues
-            else None
-        )
+            return [self._stateAttribValues.get(u) for u in uuid if u in self._stateAttribValues]
+        return self._stateAttribValues[uuid] if uuid and uuid in self._stateAttribValues else None
 
     @property
     def extra_state_attributes(self):
@@ -176,7 +167,7 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
         return self.get_state_value("tempTarget")
 
     def set_temperature(self, **kwargs):
-        """Set new target temperature"""
+        """Set new target temperature."""
         temp = kwargs.get("temperature")
         if temp is None:
             return
@@ -196,10 +187,10 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
             # Command format: setTemp/<index>/<value>
             self.hass.bus.fire(
                 SENDDOMAIN,
-                dict(
-                    uuid=self.uuidAction,
-                    value=f"setTemp/{int(temp_idx)}/{temp}",
-                ),
+                {
+                    "uuid": self.uuidAction,
+                    "value": f"setTemp/{int(temp_idx)}/{temp}",
+                },
             )
             self.schedule_update_ha_state()
 
@@ -211,7 +202,7 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
 
         if valve_heat and valve_heat > 0:
             return HVACAction.HEATING
-        elif valve_cool and valve_cool > 0:
+        if valve_cool and valve_cool > 0:
             return HVACAction.COOLING
 
         if self.get_state_value("isPreparing") == 1:
@@ -227,14 +218,13 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
         # mode: 0=Auto, 1=Heat, 2=Cool, 3=Heat/Cool, 4=Off
         if mode == 0:
             return HVACMode.AUTO
-        elif mode == 1:
+        if mode == 1:
             return HVACMode.HEAT
-        elif mode == 2:
+        if mode == 2:
             return HVACMode.COOL
-        elif mode == 3:
+        if mode == 3:
             return HVACMode.HEAT_COOL
-        else:
-            return HVACMode.OFF
+        return HVACMode.OFF
 
     @property
     def hvac_modes(self) -> list[HVACMode]:
@@ -293,14 +283,14 @@ class LoxoneRoomController(LoxoneEntity, ClimateEntity, ABC):
 
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(uuid=self.uuidAction, value=f"setMode/{target_mode}"),
+            {"uuid": self.uuidAction, "value": f"setMode/{target_mode}"},
         )
 
         self.schedule_update_ha_state()
 
 
 class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
-    """Loxone room controller"""
+    """Loxone room controller."""
 
     _attr_has_entity_name = True
     _attr_supported_features = (
@@ -311,6 +301,7 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
     )
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneRoomControllerV2."""
         super().__init__(**kwargs)
         self._attr_name = None
         self.hass = kwargs["hass"]
@@ -321,11 +312,14 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
         self._modeList = kwargs["details"]["timerModes"]
 
     def get_mode_from_id(self, mode_id):
+        """Return mode from id."""
         for mode in self._modeList:
             if mode["id"] == mode_id:
                 return mode["name"]
+        return None
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         update = False
 
         for key in set(self._stateAttribUuids.values()) & event.keys():
@@ -335,13 +329,10 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
         if update:
             self.schedule_update_ha_state()
 
-        # _LOGGER.debug(f"State attribs after event handling: {self._stateAttribValues}")
-
     def get_state_value(self, name):
+        """Return state value."""
         uuid = self._stateAttribUuids[name]
-        return (
-            self._stateAttribValues[uuid] if uuid in self._stateAttribValues else None
-        )
+        return self._stateAttribValues.get(uuid, None)
 
     @property
     def extra_state_attributes(self):
@@ -356,6 +347,7 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
 
     @property
     def is_overridden(self) -> bool:
+        """Return whether is overridden."""
         _override_entries = self.get_state_value("overrideEntries")
         if _override_entries:
             _override_entries = json.loads(_override_entries)
@@ -369,24 +361,20 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
         return self.get_state_value("tempActual")
 
     def set_temperature(self, **kwargs):
-        """Set new target temperature"""
-        if (
-            self.get_state_value("operatingMode") > 2
-        ):  # Set manual temp if any of the manual modes selected
+        """Set new target temperature."""
+        if self.get_state_value("operatingMode") > 2:  # Set manual temp if any of the manual modes selected
             self.hass.bus.fire(
                 SENDDOMAIN,
-                dict(
-                    uuid=self.uuidAction,
-                    value=f'setManualTemperature/{kwargs["temperature"]}',
-                ),
+                {
+                    "uuid": self.uuidAction,
+                    "value": f"setManualTemperature/{kwargs['temperature']}",
+                },
             )
         else:  # Set comfort temp offset otherwise
-            new_offset = kwargs["temperature"] - self.get_state_value(
-                "comfortTemperature"
-            )
+            new_offset = kwargs["temperature"] - self.get_state_value("comfortTemperature")
             self.hass.bus.fire(
                 SENDDOMAIN,
-                dict(uuid=self.uuidAction, value=f"setComfortModeTemp/{new_offset}"),
+                {"uuid": self.uuidAction, "value": f"setComfortModeTemp/{new_offset}"},
             )
 
     @property
@@ -441,7 +429,6 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
     @property
     def target_temperature(self) -> float | None:
         """Return the temperature we try to reach."""
-
         return self.get_state_value("tempTarget")
 
     @property
@@ -455,7 +442,6 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
 
         Requires SUPPORT_PRESET_MODE.
         """
-        # return self._activeMode
         return self.get_mode_from_id(self.get_state_value("activeMode"))
 
     @property
@@ -468,31 +454,20 @@ class LoxoneRoomControllerV2(LoxoneEntity, ClimateEntity, ABC):
 
     def set_hvac_mode(self, hvac_mode: str):
         """Set new target hvac mode."""
-
-        target_mode = (
-            self._autoMode if hvac_mode == HVACMode.AUTO else OPMODETOLOXONE[hvac_mode]
-        )
+        target_mode = self._autoMode if hvac_mode == HVACMode.AUTO else OPMODETOLOXONE[hvac_mode]
 
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(uuid=self.uuidAction, value=f"setOperatingMode/{target_mode}"),
+            {"uuid": self.uuidAction, "value": f"setOperatingMode/{target_mode}"},
         )
 
         self.schedule_update_ha_state()
 
-        # if the mode selected is a manual one, we set the target temperature too
-        # if (hvac_mode != HVAC_MODE_AUTO):
-        #    self.set_temperature({"temperature": self.target_temperature})
-
     def set_preset_mode(self, preset_mode: str):
         """Set new preset mode."""
-        mode_id = next(
-            (mode["id"] for mode in self._modeList if mode["name"] == preset_mode), None
-        )
+        mode_id = next((mode["id"] for mode in self._modeList if mode["name"] == preset_mode), None)
         if mode_id is not None:
-            self.hass.bus.fire(
-                SENDDOMAIN, dict(uuid=self.uuidAction, value=f"override/{mode_id}")
-            )
+            self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": f"override/{mode_id}"})
             self.schedule_update_ha_state()
 
 
@@ -511,7 +486,8 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
     _attr_has_entity_name = True
 
     def __init__(self, **kwargs):
-        _LOGGER.debug(f"Input AcControl: {kwargs}")
+        """Initialize the LoxoneAcControl."""
+        _LOGGER.debug("Input AcControl: %s", kwargs)
         super().__init__(**kwargs)
         self._attr_name = None
         self.hass = kwargs["hass"]
@@ -521,6 +497,7 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         self.type = "AcControl"
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         update = False
 
         for key in set(self._stateAttribUuids.values()) & event.keys():
@@ -530,13 +507,10 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         if update:
             self.schedule_update_ha_state()
 
-        # _LOGGER.debug(f"State attribs after event handling: {self._stateAttribValues}")
-
     def get_state_value(self, name):
+        """Return state value."""
         uuid = self._stateAttribUuids[name]
-        return (
-            self._stateAttribValues[uuid] if uuid in self._stateAttribValues else None
-        )
+        return self._stateAttribValues.get(uuid, None)
 
     @property
     def extra_state_attributes(self):
@@ -555,13 +529,13 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         return self.get_state_value("temperature")
 
     def set_temperature(self, **kwargs):
-        """Set new target temperature"""
+        """Set new target temperature."""
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value=f'setTarget/{kwargs[ATTR_TEMPERATURE]}',
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": f"setTarget/{kwargs[ATTR_TEMPERATURE]}",
+            },
         )
 
     @property
@@ -573,19 +547,17 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         if self.get_state_value("status"):
             if self.get_state_value("mode") == 2:
                 return HVACMode.HEAT
-            elif self.get_state_value("mode") == 3:
+            if self.get_state_value("mode") == 3:
                 return HVACMode.COOL
-            elif self.get_state_value("mode") == 4:
+            if self.get_state_value("mode") == 4:
                 return HVACMode.DRY
-            elif self.get_state_value("mode") == 5:
+            if self.get_state_value("mode") == 5:
                 return HVACMode.FAN_ONLY
-            else:
-                return HVACMode.AUTO
+            return HVACMode.AUTO
         return HVACMode.OFF
 
     def set_hvac_mode(self, hvac_mode):
         """Set new target hvac mode."""
-
         mode = 1
         match hvac_mode:
             case HVACMode.HEAT:
@@ -596,21 +568,21 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
                 mode = 4
             case HVACMode.FAN_ONLY:
                 mode = 5
-        
+
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value="off" if hvac_mode == HVACMode.OFF else "on",
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": "off" if hvac_mode == HVACMode.OFF else "on",
+            },
         )
-        
+
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value=f'setMode/{mode}',
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": f"setMode/{mode}",
+            },
         )
 
     @property
@@ -633,21 +605,19 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
     @property
     def target_temperature(self) -> float | None:
         """Return the temperature we try to reach."""
-
         return self.get_state_value("targetTemperature")
 
     @property
     def target_temperature_step(self) -> float | None:
         """Return the supported step of target temperature."""
         return 0.5
-        
+
     @property
     def fan_mode(self) -> str | None:
         """Return current fan mode."""
-        
         if self.get_state_value("fanspeeds") is not None:
             modes = json.loads(self.get_state_value("fanspeeds"))
-            
+
             for mode in modes:
                 if self.get_state_value("fan") == mode["id"]:
                     return mode["name"]
@@ -658,28 +628,25 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
         """Set new target fan mode."""
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value=f'setFan/{next((o["id"] for o in json.loads(self.get_state_value("fanspeeds")) if o["name"] == fan_mode), None)}',
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": f"setFan/{next((o['id'] for o in json.loads(self.get_state_value('fanspeeds')) if o['name'] == fan_mode), None)}",
+            },
         )
 
     @property
     def fan_modes(self) -> list[str]:
         """Return the list of available hvac operation modes."""
-        
         if self.get_state_value("fanspeeds") is not None:
             return [o["name"] for o in json.loads(self.get_state_value("fanspeeds"))]
-        else:
-            return None
-        
+        return None
+
     @property
     def swing_mode(self) -> str | None:
         """Return current swing mode."""
-        
         if self.get_state_value("airflows") is not None:
             modes = json.loads(self.get_state_value("airflows"))
-            
+
             for mode in modes:
                 if self.get_state_value("ventMode") == mode["id"]:
                     return mode["name"]
@@ -688,20 +655,17 @@ class LoxoneAcControl(LoxoneEntity, ClimateEntity, ABC):
 
     def set_swing_mode(self, swing_mode):
         """Set new target swing mode."""
-        
         self.hass.bus.fire(
             SENDDOMAIN,
-            dict(
-                uuid=self.uuidAction,
-                value=f'setAirDir/{next((o["id"] for o in json.loads(self.get_state_value("airflows")) if o["name"] == swing_mode), None)}',
-            ),
+            {
+                "uuid": self.uuidAction,
+                "value": f"setAirDir/{next((o['id'] for o in json.loads(self.get_state_value('airflows')) if o['name'] == swing_mode), None)}",
+            },
         )
 
     @property
     def swing_modes(self) -> list[str]:
         """Return the list of available swing modes."""
-        
         if self.get_state_value("airflows") is not None:
             return [o["name"] for o in json.loads(self.get_state_value("airflows"))]
-        else:
-            return None
+        return None

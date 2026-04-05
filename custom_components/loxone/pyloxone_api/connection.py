@@ -8,17 +8,17 @@ operations are delegated to ``crypto.py``.
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 import json
 import logging
-from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, NoReturn, Optional, Union
-from collections.abc import Awaitable, Callable
+from typing import Any, NoReturn, Self
 from urllib.parse import urlparse
 
+from async_upnp_client import aiohttp
 import websockets as wslib
 import websockets.exceptions
-from async_upnp_client import aiohttp
 
 from .const import (
     CMD_AUTH_WITH_TOKEN,
@@ -70,7 +70,6 @@ from .loxone_http_client import LoxoneAsyncHttpClient
 from .loxone_token import LoxoneToken, LxJsonKeySalt
 from .message import (
     BaseMessage,
-    BinaryFile,
     Keepalive,
     LLResponse,
     MessageType,
@@ -84,8 +83,40 @@ from .websocket_protocol import LoxoneClientConnection
 _LOGGER = logging.getLogger(__name__)
 
 
+def _require_api_value_dict(value: Any) -> dict[str, Any]:
+    """Return require api value dict."""
+    if not isinstance(value, dict):
+        raise TypeError(f"Expected dict response, got {type(value)}")
+    return value
+
+
+def _require_http_ok(response: Any, *, what: str) -> None:
+    """Return require http ok."""
+    if response.status != 200:
+        raise RuntimeError(f"{what}, status: {response.status}")
+
+
+def _require_public_key_payload(pk: Any) -> None:
+    """Return require public key payload."""
+    if not pk:
+        raise ValueError("Empty public key received")
+
+
+def _ensure_connection_open(connection: LoxoneClientConnection) -> None:
+    """Return ensure connection open."""
+    if not connection or connection.state == connection.state.CLOSED:
+        raise LoxoneConnectionError("Connection is closed")
+
+
+def _raise_out_of_service() -> NoReturn:
+    """Return raise out of service."""
+    raise LoxoneOutOfServiceException
+
+
 @dataclass
 class MessageForQueue:
+    """Represent message for queue."""
+
     command: str
     flag: bool
 
@@ -102,10 +133,11 @@ class LoxoneConnection:
         username: str,
         password: str,
         *,
-        token: Optional[dict] = None,
+        token: dict | None = None,
         port: int = 8080,
-        timeout: Optional[float] = None,
+        timeout: float | None = None,
     ):
+        """Initialize the LoxoneConnection."""
         if not host or not isinstance(host, str):
             raise ValueError("Host must be a non-empty string")
         if not username or not isinstance(username, str):
@@ -114,12 +146,8 @@ class LoxoneConnection:
             raise ValueError("Password must be a non-empty string")
         if not isinstance(port, int) or port < 1 or port > 65535:
             raise ValueError(f"Port must be an integer between 1 and 65535, got {port}")
-        if timeout is not None and (
-            not isinstance(timeout, (int, float)) or timeout < 0
-        ):
-            raise ValueError(
-                f"Timeout must be a non-negative number or None, got {timeout}"
-            )
+        if timeout is not None and (not isinstance(timeout, (int, float)) or timeout < 0):
+            raise ValueError(f"Timeout must be a non-negative number or None, got {timeout}")
 
         self.host = host
         self.username = username
@@ -137,12 +165,12 @@ class LoxoneConnection:
         # Parse host to extract scheme
         try:
             parsed = urlparse(host if "://" in host else f"//{host}", scheme="")
-            self.scheme = parsed.scheme or ("https" if port == 443 else "http")
-            netloc = parsed.hostname or parsed.path
-            if not netloc:
-                raise ValueError(f"Cannot parse hostname from '{host}'")
-        except Exception as e:
+        except ValueError as e:
             raise ValueError(f"Invalid host format '{host}': {e}") from e
+        self.scheme = parsed.scheme or ("https" if port == 443 else "http")
+        netloc = parsed.hostname or parsed.path
+        if not netloc:
+            raise ValueError(f"Cannot parse hostname from '{host}'")
 
         default_port = 80 if self.scheme == "http" else 443
         used_port = port if port and port != default_port else None
@@ -174,28 +202,32 @@ class LoxoneConnection:
         self._message_queue: asyncio.Queue[MessageForQueue] = asyncio.Queue(maxsize=1000)
         self._secured_queue: asyncio.Queue = asyncio.Queue(maxsize=1)
         self.message_header = None
+        self._background_tasks: set[asyncio.Task[Any]] = set()
+
+    def _track_background_task(self, task: asyncio.Task[Any]) -> None:
+        """Return track background task."""
+        self._background_tasks.add(task)
+        task.add_done_callback(self._background_tasks.discard)
 
     def _init_token(self, token: dict | None) -> None:
+        """Return init token."""
         try:
-            if (
-                token
-                and token.get("token")
-                and token.get("valid_until")
-                and token.get("hash_alg")
-            ):
+            if token and token.get("token") and token.get("valid_until") and token.get("hash_alg"):
                 t = token
-                if t["hash_alg"] not in ("SHA1", "SHA256"):
-                    raise ValueError(f"hash_alg must be 'SHA1' or 'SHA256'")
-                self._token = LoxoneToken(
-                    token=t["token"],
-                    valid_until=t["valid_until"],
-                    hash_alg=t["hash_alg"],
-                    key="",
-                    unsecure_password=t.get("unsecure_password", False),
-                )
+                if t["hash_alg"] in ("SHA1", "SHA256"):
+                    self._token = LoxoneToken(
+                        token=t["token"],
+                        valid_until=t["valid_until"],
+                        hash_alg=t["hash_alg"],
+                        key="",
+                        unsecure_password=t.get("unsecure_password", False),
+                    )
+                else:
+                    _LOGGER.warning("Invalid hash_alg in stored token, resetting")
+                    self._token = LoxoneToken()
             else:
                 self._token = LoxoneToken()
-        except Exception as e:
+        except (KeyError, TypeError, ValueError) as e:
             _LOGGER.error("Failed to initialize token: %s", e)
             self._token = LoxoneToken()
 
@@ -203,6 +235,7 @@ class LoxoneConnection:
 
     @property
     def is_connected(self) -> bool:
+        """Return whether is connected."""
         return (
             self.connection is not None
             and hasattr(self.connection, "protocol")
@@ -210,6 +243,7 @@ class LoxoneConnection:
         )
 
     def get_token_dict(self) -> dict:
+        """Return token dict."""
         try:
             return {
                 "token": self._token.token,
@@ -222,6 +256,7 @@ class LoxoneConnection:
             return {}
 
     def reset_token(self) -> None:
+        """Reset token."""
         self._token = LoxoneToken()
         _LOGGER.debug("Token reset successfully")
 
@@ -239,20 +274,19 @@ class LoxoneConnection:
         return encrypt_command(self._aes_key, self._iv, self._salt, command)
 
     def _hash_token(self) -> str | None:
+        """Return hash token."""
         if not self._token or not self._token.token or not self._key:
             return None
         return hash_token(self._token.token, self._key, self._hash_alg)
 
     def _hash_credentials(self) -> str | None:
-        return hash_credentials(
-            self.username, self.password, self._user_salt, self._key, self._hash_alg
-        )
+        """Return hash credentials."""
+        return hash_credentials(self.username, self.password, self._user_salt, self._key, self._hash_alg)
 
     # -- Send commands ---------------------------------------------------------
 
-    async def _send_text_command(
-        self, command: str = "", encrypted: bool = False
-    ) -> None:
+    async def _send_text_command(self, command: str = "", encrypted: bool = False) -> None:
+        """Return send text command."""
         _LOGGER.debug("Send text command: %s", command)
         if encrypted:
             command = self._encrypt_and_send_command(command)
@@ -261,16 +295,13 @@ class LoxoneConnection:
                 _LOGGER.warning("Cannot send command — connection is not open")
             await self.connection.send([command])
         except websockets.ConnectionClosedOK:
-            raise LoxoneConnectionClosedOk(
-                "Connection closed normally while sending command"
-            )
+            raise LoxoneConnectionClosedOk("Connection closed normally while sending command") from None
         except Exception as e:
             _LOGGER.error("Error while sending: %s", e)
             raise
 
-    async def send_websocket_command(
-        self, device_uuid: str, value: Union[str, int, float]
-    ) -> None:
+    async def send_websocket_command(self, device_uuid: str, value: str | float) -> None:
+        """Send websocket command."""
         if not device_uuid or not isinstance(device_uuid, str):
             raise ValueError("device_uuid must be a non-empty string")
         command = f"jdev/sps/io/{device_uuid}/{value}"
@@ -283,11 +314,10 @@ class LoxoneConnection:
                 self._message_queue.maxsize,
                 device_uuid,
             )
-            raise RuntimeError("Message queue is full, cannot send command")
+            raise RuntimeError("Message queue is full, cannot send command") from None
 
-    async def send_secured__websocket_command(
-        self, device_uuid: str, value: Union[str, int, float], code: str
-    ) -> None:
+    async def send_secured__websocket_command(self, device_uuid: str, value: str | float, code: str) -> None:
+        """Send secured websocket command."""
         if not device_uuid or not isinstance(device_uuid, str):
             raise ValueError("device_uuid must be a non-empty string")
         if value is None or not isinstance(value, (str, int, float)):
@@ -298,15 +328,14 @@ class LoxoneConnection:
         command = f"{CMD_GET_VISUAL_PASSWD}{self.username}"
         _LOGGER.debug("Call send_secured__websocket_command: %s", command)
         try:
-            self._secured_queue.put_nowait(
-                self._send_secure(device_uuid, value, code)
-            )
+            self._secured_queue.put_nowait(self._send_secure(device_uuid, value, code))
             self._message_queue.put_nowait(MessageForQueue(command=command, flag=True))
         except asyncio.QueueFull:
             _LOGGER.error("Queue is full, dropping secured command")
-            raise RuntimeError("Queue is full, cannot send secured command")
+            raise RuntimeError("Queue is full, cannot send secured command") from None
 
     async def _send_secure(self, device_uuid: str, value: Any, code: str) -> None:
+        """Return send secure."""
         if self._visual_hash is None:
             _LOGGER.error("No visual hash available for secure command")
             return
@@ -323,22 +352,23 @@ class LoxoneConnection:
 
     # -- Context manager -------------------------------------------------------
 
-    async def __aenter__(self) -> LoxoneConnection:
+    async def __aenter__(self) -> Self:
+        """Return aenter."""
         return self
 
     async def __aexit__(
         self,
-        exc_type: type | None,
+        exc_type: type[BaseException] | None,
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
+        """Return aexit."""
         await self.close()
 
     # -- open() — HTTP bootstrap -----------------------------------------------
 
-    async def open(
-        self, session: aiohttp.ClientSession | None = None
-    ) -> LoxoneClientConnection:
+    async def open(self, session: aiohttp.ClientSession | None = None) -> LoxoneClientConnection:
+        """Open."""
         if self._closed:
             raise RuntimeError("Cannot open a closed connection")
 
@@ -362,20 +392,19 @@ class LoxoneConnection:
                     if attempt < RECONNECT_TRIES - 1:
                         _LOGGER.debug(
                             "Connection error (attempt %d/%d), retrying in %ds: %s",
-                            attempt + 1, RECONNECT_TRIES, RECONNECT_DELAY, e,
+                            attempt + 1,
+                            RECONNECT_TRIES,
+                            RECONNECT_DELAY,
+                            e,
                         )
                         await asyncio.sleep(RECONNECT_DELAY)
                     else:
                         _LOGGER.exception("Max connection tries exceeded. Stopping.")
                         raise
 
-            data = await asyncio.wait_for(
-                api_resp.content.read(), timeout=self.timeout or TIMEOUT
-            )
+            data = await asyncio.wait_for(api_resp.content.read(), timeout=self.timeout or TIMEOUT)
             _value = LLResponse(data).value
-            value = json.loads(_value.replace("'", '"'))
-            if not isinstance(value, dict):
-                raise ValueError(f"Expected dict response, got {type(value)}")
+            value = _require_api_value_dict(json.loads(_value.replace("'", '"')))
 
             version_str = value.get("version")
             if version_str:
@@ -392,48 +421,40 @@ class LoxoneConnection:
                 try:
                     connector.base_url = str(api_resp.url).replace(CMD_GET_API_KEY, "")
                     self.url = connector.base_url.replace("https://", "").replace("http://", "")
-                except Exception as e:
+                except (TypeError, ValueError, AttributeError) as e:
                     _LOGGER.warning("Failed to update URL for remote access: %s", e)
 
             # Fetch structure file
             lox_app_data = await connector.get(LOXAPPPATH)
-            if lox_app_data.status != 200:
-                raise RuntimeError(f"Failed to get structure file, status: {lox_app_data.status}")
+            _require_http_ok(lox_app_data, what="Failed to get structure file")
 
-            data = await asyncio.wait_for(
-                lox_app_data.content.read(), timeout=self.timeout or TIMEOUT
-            )
+            data = await asyncio.wait_for(lox_app_data.content.read(), timeout=self.timeout or TIMEOUT)
             self.structure_file = json.loads(data)
             self.structure_file["softwareVersion"] = self.miniserver_version
 
             # Fetch public key
             pk_data = await connector.get(CMD_GET_PUBLIC_KEY)
-            pk_data_text = await asyncio.wait_for(
-                pk_data.content.read(), timeout=self.timeout or TIMEOUT
-            )
+            pk_data_text = await asyncio.wait_for(pk_data.content.read(), timeout=self.timeout or TIMEOUT)
             pk = LLResponse(pk_data_text).value
-            if not pk:
-                raise ValueError("Empty public key received")
+            _require_public_key_payload(pk)
             self._public_key = parse_public_key(pk)
 
         except LoxoneServiceUnAvailableError:
             raise
-        except Exception as e:
-            _LOGGER.error("Failed to initialize connection: %s", e, exc_info=True)
+        except Exception:
+            _LOGGER.exception("Failed to initialize connection")
             raise
         finally:
             if session is None and connector:
                 try:
                     await connector.session.close()
-                except Exception as e:
+                except OSError as e:
                     _LOGGER.warning("Error closing HTTP session: %s", e)
 
         # Build session key
         try:
-            self._session_key = make_session_key(
-                self._public_key, self._aes_key, self._iv
-            )
-        except Exception as exc:
+            self._session_key = make_session_key(self._public_key, self._aes_key, self._iv)
+        except (TypeError, ValueError) as exc:
             raise LoxoneException(f"Session key generation failed: {exc}") from exc
 
         # Generate first salt
@@ -459,8 +480,8 @@ class LoxoneConnection:
                 ),
                 timeout=(self.timeout or TIMEOUT) * 2,
             )
-        except asyncio.TimeoutError:
-            raise TimeoutError(f"Timeout connecting to websocket at {base_url}")
+        except TimeoutError:
+            raise TimeoutError(f"Timeout connecting to websocket at {base_url}") from None
         except websockets.exceptions.WebSocketException as e:
             raise LoxoneConnectionError(f"Websocket connection failed: {e}") from e
         except OSError as e:
@@ -475,12 +496,10 @@ class LoxoneConnection:
         self,
         callback: Callable[[Any], Awaitable[None] | None] | None = None,
     ) -> None:
+        """Start listening."""
         if not self.connection:
-            raise RuntimeError(
-                "No existing connection — call open(session) before start_listening()"
-            )
-        else:
-            _LOGGER.debug("Using existing connection.")
+            raise RuntimeError("No existing connection — call open(session) before start_listening()")
+        _LOGGER.debug("Using existing connection.")
 
         self._shutdown_event.clear()
 
@@ -499,14 +518,12 @@ class LoxoneConnection:
         ]
 
         try:
-            done, pending = await asyncio.wait(
-                self._pending_task, return_when=asyncio.FIRST_EXCEPTION
-            )
+            done, _pending = await asyncio.wait(self._pending_task, return_when=asyncio.FIRST_EXCEPTION)
             for task in done:
                 try:
                     await task
                 except websockets.exceptions.ConnectionClosedOK:
-                    raise LoxoneConnectionClosedOk
+                    raise LoxoneConnectionClosedOk from None
                 except LoxoneTokenError:
                     raise
                 except LoxoneOutOfServiceException:
@@ -530,6 +547,7 @@ class LoxoneConnection:
                 await asyncio.gather(*self._pending_task, return_exceptions=True)
 
     async def _keep_alive(self) -> NoReturn:
+        """Return keep alive."""
         try:
             while True:
                 await asyncio.sleep(KEEP_ALIVE_PERIOD)
@@ -541,55 +559,54 @@ class LoxoneConnection:
             raise
 
     async def _check_and_refresh_token(self) -> NoReturn:
+        """Return check and refresh token."""
         _LOGGER.debug("Start check refresh token task...")
         await asyncio.sleep(DELAY_CHECK_TOKEN_REFRESH)
-        try:
-            while not self._shutdown_event.is_set():
+        while not self._shutdown_event.is_set():
+            try:
+                candidate = int(self._token.seconds_to_expire() * 0.5)
+                seconds_to_refresh = max(1, min(candidate, MAX_REFRESH_DELAY))
+                _LOGGER.debug("Token refresh in %ds", seconds_to_refresh)
+
+                await asyncio.sleep(seconds_to_refresh)
+                if self._shutdown_event.is_set():
+                    break
+
+                old_key = self._key
+                key_updated_event = asyncio.Event()
+                self._key_update_event = key_updated_event
+
                 try:
-                    candidate = int(self._token.seconds_to_expire() * 0.5)
-                    seconds_to_refresh = max(1, min(candidate, MAX_REFRESH_DELAY))
-                    _LOGGER.debug("Token refresh in %ds", seconds_to_refresh)
-
-                    await asyncio.sleep(seconds_to_refresh)
-                    if self._shutdown_event.is_set():
-                        break
-
-                    old_key = self._key
-                    key_updated_event = asyncio.Event()
-                    self._key_update_event = key_updated_event
-
-                    try:
-                        asyncio.create_task(
-                            self._send_text_command(CMD_GET_KEY, encrypted=False)
-                        )
-                        await asyncio.sleep(0)
-                    except Exception as exc:
-                        _LOGGER.error("Error requesting new key: %s", exc)
-                        self._key_update_event = None
-                        await asyncio.sleep(1)
-                        continue
-
-                    try:
-                        await asyncio.wait_for(key_updated_event.wait(), timeout=15.0)
-                        if self._key != old_key:
-                            _LOGGER.debug("Key changed successfully.")
-                            asyncio.create_task(self._refresh_token())
-                        else:
-                            _LOGGER.warning("Key was not updated despite event being set")
-                    except asyncio.TimeoutError:
-                        _LOGGER.warning("Timed out waiting for new key (15s)")
-                    finally:
-                        self._key_update_event = None
-
-                except asyncio.CancelledError:
-                    raise
-                except Exception as e:
-                    _LOGGER.error("Error in token refresh cycle: %s", e)
+                    self._track_background_task(
+                        asyncio.create_task(self._send_text_command(CMD_GET_KEY, encrypted=False))
+                    )
+                    await asyncio.sleep(0)
+                except (RuntimeError, OSError, ValueError) as exc:
+                    _LOGGER.error("Error requesting new key: %s", exc)
+                    self._key_update_event = None
                     await asyncio.sleep(1)
-        except asyncio.CancelledError:
-            raise
+                    continue
+
+                try:
+                    await asyncio.wait_for(key_updated_event.wait(), timeout=15.0)
+                    if self._key != old_key:
+                        _LOGGER.debug("Key changed successfully.")
+                        self._track_background_task(asyncio.create_task(self._refresh_token()))
+                    else:
+                        _LOGGER.warning("Key was not updated despite event being set")
+                except TimeoutError:
+                    _LOGGER.warning("Timed out waiting for new key (15s)")
+                finally:
+                    self._key_update_event = None
+
+            except asyncio.CancelledError:
+                raise
+            except Exception as e:  # noqa: BLE001 — continue token refresh loop after any failure
+                _LOGGER.error("Error in token refresh cycle: %s", e)
+                await asyncio.sleep(1)
 
     async def _refresh_token(self) -> None:
+        """Return refresh token."""
         token_hash = self._hash_token()
         if token_hash is None:
             _LOGGER.error("Failed to hash token for refresh")
@@ -601,30 +618,27 @@ class LoxoneConnection:
         await self._message_queue.put(MessageForQueue(command, True))
 
     async def _reconnect_task(self) -> None:
-        try:
-            while True:
-                t_shutdown = asyncio.create_task(self._shutdown_event.wait())
-                t_reconnect = asyncio.create_task(self._reconnect_event.wait())
-                try:
-                    await asyncio.wait(
-                        {t_shutdown, t_reconnect}, return_when=asyncio.FIRST_COMPLETED
-                    )
-                finally:
-                    for t in (t_shutdown, t_reconnect):
-                        if not t.done():
-                            t.cancel()
+        """Return reconnect task."""
+        while True:
+            t_shutdown = asyncio.create_task(self._shutdown_event.wait())
+            t_reconnect = asyncio.create_task(self._reconnect_event.wait())
+            try:
+                await asyncio.wait({t_shutdown, t_reconnect}, return_when=asyncio.FIRST_COMPLETED)
+            finally:
+                for t in (t_shutdown, t_reconnect):
+                    if not t.done():
+                        t.cancel()
 
-                if self._shutdown_event.is_set():
-                    return
-                if self._reconnect_event.is_set():
-                    self._reconnect_event.clear()
-                    raise LoxoneTokenError
-        except asyncio.CancelledError:
-            raise
+            if self._shutdown_event.is_set():
+                return
+            if self._reconnect_event.is_set():
+                self._reconnect_event.clear()
+                raise LoxoneTokenError
 
     # -- Message processing ----------------------------------------------------
 
     async def _process_message(self) -> NoReturn:
+        """Return process message."""
         _LOGGER.debug("Message processing task started")
         try:
             while not self._shutdown_event.is_set():
@@ -632,17 +646,17 @@ class LoxoneConnection:
                     msg = await self._message_queue.get()
                     await asyncio.sleep(0)
                     try:
-                        asyncio.create_task(
-                            self._send_text_command(msg.command, encrypted=msg.flag)
+                        self._track_background_task(
+                            asyncio.create_task(self._send_text_command(msg.command, encrypted=msg.flag))
                         )
                         await asyncio.sleep(0)
-                    except Exception as e:
+                    except (OSError, RuntimeError, ValueError) as e:
                         _LOGGER.error("Error sending message: %s", e)
                     finally:
                         self._message_queue.task_done()
                 except asyncio.CancelledError:
                     raise
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001 — keep processor alive; log and backoff
                     _LOGGER.error("Error in message processing loop: %s", e)
                     await asyncio.sleep(0.1)
         except asyncio.CancelledError:
@@ -651,7 +665,7 @@ class LoxoneConnection:
                     msg = self._message_queue.get_nowait()
                     try:
                         await self._send_text_command(msg.command, encrypted=msg.flag)
-                    except Exception:
+                    except Exception:  # noqa: BLE001 — best-effort drain on shutdown
                         pass
                     finally:
                         self._message_queue.task_done()
@@ -666,6 +680,7 @@ class LoxoneConnection:
         callback: Callable[[Any], Awaitable[None] | None] | None,
         connection: LoxoneClientConnection,
     ) -> None:
+        """Return do start listening."""
         callback_types = {
             MessageType.VALUE_STATES,
             MessageType.TEXT_STATES,
@@ -678,22 +693,21 @@ class LoxoneConnection:
         async def _run_callback(msg: BaseMessage) -> None:
             try:
                 await callback(msg.as_dict())
-            except Exception as e:
-                _LOGGER.error("Callback error: %s", e, exc_info=True)
+            except Exception:
+                _LOGGER.exception("Callback error")
 
         try:
             async for message in connection:
-                if not connection or connection.state == connection.state.CLOSED:
-                    raise LoxoneConnectionError("Connection is closed")
+                _ensure_connection_open(connection)
 
                 message_length = len(message)
 
                 if message_length == 8:
                     last_header = parse_header(message)
                     if last_header.message_type == MessageType.OUT_OF_SERVICE:
-                        raise LoxoneOutOfServiceException
+                        _raise_out_of_service()
                     if last_header.message_type == MessageType.KEEPALIVE:
-                        asyncio.create_task(_run_callback(Keepalive("")))
+                        self._track_background_task(asyncio.create_task(_run_callback(Keepalive(""))))
 
                 elif last_header and last_header.payload_length == message_length:
                     msg_type = last_header.message_type
@@ -702,23 +716,24 @@ class LoxoneConnection:
                         message = check_and_decode_if_needed(message)
 
                     parsed_message = parse_message(message, msg_type)
-                    asyncio.create_task(self._websocket_event(parsed_message))
+                    self._track_background_task(asyncio.create_task(self._websocket_event(parsed_message)))
 
                     if callback and msg_type in callback_types:
-                        asyncio.create_task(_run_callback(parsed_message))
+                        self._track_background_task(asyncio.create_task(_run_callback(parsed_message)))
                 else:
                     _LOGGER.error("Message not handled: %s", message)
         except asyncio.CancelledError:
             raise
         except (LoxoneTokenError, LoxoneOutOfServiceException, LoxoneConnectionError):
             raise
-        except Exception as e:
-            _LOGGER.error("Unexpected error in listening loop: %s", e, exc_info=True)
+        except Exception:
+            _LOGGER.exception("Unexpected error in listening loop")
             raise
 
     # -- Internal event dispatch -----------------------------------------------
 
     async def _websocket_event(self, message: dict[str, Any] | BaseMessage) -> None:
+        """Return websocket event."""
         if message is None:
             return
 
@@ -738,22 +753,29 @@ class LoxoneConnection:
                 return
 
             # Decrypt if needed
-            if (
-                hasattr(mess_obj, "control")
-                and mess_obj.control
-                and "/enc/" in mess_obj.control
-            ):
-                mess_obj.control = decrypt_command(
-                    self._aes_key, self._iv, mess_obj.control
-                )
+            if hasattr(mess_obj, "control") and mess_obj.control and "/enc/" in mess_obj.control:
+                mess_obj.control = decrypt_command(self._aes_key, self._iv, mess_obj.control)
 
             if isinstance(mess_obj, TextMessage):
                 await self._handle_text_event(mess_obj)
 
         except LoxoneTokenError:
             raise
-        except Exception as e:
-            _LOGGER.error("Error in websocket event handler: %s", e, exc_info=True)
+        except Exception:
+            _LOGGER.exception("Error in websocket event handler")
+
+    async def _drain_secured_queue(self) -> None:
+        """Run pending secured commands after visual hash / salt is ready."""
+        while not self._secured_queue.empty():
+            try:
+                awaitable = self._secured_queue.get_nowait()
+                if awaitable:
+                    await awaitable
+                self._secured_queue.task_done()
+            except asyncio.QueueEmpty:
+                break
+            except (OSError, RuntimeError, ValueError) as e:
+                _LOGGER.error("Error processing secured queue item: %s", e)
 
     async def _handle_text_event(self, msg: TextMessage) -> None:
         """Route a text protocol message to the appropriate handler."""
@@ -815,16 +837,7 @@ class LoxoneConnection:
             key_and_salt.time_elapsed_in_seconds = time_elapsed_in_seconds()
             self._visual_hash = key_and_salt
 
-            while not self._secured_queue.empty():
-                try:
-                    awaitable = self._secured_queue.get_nowait()
-                    if awaitable:
-                        await awaitable
-                    self._secured_queue.task_done()
-                except asyncio.QueueEmpty:
-                    break
-                except Exception as e:
-                    _LOGGER.error("Error processing secured queue item: %s", e)
+            await self._drain_secured_queue()
 
         elif "gettoken" in m or "getjwt" in m:
             vd = msg.value_as_dict
@@ -839,9 +852,7 @@ class LoxoneConnection:
             if not self._token.token:
                 _LOGGER.error("Received empty token")
                 return
-            await self._message_queue.put(
-                MessageForQueue(CMD_ENABLE_UPDATES, True)
-            )
+            await self._message_queue.put(MessageForQueue(CMD_ENABLE_UPDATES, True))
 
         elif "authwithtoken" in m:
             if msg.code == 401:
@@ -850,9 +861,7 @@ class LoxoneConnection:
                 self._reconnect_event.set()
             else:
                 _LOGGER.debug("Got message authwithtoken")
-                await self._message_queue.put(
-                    MessageForQueue(CMD_ENABLE_UPDATES, True)
-                )
+                await self._message_queue.put(MessageForQueue(CMD_ENABLE_UPDATES, True))
 
         elif "refreshjwt" in m or "refresh" in m:
             _LOGGER.debug("Got token refresh response")
@@ -873,6 +882,7 @@ class LoxoneConnection:
     # -- close() ---------------------------------------------------------------
 
     async def close(self) -> None:
+        """Close."""
         if self._closed:
             return
 
@@ -883,7 +893,7 @@ class LoxoneConnection:
         if self._message_queue and self._message_queue.qsize() > 0:
             try:
                 await asyncio.wait_for(self._message_queue.join(), timeout=5.0)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 _LOGGER.warning("Timeout waiting for message queue to drain")
 
         if self._pending_task:
@@ -893,11 +903,18 @@ class LoxoneConnection:
             await asyncio.gather(*self._pending_task, return_exceptions=True)
             self._pending_task = []
 
+        if self._background_tasks:
+            for task in self._background_tasks:
+                if not task.done():
+                    task.cancel()
+            await asyncio.gather(*self._background_tasks, return_exceptions=True)
+            self._background_tasks.clear()
+
         if self.connection:
             try:
                 if self.connection.state != self.connection.state.CLOSED:
                     await asyncio.wait_for(self.connection.close(), timeout=5.0)
-            except (asyncio.TimeoutError, Exception) as e:
+            except (TimeoutError, OSError, wslib.exceptions.WebSocketException) as e:
                 _LOGGER.warning("Error closing websocket: %s", e)
             finally:
                 self.connection = None

@@ -20,8 +20,8 @@ from custom_components.loxone.helpers import (
     to_loxone_color_temp,
 )
 
-
 # -- map_range ---------------------------------------------------------------
+
 
 class TestMapRange:
     @pytest.mark.parametrize(
@@ -48,6 +48,7 @@ class TestMapRange:
 
 
 # -- Brightness conversions --------------------------------------------------
+
 
 class TestBrightnessConversions:
     @pytest.mark.parametrize(
@@ -80,6 +81,7 @@ class TestBrightnessConversions:
 
 # -- Clamped brightness conversions ------------------------------------------
 
+
 class TestClampedBrightness:
     def test_lox2lox_mapped_below_min(self):
         assert lox2lox_mapped(5, 10, 100) == 0
@@ -105,12 +107,13 @@ class TestClampedBrightness:
 
 # -- Color temperature conversions -------------------------------------------
 
+
 class TestColorTempConversions:
     @pytest.mark.parametrize(
         ("kelvin", "mired"),
         [
-            (2700, 500),   # warmest
-            (6500, 153),   # coolest
+            (2700, 500),  # warmest
+            (6500, 153),  # coolest
         ],
     )
     def test_to_hass_boundaries(self, kelvin, mired):
@@ -146,6 +149,7 @@ class TestColorTempConversions:
 
 
 # -- get_miniserver_type ------------------------------------------------------
+
 
 class TestGetMiniserverType:
     @pytest.mark.parametrize(

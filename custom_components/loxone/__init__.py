@@ -1,48 +1,63 @@
-"""
-Component to create an interface to the Loxone Miniserver.
+"""Component to create an interface to the Loxone Miniserver.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
 import asyncio
+from functools import cached_property
 import logging
 import re
-from functools import cached_property
 
-import homeassistant.components.group as group
 import voluptuous as vol
+
+from homeassistant.components import group
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (CONF_HOST, CONF_PASSWORD, CONF_PORT,
-                                 CONF_USERNAME, EVENT_COMPONENT_LOADED,
-                                 Platform)
+from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME, EVENT_COMPONENT_LOADED, Platform
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import ConfigEntryNotReady, HomeAssistantError
-from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import config_validation as cv
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import (
+    area_registry as ar,
+    config_validation as cv,
+    device_registry as dr,
+    entity_registry as er,
+)
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo, Entity
-
-from .bridge import BridgeRuntime
 from homeassistant.setup import async_setup_component
 
-from .const import (ATTR_AREA_CREATE, ATTR_CODE, ATTR_DEVICE,
-                    ATTR_UUID, ATTR_VALUE, CONF_CREATE_AREAS,
-                    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, CONF_SCENE_GEN,
-                    CONF_SCENE_GEN_DELAY, DEFAULT, DEFAULT_DELAY_SCENE,
-                    DEFAULT_PORT, DOMAIN,
-                    LOXONE_PLATFORMS, SECUREDSENDDOMAIN, SENDDOMAIN, cfmt)
+from .bridge import BridgeRuntime
+from .const import (
+    ATTR_AREA_CREATE,
+    ATTR_CODE,
+    ATTR_DEVICE,
+    ATTR_UUID,
+    ATTR_VALUE,
+    CONF_CREATE_AREAS,
+    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
+    CONF_SCENE_GEN,
+    CONF_SCENE_GEN_DELAY,
+    DEFAULT,
+    DEFAULT_DELAY_SCENE,
+    DEFAULT_PORT,
+    DOMAIN,
+    LOXONE_PLATFORMS,
+    SECUREDSENDDOMAIN,
+    SENDDOMAIN,
+    cfmt,
+)
 from .coordinator import ConnectionState, LoxoneCoordinator
+from .pyloxone_api.exceptions import (
+    LoxoneConnectionClosedOk,
+    LoxoneConnectionError,
+    LoxoneServiceUnAvailableError,
+    LoxoneUnauthorisedError,
+)
+from .websocket import register_panel
 
 type LoxoneConfigEntry = ConfigEntry[LoxoneCoordinator]
-from .pyloxone_api.exceptions import (LoxoneConnectionClosedOk,
-                                      LoxoneConnectionError,
-                                      LoxoneServiceUnAvailableError,
-                                      LoxoneUnauthorisedError)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -55,9 +70,7 @@ CONFIG_SCHEMA = vol.Schema(
                 vol.Required(CONF_HOST): cv.string,
                 vol.Optional(CONF_PORT, default=DEFAULT_PORT): cv.port,
                 vol.Optional(CONF_SCENE_GEN, default=True): cv.boolean,
-                vol.Optional(
-                    CONF_SCENE_GEN_DELAY, default=DEFAULT_DELAY_SCENE
-                ): cv.positive_int,
+                vol.Optional(CONF_SCENE_GEN_DELAY, default=DEFAULT_DELAY_SCENE): cv.positive_int,
                 vol.Required(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, default=False): bool,
             }
         ),
@@ -67,7 +80,7 @@ CONFIG_SCHEMA = vol.Schema(
 
 _UNDEF: dict = {}
 
-# TODO: get version and check for updates https://update.loxone.com/updatecheck.xml?serial=xxxxxxxxx
+# TODO(PyLoxone): get version and check for updates https://update.loxone.com/updatecheck.xml?serial=xxxxxxxxx
 
 
 def _get_coordinator(hass: HomeAssistant) -> LoxoneCoordinator | None:
@@ -92,8 +105,7 @@ async def _async_sync_areas(
     dr_registry = dr.async_get(hass)
 
     loxone_entities = [e for e in er_registry.entities.values() if e.platform == DOMAIN]
-    _LOGGER.debug("sync_areas: found %d loxone entities (create_areas=%s)",
-                   len(loxone_entities), create_areas)
+    _LOGGER.debug("sync_areas: found %d loxone entities (create_areas=%s)", len(loxone_entities), create_areas)
 
     no_state = []
     no_room = []
@@ -135,8 +147,9 @@ async def _async_sync_areas(
         device = dr_registry.async_get(device_id)
         if device and device.area_id != area.id:
             dr_registry.async_update_device(device_id, area_id=area.id)
-            _LOGGER.debug("sync_areas: device %s → area '%s' (was %s)",
-                          device.name or device_id, room_name, device.area_id)
+            _LOGGER.debug(
+                "sync_areas: device %s → area '%s' (was %s)", device.name or device_id, room_name, device.area_id
+            )
             devices_updated += 1
         else:
             devices_ok += 1
@@ -175,17 +188,21 @@ async def _async_sync_areas(
         "%d entity override(s) cleared, %d orphan(s) updated, "
         "%d room(s) created from structure, "
         "%d no state, %d no room attr, %d room not found",
-        devices_updated, devices_ok, overrides_cleared, orphans_updated,
+        devices_updated,
+        devices_ok,
+        overrides_cleared,
+        orphans_updated,
         rooms_created,
-        len(no_state), len(no_room), len(no_area),
+        len(no_state),
+        len(no_room),
+        len(no_area),
     )
     if no_state:
         _LOGGER.debug("sync_areas: entities with no state: %s", no_state)
     if no_room:
         _LOGGER.debug("sync_areas: entities missing 'room' attribute: %s", no_room)
     if no_area:
-        _LOGGER.debug("sync_areas: room not found in HA areas (create_areas=%s): %s",
-                      create_areas, no_area)
+        _LOGGER.debug("sync_areas: room not found in HA areas (create_areas=%s): %s", create_areas, no_area)
 
 
 async def _async_sync_device_names(
@@ -202,9 +219,7 @@ async def _async_sync_device_names(
     controls = structure.get("controls", {})
 
     uuid_to_name = {
-        ctrl["uuidAction"]: ctrl["name"]
-        for ctrl in controls.values()
-        if "uuidAction" in ctrl and "name" in ctrl
+        ctrl["uuidAction"]: ctrl["name"] for ctrl in controls.values() if "uuidAction" in ctrl and "name" in ctrl
     }
 
     dr_registry = dr.async_get(hass)
@@ -245,11 +260,7 @@ def _async_remove_stale_devices(
     for device in list(dr_registry.devices.values()):
         if config_entry.entry_id not in device.config_entries:
             continue
-        identifiers_for_domain = {
-            identifier
-            for domain, identifier in device.identifiers
-            if domain == DOMAIN
-        }
+        identifiers_for_domain = {identifier for domain, identifier in device.identifiers if domain == DOMAIN}
         if not identifiers_for_domain:
             continue
         if identifiers_for_domain & active_uuids:
@@ -322,9 +333,7 @@ def _async_register_services(hass: HomeAssistant):
             entity_id = call.data.get(ATTR_DEVICE)
             entity = entity_registry.async_get(entity_id)
             entity_uuid = entity.unique_id
-        await coordinator.api.send_secured__websocket_command(
-            entity_uuid, value, code
-        )
+        await coordinator.api.send_secured__websocket_command(entity_uuid, value, code)
 
     async def handle_sync_areas(call):
         await _async_sync_areas(hass, call.data)
@@ -336,46 +345,33 @@ def _async_register_services(hass: HomeAssistant):
         """Handle the service call to reload the integration."""
         _LOGGER.info("Reloading Loxone integration via service call")
         entries = hass.config_entries.async_entries(DOMAIN)
-        unloads = [
-            hass.config_entries.async_unload(entry.entry_id) for entry in entries
-        ]
+        unloads = [hass.config_entries.async_unload(entry.entry_id) for entry in entries]
         await asyncio.gather(*unloads)
         loads = [hass.config_entries.async_reload(entry.entry_id) for entry in entries]
         await asyncio.gather(*loads)
         _LOGGER.info("Loxone integration reload complete")
 
-    hass.services.async_register(
-        DOMAIN, "event_websocket_command", handle_websocket_command
-    )
-    hass.services.async_register(
-        DOMAIN, "event_secured_websocket_command", handle_secured_websocket_command
-    )
+    hass.services.async_register(DOMAIN, "event_websocket_command", handle_websocket_command)
+    hass.services.async_register(DOMAIN, "event_secured_websocket_command", handle_secured_websocket_command)
     hass.services.async_register(DOMAIN, "sync_areas", handle_sync_areas)
     hass.services.async_register(DOMAIN, "sync_device_names", handle_sync_device_names)
     hass.services.async_register(DOMAIN, "reload", handle_reload)
 
 
-async def async_unload_entry(
-    hass: HomeAssistant, config_entry: LoxoneConfigEntry
-) -> bool:
+async def async_unload_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry) -> bool:
     """Completely unloads the Loxone integration and closes all connections."""
-    coordinator: LoxoneCoordinator | None = getattr(
-        config_entry, "runtime_data", None
-    )
+    coordinator: LoxoneCoordinator | None = getattr(config_entry, "runtime_data", None)
 
     if coordinator is not None:
         try:
             await coordinator.async_cleanup()
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 — cleanup is best-effort; log and continue unloading
             _LOGGER.warning("Error during cleanup: %s", e)
 
         if hasattr(coordinator, "bridge_runtime") and coordinator.bridge_runtime:
             await coordinator.bridge_runtime.async_teardown()
 
-    unload_ok = await hass.config_entries.async_unload_platforms(
-        config_entry, LOXONE_PLATFORMS
-    )
-    return unload_ok
+    return await hass.config_entries.async_unload_platforms(config_entry, LOXONE_PLATFORMS)
 
 
 async def async_setup(hass, config):
@@ -384,9 +380,7 @@ async def async_setup(hass, config):
 
     if DOMAIN in config:
         hass.async_create_task(
-            hass.config_entries.flow.async_init(
-                DOMAIN, context={"source": "import"}, data=config[DOMAIN]
-            )
+            hass.config_entries.flow.async_init(DOMAIN, context={"source": "import"}, data=config[DOMAIN])
         )
 
     _async_register_services(hass)
@@ -394,7 +388,7 @@ async def async_setup(hass, config):
 
 
 async def async_migrate_entry(hass, config_entry):
-    # _LOGGER.debug("Migrating from version %s", config_entry.version)
+    """Migrate entry asynchronously."""
     if config_entry.version == 1:
         new = {**config_entry.options, CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: True}
         config_entry.options = {**new}
@@ -410,6 +404,7 @@ async def async_migrate_entry(hass, config_entry):
 
 
 async def async_set_options(hass, config_entry):
+    """Set options asynchronously."""
     options_in = {**config_entry.options}
     options = {
         CONF_HOST: options_in.pop(CONF_HOST, ""),
@@ -418,16 +413,13 @@ async def async_set_options(hass, config_entry):
         CONF_PASSWORD: options_in.pop(CONF_PASSWORD, ""),
         CONF_SCENE_GEN: options_in.pop(CONF_SCENE_GEN, ""),
         CONF_SCENE_GEN_DELAY: options_in.pop(CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE),
-        CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: options_in.pop(
-            CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, ""
-        ),
+        CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: options_in.pop(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, ""),
     }
-    hass.config_entries.async_update_entry(
-        config_entry, data=config_entry.data, options=options
-    )
+    hass.config_entries.async_update_entry(config_entry, data=config_entry.data, options=options)
 
 
 async def create_group_for_loxone_entities(hass, entities, name, object_id):
+    """Create group for loxone entities."""
     try:
         await group.Group.async_create_group(
             hass,
@@ -451,7 +443,7 @@ async def create_group_for_loxone_entities(hass, entities, name, object_id):
             order=None,
         )
         _LOGGER.error("Can't create group '%s' with error: %s", name, err)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 — HA group API can raise arbitrary errors
         _LOGGER.error(
             "Can't create group '%s'. Try to make at least one group manually. ("
             "https://www.home-assistant.io/integrations/group/)",
@@ -459,9 +451,110 @@ async def create_group_for_loxone_entities(hass, entities, name, object_id):
         )
 
 
-async def async_setup_entry(
-    hass: HomeAssistant, config_entry: LoxoneConfigEntry
-) -> bool:
+async def _async_handle_options_updated(hass: HomeAssistant, entry) -> None:
+    """Re-configure bridges when config entry options change."""
+    coord: LoxoneCoordinator | None = getattr(entry, "runtime_data", None)
+    if coord and hasattr(coord, "bridge_runtime") and coord.bridge_runtime:
+        await coord.bridge_runtime.async_options_updated()
+
+
+async def _async_create_loxone_groups(hass: HomeAssistant) -> None:
+    """Group Loxone entities by type (Miniserver Gen-1 only)."""
+    await asyncio.sleep(0.1)
+    entity_ids = hass.states.async_all()
+    sensors_analog = []
+    sensors_digital = []
+    switches = []
+    covers = []
+    lights = []
+    dimmers = []
+    climates = []
+    fans = []
+    accontrols = []
+    numbers = []
+    texts = []
+    buttons = []
+
+    for s in entity_ids:
+        s_dict = s.as_dict()
+        attr = s_dict["attributes"]
+        if "platform" in attr and attr["platform"] == DOMAIN:
+            device_type = attr.get("device_type", "")
+            if device_type in ["analog_sensor", "Meter"]:
+                sensors_analog.append(s_dict["entity_id"])
+            elif device_type == "digital_sensor":
+                sensors_digital.append(s_dict["entity_id"])
+            elif device_type in ["Jalousie", "Gate", "Window"]:
+                covers.append(s_dict["entity_id"])
+            elif device_type in ["Switch", "TimedSwitch"]:
+                switches.append(s_dict["entity_id"])
+            elif device_type == "Pushbutton":
+                buttons.append(s_dict["entity_id"])
+            elif device_type == "LightControllerV2":
+                lights.append(s_dict["entity_id"])
+            elif device_type == "Dimmer":
+                dimmers.append(s_dict["entity_id"])
+            elif device_type == "IRoomControllerV2":
+                climates.append(s_dict["entity_id"])
+            elif device_type == "Ventilation":
+                fans.append(s_dict["entity_id"])
+            elif device_type == "AcControl":
+                accontrols.append(s_dict["entity_id"])
+            elif device_type == "Slider":
+                numbers.append(s_dict["entity_id"])
+            elif device_type == "TextInput":
+                texts.append(s_dict["entity_id"])
+
+    for lst in (
+        sensors_analog,
+        sensors_digital,
+        covers,
+        switches,
+        buttons,
+        lights,
+        climates,
+        dimmers,
+        fans,
+        accontrols,
+        numbers,
+        texts,
+    ):
+        lst.sort()
+
+    await async_setup_component(hass, "group", {})
+    await create_group_for_loxone_entities(hass, sensors_analog, "Loxone Analog Sensors", "loxone_analog")
+    await create_group_for_loxone_entities(hass, sensors_digital, "Loxone Digital Sensors", "loxone_digital")
+    await create_group_for_loxone_entities(hass, switches, "Loxone Switches", "loxone_switches")
+    await create_group_for_loxone_entities(hass, buttons, "Loxone Buttons", "loxone_buttons")
+    await create_group_for_loxone_entities(hass, covers, "Loxone Covers", "loxone_covers")
+    await create_group_for_loxone_entities(hass, lights, "Loxone LightControllers", "loxone_lights")
+    await create_group_for_loxone_entities(hass, dimmers, "Loxone Dimmer", "loxone_dimmers")
+    await create_group_for_loxone_entities(hass, climates, "Loxone Room Controllers", "loxone_climates")
+    await create_group_for_loxone_entities(hass, fans, "Loxone Ventilation Controllers", "loxone_ventilations")
+    await create_group_for_loxone_entities(hass, accontrols, "Loxone AC Controllers", "loxone_accontrollers")
+    await create_group_for_loxone_entities(hass, numbers, "Loxone Numbers", "loxone_numbers")
+    await create_group_for_loxone_entities(hass, texts, "Loxone Texts", "loxone_texts")
+    await hass.async_block_till_done()
+    await create_group_for_loxone_entities(
+        hass,
+        [
+            "group.loxone_analog",
+            "group.loxone_digital",
+            "group.loxone_switches",
+            "group.loxone_buttons",
+            "group.loxone_covers",
+            "group.loxone_lights",
+            "group.loxone_ventilations",
+            "group.loxone_numbers",
+            "group.loxone_texts",
+        ],
+        "Loxone Group",
+        "loxone_group",
+    )
+
+
+async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry) -> bool:  # noqa: C901 — setup functions are inherently complex orchestrators
+    """Setup entry asynchronously."""
     if not config_entry.options:
         await async_set_options(hass, config_entry)
 
@@ -483,10 +576,7 @@ async def async_setup_entry(
         )
         raise ConfigEntryNotReady from err
     except LoxoneUnauthorisedError:
-        _LOGGER.error(
-            "Could not connect to Loxone Miniserver. Unauthorised. "
-            "Please check username and password."
-        )
+        _LOGGER.error("Could not connect to Loxone Miniserver. Unauthorised. Please check username and password.")
         config_entry.async_start_reauth(hass)
         return False
     except OSError as err:
@@ -526,158 +616,36 @@ async def async_setup_entry(
     # YAML-based custom sensors/binary_sensors (documented "Advanced usage" escape hatch)
     yaml_platforms = [Platform.SENSOR, Platform.BINARY_SENSOR]
     yaml_tasks = [
-        hass.async_create_task(
-            async_load_platform(hass, platform, DOMAIN, {}, config_entry)
-        )
+        hass.async_create_task(async_load_platform(hass, platform, DOMAIN, {}, config_entry))
         for platform in yaml_platforms
     ]
     if yaml_tasks:
         await asyncio.wait(yaml_tasks)
 
-    async def loxone_discovered(event):
+    my_entry_id = config_entry.entry_id
+
+    async def loxone_discovered(event) -> None:
+        """Handle component-loaded event to create legacy Loxone entity groups."""
         if coordinator.miniserver is None:
             return
         if coordinator.miniserver.miniserver_type < 2 and "component" in event.data:
             if event.data["component"] == DOMAIN:
+                _LOGGER.info("loxone discovered")
                 try:
-                    _LOGGER.info("loxone discovered")
-                    await asyncio.sleep(0.1)
-                    # await sync_areas_with_loxone()
-                    entity_ids = hass.states.async_all()
-                    sensors_analog = []
-                    sensors_digital = []
-                    switches = []
-                    covers = []
-                    lights = []
-                    dimmers = []
-                    climates = []
-                    fans = []
-                    accontrols = []
-                    numbers = []
-                    texts = []
-                    buttons = []
-
-                    for s in entity_ids:
-                        s_dict = s.as_dict()
-                        attr = s_dict["attributes"]
-                        if "platform" in attr and attr["platform"] == DOMAIN:
-                            device_type = attr.get("device_type", "")
-                            if device_type in ["analog_sensor", "Meter"]:
-                                sensors_analog.append(s_dict["entity_id"])
-                            elif device_type == "digital_sensor":
-                                sensors_digital.append(s_dict["entity_id"])
-                            elif device_type in ["Jalousie", "Gate", "Window"]:
-                                covers.append(s_dict["entity_id"])
-                            elif device_type in ["Switch", "TimedSwitch"]:
-                                switches.append(s_dict["entity_id"])
-                            elif device_type == "Pushbutton":
-                                buttons.append(s_dict["entity_id"])
-                            elif device_type in ["LightControllerV2"]:
-                                lights.append(s_dict["entity_id"])
-                            elif device_type == "Dimmer":
-                                dimmers.append(s_dict["entity_id"])
-                            elif device_type == "IRoomControllerV2":
-                                climates.append(s_dict["entity_id"])
-                            elif device_type == "Ventilation":
-                                fans.append(s_dict["entity_id"])
-                            elif device_type == "AcControl":
-                                accontrols.append(s_dict["entity_id"])
-                            elif device_type == "Slider":
-                                numbers.append(s_dict["entity_id"])
-                            elif device_type == "TextInput":
-                                texts.append(s_dict["entity_id"])
-
-                    sensors_analog.sort()
-                    sensors_digital.sort()
-                    covers.sort()
-                    switches.sort()
-                    buttons.sort()
-                    lights.sort()
-                    climates.sort()
-                    dimmers.sort()
-                    fans.sort()
-                    accontrols.sort()
-                    numbers.sort()
-                    texts.sort()
-                    await async_setup_component(hass, "group", {})
-                    await create_group_for_loxone_entities(
-                        hass, sensors_analog, "Loxone Analog Sensors", "loxone_analog"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass,
-                        sensors_digital,
-                        "Loxone Digital Sensors",
-                        "loxone_digital",
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, switches, "Loxone Switches", "loxone_switches"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, buttons, "Loxone Buttons", "loxone_buttons"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, covers, "Loxone Covers", "loxone_covers"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, lights, "Loxone LightControllers", "loxone_lights"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, lights, "Loxone Dimmer", "loxone_dimmers"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, climates, "Loxone Room Controllers", "loxone_climates"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass,
-                        fans,
-                        "Loxone Ventilation Controllers",
-                        "loxone_ventilations",
-                    )
-                    await create_group_for_loxone_entities(
-                        hass,
-                        accontrols,
-                        "Loxone AC Controllers",
-                        "loxone_accontrollers",
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, numbers, "Loxone Numbers", "loxone_numbers"
-                    )
-                    await create_group_for_loxone_entities(
-                        hass, texts, "Loxone Texts", "loxone_texts"
-                    )
-                    await hass.async_block_till_done()
-                    await create_group_for_loxone_entities(
-                        hass,
-                        [
-                            "group.loxone_analog",
-                            "group.loxone_digital",
-                            "group.loxone_switches",
-                            "group.loxone_buttons",
-                            "group.loxone_covers",
-                            "group.loxone_lights",
-                            "group.loxone_ventilations",
-                            "group.loxone_numbers",
-                            "group.loxone_texts",
-                        ],
-                        "Loxone Group",
-                        "loxone_group",
-                    )
-                except Exception as err:
+                    await _async_create_loxone_groups(hass)
+                except Exception as err:  # noqa: BLE001 — HA group API can raise arbitrary errors
                     _LOGGER.error(
-                        "Can't create group '%s'. Try to make at least one group manually. ("
-                        "https://www.home-assistant.io/integrations/group/)",
+                        "Can't create group. Try to make at least one group manually. ("
+                        "https://www.home-assistant.io/integrations/group/): %s",
                         err,
                     )
 
-    my_entry_id = config_entry.entry_id
-
-    async def loxone_send(event):
-        """Listen for change Events from Loxone Components"""
+    async def loxone_send(event) -> None:
+        """Forward Loxone send/secured-send bus events to the API."""
         try:
             if not isinstance(event.data, dict):
                 return
 
-            # Multi-entry scoping: only process events for our Miniserver
             evt_entry = event.data.get("miniserver")
             if evt_entry is not None and evt_entry != my_entry_id:
                 return
@@ -689,10 +657,7 @@ async def async_setup_entry(
                     value = DEFAULT
                 if device_uuid is None:
                     device_uuid = DEFAULT
-
-                asyncio.create_task(
-                    coordinator.async_send_command(device_uuid, value)
-                )
+                hass.async_create_task(coordinator.async_send_command(device_uuid, value))
 
             elif event.event_type == SECUREDSENDDOMAIN:
                 value = event.data.get(ATTR_VALUE, DEFAULT)
@@ -704,20 +669,15 @@ async def async_setup_entry(
                     value = DEFAULT
                 if device_uuid is None:
                     device_uuid = DEFAULT
-                asyncio.create_task(
-                    coordinator.async_send_secured_command(
-                        device_uuid, value, code
-                    )
-                )
+                hass.async_create_task(coordinator.async_send_secured_command(device_uuid, value, code))
 
-        except Exception as e:
+        except (TypeError, KeyError, AttributeError) as e:
             _LOGGER.error(e)
 
     # -- Custom panel + WebSocket API ------------------------------------------
-    from .websocket import register_panel
     try:
         await register_panel(hass)
-    except Exception:
+    except Exception:  # noqa: BLE001 — panel registration uses internal HA APIs
         _LOGGER.warning("Could not register Loxone custom panel", exc_info=True)
 
     # -- Device Bridges (HA entity <-> Loxone control) ------------------------
@@ -745,21 +705,13 @@ async def async_setup_entry(
                 config_entry,
                 data={**config_entry.data, "initial_sync_done": True},
             )
-    except Exception:
+    except (OSError, TimeoutError, RuntimeError, ValueError, KeyError, TypeError):
         _LOGGER.warning(
-            "Auto-sync failed during setup; you can retry via "
-            "loxone.sync_areas / loxone.sync_device_names services",
+            "Auto-sync failed during setup; you can retry via loxone.sync_areas / loxone.sync_device_names services",
             exc_info=True,
         )
 
-    async def _async_options_updated(hass_ref, entry):
-        coord: LoxoneCoordinator | None = getattr(entry, "runtime_data", None)
-        if coord and hasattr(coord, "bridge_runtime") and coord.bridge_runtime:
-            await coord.bridge_runtime.async_options_updated()
-
-    config_entry.async_on_unload(
-        config_entry.add_update_listener(_async_options_updated)
-    )
+    config_entry.async_on_unload(config_entry.add_update_listener(_async_handle_options_updated))
 
     hass.bus.async_listen_once(EVENT_COMPONENT_LOADED, loxone_discovered)
 
@@ -794,21 +746,16 @@ async def async_remove_config_entry_device(
             active_uuids.add(sc.get("uuidAction", ""))
 
     # Allow removal only if the device's identifiers don't match any active control
-    for _, identifier in device_entry.identifiers:
-        if identifier in active_uuids:
-            return False
-
-    return True
+    return all(identifier not in active_uuids for _, identifier in device_entry.identifiers)
 
 
 class LoxoneEntity(Entity):
-    """
-    @DynamicAttrs
-    """
+    """@DynamicAttrs."""
 
     _SKIP_KWARGS = frozenset({"device_info", "coordinator"})
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneEntity."""
         self._coordinator: LoxoneCoordinator | None = kwargs.get("coordinator")
 
         self._loxone_name: str = kwargs.get("name", "")
@@ -818,18 +765,16 @@ class LoxoneEntity(Entity):
             # (meaning "use the device name"); we must not clobber that.
             self._attr_name = self._loxone_name
 
-        for key in kwargs:
+        for key, val in kwargs.items():
             if key in self._SKIP_KWARGS or key == "name":
                 continue
             if not hasattr(self, key):
-                setattr(self, key, kwargs[key])
+                setattr(self, key, val)
             else:
                 try:
-                    setattr(self, key, kwargs[key])
+                    setattr(self, key, val)
                 except AttributeError:
                     _LOGGER.error("Could not set %s for %s", key, self._loxone_name)
-                except Exception:
-                    _LOGGER.exception("Unexpected error setting %s", key)
 
         self._prev_available: bool | None = None
 
@@ -838,9 +783,9 @@ class LoxoneEntity(Entity):
             "platform": "loxone",
         }
 
-        if "room" in kwargs and kwargs["room"]:
+        if kwargs.get("room"):
             self._attr_extra_state_attributes["room"] = kwargs["room"]
-        if "cat" in kwargs and kwargs["cat"]:
+        if kwargs.get("cat"):
             self._attr_extra_state_attributes["category"] = kwargs["cat"]
 
     def _resolve_coordinator(self) -> LoxoneCoordinator | None:
@@ -851,6 +796,7 @@ class LoxoneEntity(Entity):
 
     @property
     def available(self) -> bool:
+        """Return whether the entity is available."""
         coordinator = self._resolve_coordinator()
         if coordinator is None:
             return True
@@ -872,11 +818,7 @@ class LoxoneEntity(Entity):
         self._register_coordinator_listener()
         prefix = self._dispatcher_prefix()
         for uuid in self._get_state_uuids():
-            self.async_on_remove(
-                async_dispatcher_connect(
-                    self.hass, f"{prefix}{uuid}", self._dispatch_handler
-                )
-            )
+            self.async_on_remove(async_dispatcher_connect(self.hass, f"{prefix}{uuid}", self._dispatch_handler))
 
     def _dispatcher_prefix(self) -> str:
         """Signal prefix scoped to this entity's config entry."""
@@ -894,9 +836,7 @@ class LoxoneEntity(Entity):
         """Subscribe to coordinator updates so availability changes propagate."""
         coordinator = self._resolve_coordinator()
         if coordinator:
-            self.async_on_remove(
-                coordinator.async_add_listener(self._handle_coordinator_update)
-            )
+            self.async_on_remove(coordinator.async_add_listener(self._handle_coordinator_update))
 
     def _handle_coordinator_update(self) -> None:
         """Called when the coordinator's state changes -- only write if availability flipped."""
@@ -906,7 +846,7 @@ class LoxoneEntity(Entity):
             self.async_write_ha_state()
 
     async def event_handler(self, data: dict) -> None:
-        pass
+        """Handle a state update message from Loxone."""
 
     @property
     def device_info(self) -> DeviceInfo | None:
@@ -931,18 +871,19 @@ class LoxoneEntity(Entity):
 
     @staticmethod
     def _clean_unit(lox_format):
-        search = re.search(cfmt, lox_format, flags=re.X)
+        """Return clean unit."""
+        search = re.search(cfmt, lox_format, flags=re.VERBOSE)
         if search:
             unit = lox_format.replace(search.group(0).strip(), "").strip()
             if unit == "%%":
                 unit = unit.replace("%%", "%")
             return unit
-        else:
-            return lox_format
+        return lox_format
 
     @staticmethod
     def _get_format(lox_format):
-        search = re.search(cfmt, lox_format, flags=re.X)
+        """Return get format."""
+        search = re.search(cfmt, lox_format, flags=re.VERBOSE)
         if search:
             return search.group(0).strip()
         return None

@@ -57,9 +57,9 @@ def _extract_get_all_types() -> dict[str, set[str]]:
             if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
                 type_strings.append(arg.value)
             elif isinstance(arg, ast.List):
-                for elt in arg.elts:
-                    if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
-                        type_strings.append(elt.value)
+                type_strings.extend(
+                    elt.value for elt in arg.elts if isinstance(elt, ast.Constant) and isinstance(elt.value, str)
+                )
 
             for ts in type_strings:
                 type_to_platforms.setdefault(ts, set()).add(platform)
@@ -73,11 +73,7 @@ class TestKnownTypesSync:
     def test_no_missing_types(self):
         """Every type used in a get_all() call should be in KNOWN_CONTROL_TYPES."""
         source_types = _extract_get_all_types()
-        missing = {
-            t: platforms
-            for t, platforms in source_types.items()
-            if t not in KNOWN_CONTROL_TYPES
-        }
+        missing = {t: platforms for t, platforms in source_types.items() if t not in KNOWN_CONTROL_TYPES}
         if missing:
             lines = [f"  {t} (used in {', '.join(sorted(ps))})" for t, ps in sorted(missing.items())]
             pytest.fail(
@@ -88,11 +84,7 @@ class TestKnownTypesSync:
     def test_no_stale_types(self):
         """Every type in KNOWN_CONTROL_TYPES should still be used by some platform."""
         source_types = _extract_get_all_types()
-        stale = {
-            t: platform
-            for t, platform in KNOWN_CONTROL_TYPES.items()
-            if t not in source_types
-        }
+        stale = {t: platform for t, platform in KNOWN_CONTROL_TYPES.items() if t not in source_types}
         if stale:
             lines = [f"  {t} (was mapped to {p})" for t, p in sorted(stale.items())]
             pytest.fail(
@@ -110,11 +102,7 @@ class TestKnownTypesSync:
             declared_platform = KNOWN_CONTROL_TYPES[ctype]
             if declared_platform not in platforms:
                 mismatches.append(
-                    f"  {ctype}: declared as '{declared_platform}' but "
-                    f"used in {', '.join(sorted(platforms))}"
+                    f"  {ctype}: declared as '{declared_platform}' but used in {', '.join(sorted(platforms))}"
                 )
         if mismatches:
-            pytest.fail(
-                "Platform mismatches in KNOWN_CONTROL_TYPES:\n"
-                + "\n".join(mismatches)
-            )
+            pytest.fail("Platform mismatches in KNOWN_CONTROL_TYPES:\n" + "\n".join(mismatches))

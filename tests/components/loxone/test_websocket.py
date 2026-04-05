@@ -1,13 +1,13 @@
 """Tests for Loxone WebSocket API commands (custom panel backend)."""
 
-import pytest
 from unittest.mock import MagicMock
 
-from homeassistant.components import websocket_api
-from homeassistant.core import HomeAssistant
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import DOMAIN
+from homeassistant.components import websocket_api
+from homeassistant.core import HomeAssistant
 
 
 @pytest.fixture
@@ -71,7 +71,7 @@ async def test_ws_get_devices_includes_subcontrols(
     mock_loxone_connection: MagicMock,
 ) -> None:
     """Sub-controls should appear as separate entries with a parent field."""
-    from tests.components.loxone.conftest import MOCK_OPTIONS
+    from .conftest import MOCK_OPTIONS
 
     entry = MockConfigEntry(
         domain=DOMAIN,
@@ -88,9 +88,7 @@ async def test_ws_get_devices_includes_subcontrols(
     import json
     from pathlib import Path
 
-    lights_structure = json.loads(
-        (Path(__file__).parent / "fixtures" / "structure_lights.json").read_text()
-    )
+    lights_structure = json.loads((Path(__file__).parent / "fixtures" / "structure_lights.json").read_text())
     mock_loxone_connection.structure_file = lights_structure
 
     await hass.config_entries.async_setup(entry.entry_id)
@@ -163,9 +161,7 @@ async def test_set_entity_enabled_reenables_entity(
     from homeassistant.helpers import entity_registry as er
 
     registry = er.async_get(hass)
-    registry.async_update_entity(
-        "switch.wall_switch", disabled_by=er.RegistryEntryDisabler.INTEGRATION
-    )
+    registry.async_update_entity("switch.wall_switch", disabled_by=er.RegistryEntryDisabler.INTEGRATION)
 
     client = await hass_ws_client(hass)
     await client.send_json(
@@ -346,9 +342,7 @@ async def test_ws_remove_bridge(
     assert resp["success"] is True
 
     msg_id += 1
-    await client.send_json(
-        {"id": msg_id, "type": "loxone/remove_bridge", "entity_id": "sensor.other_temp2"}
-    )
+    await client.send_json({"id": msg_id, "type": "loxone/remove_bridge", "entity_id": "sensor.other_temp2"})
     resp = await client.receive_json()
     assert resp["success"] is True
     assert resp["result"]["removed"] == "sensor.other_temp2"

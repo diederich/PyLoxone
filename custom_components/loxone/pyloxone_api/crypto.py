@@ -7,10 +7,10 @@ lifecycle.
 
 from __future__ import annotations
 
+from base64 import b64decode, b64encode
 import hashlib
 import time
 import urllib.parse
-from base64 import b64decode, b64encode
 
 from Crypto.Cipher import AES, PKCS1_v1_5
 from Crypto.Hash import HMAC, SHA1, SHA256
@@ -18,42 +18,38 @@ from Crypto.PublicKey import RSA
 from Crypto.Random import get_random_bytes
 from Crypto.Util import Padding
 
-from .const import (
-    AES_KEY_SIZE,
-    IV_BYTES,
-    SALT_BYTES,
-    SALT_MAX_AGE_SECONDS,
-    SALT_MAX_USE_COUNT,
-)
+from .const import AES_KEY_SIZE, IV_BYTES, SALT_BYTES, SALT_MAX_AGE_SECONDS, SALT_MAX_USE_COUNT
 
 _HASH_MODULES = {"SHA1": SHA1, "SHA256": SHA256}
 _HASHLIB_CTORS = {"SHA1": hashlib.sha1, "SHA256": hashlib.sha256}
 
 
 def time_elapsed_in_seconds() -> int:
-    return int(round(time.time()))
+    """Time elapsed in seconds."""
+    return round(time.time())
 
 
 # -- Key / IV / salt generation -----------------------------------------------
 
 
 def generate_aes_key() -> bytes:
+    """Generate aes key."""
     return get_random_bytes(AES_KEY_SIZE)
 
 
 def generate_iv() -> bytes:
+    """Generate iv."""
     return get_random_bytes(IV_BYTES)
 
 
 def generate_salt() -> str:
+    """Generate salt."""
     return get_random_bytes(SALT_BYTES).hex()
 
 
 def new_salt_needed(salt_used_count: int, salt_timestamp: int) -> bool:
-    return (
-        salt_used_count > SALT_MAX_USE_COUNT
-        or time_elapsed_in_seconds() - salt_timestamp > SALT_MAX_AGE_SECONDS
-    )
+    """New salt needed."""
+    return salt_used_count > SALT_MAX_USE_COUNT or time_elapsed_in_seconds() - salt_timestamp > SALT_MAX_AGE_SECONDS
 
 
 # -- AES encrypt / decrypt ----------------------------------------------------
@@ -83,7 +79,7 @@ def encrypt_command(
 def decrypt_command(aes_key: bytes, iv: bytes, command: str) -> bytes:
     """AES-256-CBC decrypt a response from the Miniserver."""
     prefix = "jdev/sys/enc/"
-    enc_text = command[len(prefix) :] if command.startswith(prefix) else command
+    enc_text = command.removeprefix(prefix)
     decoded = b64decode(enc_text)
     cipher = AES.new(aes_key, AES.MODE_CBC, iv)
     decrypted = cipher.decrypt(decoded)
@@ -97,15 +93,15 @@ def make_session_key(public_key_pem: str, aes_key: bytes, iv: bytes) -> bytes:
     """RSA-encrypt the AES session key for the key-exchange handshake."""
     rsa_key = RSA.importKey(public_key_pem)
     rsa_cipher = PKCS1_v1_5.new(rsa_key)
-    session_key = f"{aes_key.hex()}:{iv.hex()}".encode("utf-8")
+    session_key = f"{aes_key.hex()}:{iv.hex()}".encode()
     return b64encode(rsa_cipher.encrypt(session_key))
 
 
 def parse_public_key(raw_pk: str) -> str:
     """Convert Loxone's certificate-style PK to standard PEM."""
-    return raw_pk.replace(
-        "-----BEGIN CERTIFICATE-----", "-----BEGIN PUBLIC KEY-----\n"
-    ).replace("-----END CERTIFICATE-----", "\n-----END PUBLIC KEY-----\n")
+    return raw_pk.replace("-----BEGIN CERTIFICATE-----", "-----BEGIN PUBLIC KEY-----\n").replace(
+        "-----END CERTIFICATE-----", "\n-----END PUBLIC KEY-----\n"
+    )
 
 
 # -- HMAC hashing --------------------------------------------------------------
@@ -125,13 +121,11 @@ def hash_credentials(
         return None
 
     m = ctor()
-    m.update(f"{password}:{user_salt}".encode("utf-8"))
+    m.update(f"{password}:{user_salt}".encode())
     pwd_hash = f"{username}:{m.hexdigest().upper()}"
 
     try:
-        digester = HMAC.new(
-            bytes.fromhex(key), pwd_hash.encode("utf-8"), module
-        )
+        digester = HMAC.new(bytes.fromhex(key), pwd_hash.encode("utf-8"), module)
     except ValueError:
         return None
     return digester.hexdigest()
@@ -165,11 +159,9 @@ def hash_secure_command(
         return None
 
     m = ctor()
-    m.update(f"{code}:{visual_hash_salt}".encode("utf-8"))
+    m.update(f"{code}:{visual_hash_salt}".encode())
     pwd_hash = m.hexdigest().upper()
 
-    digester = HMAC.new(
-        bytes.fromhex(visual_hash_key), pwd_hash.encode("utf-8"), module
-    )
+    digester = HMAC.new(bytes.fromhex(visual_hash_key), pwd_hash.encode("utf-8"), module)
     new_hash = digester.hexdigest()
     return f"jdev/sps/ios/{new_hash}/{device_uuid}/{value}"

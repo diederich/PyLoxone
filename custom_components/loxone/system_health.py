@@ -11,9 +11,7 @@ from .const import DOMAIN
 
 
 @callback
-def async_register(
-    hass: HomeAssistant, register: system_health.SystemHealthRegistration
-) -> None:
+def async_register(hass: HomeAssistant, register: system_health.SystemHealthRegistration) -> None:
     """Register system health callbacks."""
     register.async_register_info(system_health_info)
 
@@ -21,10 +19,7 @@ def async_register(
 async def system_health_info(hass: HomeAssistant) -> dict[str, Any]:
     """Get info for the info page."""
     entries = hass.config_entries.async_entries(DOMAIN)
-    coordinators = [
-        (entry, getattr(entry, "runtime_data", None))
-        for entry in entries
-    ]
+    coordinators = [(entry, getattr(entry, "runtime_data", None)) for entry in entries]
     coordinators = [(e, c) for e, c in coordinators if c is not None]
 
     if not coordinators:

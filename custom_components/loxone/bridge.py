@@ -7,122 +7,46 @@ echo protection automatically.
 
 Bridges are persisted in ``config_entry.options["bridges"]`` and restored
 on integration (re)load.
+
+Shared types (``DeviceBridge``, ``BridgeMapper``) live in ``bridge_types``
+so that ``bridge_mappers`` can import them without a circular dependency.
+``BridgeMapper`` and ``DeviceBridge`` are re-exported here for backwards
+compatibility with callers that import from this module.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass, field
 import logging
 import time
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, asdict
-from typing import Any, Callable
+from typing import Any
 
-from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
-from homeassistant.core import (
-    CALLBACK_TYPE,
-    Event,
-    HomeAssistant,
-    State,
-    callback,
-)
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import STATE_UNAVAILABLE, STATE_UNKNOWN
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, State, callback
 from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
-from homeassistant.helpers.event import async_track_state_change_event, async_call_later
+from homeassistant.helpers.event import async_call_later, async_track_state_change_event
 
+from .bridge_mappers import get_mapper
+from .bridge_types import DEFAULT_COOLDOWN, VALUE_EPSILON, BridgeMapper, DeviceBridge
 from .const import DOMAIN
 
+__all__ = ["DEFAULT_COOLDOWN", "VALUE_EPSILON", "BridgeMapper", "BridgeRuntime", "DeviceBridge"]
+
 _LOGGER = logging.getLogger(__name__)
-
-DEFAULT_COOLDOWN = 1.0
-VALUE_EPSILON = 0.5
-
-
-# ---------------------------------------------------------------------------
-# Persistence model
-# ---------------------------------------------------------------------------
-
-@dataclass
-class DeviceBridge:
-    """Persisted configuration for a single device bridge."""
-
-    entity_id: str
-    loxone_uuid: str
-    loxone_type: str
-    loxone_states: dict[str, str] = field(default_factory=dict)
-    loxone_name: str = ""
-    cooldown: float = DEFAULT_COOLDOWN
-    details: dict[str, Any] = field(default_factory=dict)
-
-    def to_dict(self) -> dict[str, Any]:
-        d = asdict(self)
-        return {k: v for k, v in d.items() if v or k in ("cooldown",)}
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> DeviceBridge:
-        return cls(
-            entity_id=data["entity_id"],
-            loxone_uuid=data["loxone_uuid"],
-            loxone_type=data["loxone_type"],
-            loxone_states=data.get("loxone_states", {}),
-            loxone_name=data.get("loxone_name", ""),
-            cooldown=data.get("cooldown", DEFAULT_COOLDOWN),
-            details=data.get("details", {}),
-        )
-
-
-# ---------------------------------------------------------------------------
-# Mapper ABC
-# ---------------------------------------------------------------------------
-
-class BridgeMapper(ABC):
-    """Translates between HA entity state and Loxone control values."""
-
-    def __init__(self, bridge: DeviceBridge) -> None:
-        self.bridge = bridge
-
-    @property
-    @abstractmethod
-    def expose_supported(self) -> bool:
-        """Whether HA -> Loxone direction is active."""
-
-    @property
-    @abstractmethod
-    def subscribe_supported(self) -> bool:
-        """Whether Loxone -> HA direction is active."""
-
-    @property
-    def subscribe_uuids(self) -> set[str]:
-        """Loxone state UUIDs to watch for incoming changes."""
-        return set()
-
-    @abstractmethod
-    def ha_state_to_command(self, state: State) -> tuple[str, Any] | None:
-        """Convert HA state to a single ``(loxone_uuid, value)`` command.
-
-        Return *None* when nothing should be sent (e.g. unavailable state).
-        """
-
-    async def loxone_value_to_ha(
-        self, hass: HomeAssistant, uuid: str, value: Any
-    ) -> None:
-        """Push a Loxone value into the bound HA entity.
-
-        Default implementation does nothing (expose-only mappers).
-        """
-
-    @property
-    def description(self) -> str:
-        """Human-readable summary for the options-flow UI."""
-        return f"{self.bridge.loxone_type} bridge"
 
 
 # ---------------------------------------------------------------------------
 # Runtime state per active bridge
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class _ActiveBridge:
+    """Represent _ active bridge."""
+
     bridge: DeviceBridge
     mapper: BridgeMapper
     last_sent_value: Any = None
@@ -132,10 +56,11 @@ class _ActiveBridge:
     cancel_ha_listener: CALLBACK_TYPE | None = field(default=None, repr=False)
     cancel_lox_listener: CALLBACK_TYPE | None = field(default=None, repr=False)
     cancel_cooldown: CALLBACK_TYPE | None = field(default=None, repr=False)
-    _echo_suppress: bool = field(default=False, repr=False)
+    echo_suppress: bool = field(default=False, repr=False)
 
 
 def _values_equal(a: Any, b: Any) -> bool:
+    """Return values equal."""
     if a is None or b is None:
         return a is b
     if isinstance(a, (int, float)) and isinstance(b, (int, float)):
@@ -147,6 +72,7 @@ def _values_equal(a: Any, b: Any) -> bool:
 # Bridge runtime
 # ---------------------------------------------------------------------------
 
+
 class BridgeRuntime:
     """Manages device bridges between HA entities and Loxone controls."""
 
@@ -156,6 +82,7 @@ class BridgeRuntime:
         coordinator: Any,
         config_entry: ConfigEntry,
     ) -> None:
+        """Initialize the BridgeRuntime."""
         self.hass = hass
         self.coordinator = coordinator
         self.config_entry = config_entry
@@ -214,12 +141,8 @@ class BridgeRuntime:
                 continue
             ent_entry = registry.async_get(entry)
             if ent_entry and ent_entry.disabled_by != er.RegistryEntryDisabler.INTEGRATION:
-                registry.async_update_entity(
-                    entry, disabled_by=er.RegistryEntryDisabler.INTEGRATION
-                )
-                _LOGGER.info(
-                    "Disabled entity %s — control used by device bridge", entry
-                )
+                registry.async_update_entity(entry, disabled_by=er.RegistryEntryDisabler.INTEGRATION)
+                _LOGGER.info("Disabled entity %s — control used by device bridge", entry)
 
     def _reenable_entities(self, uuids: set[str]) -> None:
         """Re-enable entities whose bridge was removed."""
@@ -230,18 +153,34 @@ class BridgeRuntime:
                 and ent.unique_id in uuids
                 and ent.disabled_by == er.RegistryEntryDisabler.INTEGRATION
             ):
-                registry.async_update_entity(
-                    ent.entity_id, disabled_by=None
-                )
-                _LOGGER.info(
-                    "Re-enabled entity %s — bridge removed", ent.entity_id
-                )
+                registry.async_update_entity(ent.entity_id, disabled_by=None)
+                _LOGGER.info("Re-enabled entity %s — bridge removed", ent.entity_id)
 
     # -- internal ------------------------------------------------------------
 
-    def _activate(self, bridge: DeviceBridge) -> None:
-        from .bridge_mappers import get_mapper
+    @property
+    def active_bridges(self) -> list[_ActiveBridge]:
+        """Return the list of active bridge bindings (same module; for WS API)."""
+        return self._active
 
+    def register_bridge(self, bridge: DeviceBridge) -> None:
+        """Add and wire a bridge (restore, options flow, or WS)."""
+        self._activate(bridge)
+
+    def persist_bridge_options(self) -> None:
+        """Persist ``bridges`` into the config entry."""
+        self._persist()
+
+    def unregister_bridge(self, ab: _ActiveBridge) -> None:
+        """Tear down a bridge, re-enable native entities, and save options."""
+        removed_uuid = ab.bridge.loxone_uuid
+        self._deactivate(ab)
+        self._active.remove(ab)
+        self._reenable_entities({removed_uuid})
+        self._persist()
+
+    def _activate(self, bridge: DeviceBridge) -> None:
+        """Attach mapper, listeners, and logging for one bridge."""
         entity_domain = bridge.entity_id.split(".")[0]
         mapper = get_mapper(bridge, entity_domain)
 
@@ -260,10 +199,7 @@ class BridgeRuntime:
             listener = self._make_lox_listener(ab)
             prefix = self.coordinator.dispatcher_prefix
             cancel_fns = [
-                async_dispatcher_connect(
-                    self.hass, f"{prefix}{uuid}", listener
-                )
-                for uuid in mapper.subscribe_uuids
+                async_dispatcher_connect(self.hass, f"{prefix}{uuid}", listener) for uuid in mapper.subscribe_uuids
             ]
             ab.cancel_lox_listener = lambda fns=cancel_fns: [fn() for fn in fns]
 
@@ -277,6 +213,7 @@ class BridgeRuntime:
         )
 
     def _deactivate(self, ab: _ActiveBridge) -> None:
+        """Tear down listeners and timers for one active bridge."""
         if ab.cancel_ha_listener:
             ab.cancel_ha_listener()
             ab.cancel_ha_listener = None
@@ -290,16 +227,21 @@ class BridgeRuntime:
     # -- expose direction (HA -> Loxone) ------------------------------------
 
     def _make_ha_listener(self, ab: _ActiveBridge) -> Callable:
+        """Build a callback that reacts to Home Assistant state changes."""
+
         @callback
         def _listener(event: Event) -> None:
+            """Handle a tracked entity state change event."""
             new_state: State | None = event.data.get("new_state")
             if new_state is None:
                 return
             self._process_ha_state(ab, new_state)
+
         return _listener
 
     @callback
     def _process_ha_state(self, ab: _ActiveBridge, state: State) -> None:
+        """Map HA state to a Loxone command, respecting cooldown and echo."""
         if str(state.state) in (STATE_UNAVAILABLE, STATE_UNKNOWN):
             return
 
@@ -323,6 +265,7 @@ class BridgeRuntime:
 
                 @callback
                 def _flush(_now: Any) -> None:
+                    """Send a pending command once the cooldown elapses."""
                     ab.cancel_cooldown = None
                     if ab.pending_command is not None:
                         _, pval = ab.pending_command
@@ -330,20 +273,17 @@ class BridgeRuntime:
                             self._send(ab, ab.pending_command)
                     ab.pending_command = None
 
-                ab.cancel_cooldown = async_call_later(
-                    self.hass, remaining, _flush
-                )
+                ab.cancel_cooldown = async_call_later(self.hass, remaining, _flush)
 
     def _send(self, ab: _ActiveBridge, cmd: tuple[str, Any]) -> None:
+        """Enqueue a websocket command to Loxone and update send bookkeeping."""
         uuid, value = cmd
         ab.last_sent_value = value
         ab.last_sent_time = time.monotonic()
         ab.pending_command = None
         if ab.mapper.subscribe_supported:
-            ab._echo_suppress = True
-        self.hass.async_create_task(
-            self.coordinator.api.send_websocket_command(uuid, value)
-        )
+            ab.echo_suppress = True
+        self.hass.async_create_task(self.coordinator.api.send_websocket_command(uuid, value))
         _LOGGER.debug(
             "Bridge %s -> %s: sent %r",
             ab.bridge.entity_id,
@@ -354,32 +294,32 @@ class BridgeRuntime:
     # -- subscribe direction (Loxone -> HA) ---------------------------------
 
     def _make_lox_listener(self, ab: _ActiveBridge) -> Callable:
+        """Build a callback for Loxone dispatcher messages."""
         watch = ab.mapper.subscribe_uuids
 
         @callback
         def _listener(message: dict) -> None:
+            """Apply incoming Loxone values for subscribed state UUIDs."""
             for uuid in watch:
                 if uuid not in message:
                     continue
                 value = message[uuid]
 
-                if ab._echo_suppress:
-                    ab._echo_suppress = False
+                if ab.echo_suppress:
+                    ab.echo_suppress = False
                     return
 
                 if _values_equal(value, ab.last_received_value):
                     return
 
                 ab.last_received_value = value
-                self.hass.async_create_task(
-                    self._handle_lox_value(ab, uuid, value)
-                )
+                self.hass.async_create_task(self._handle_lox_value(ab, uuid, value))
                 return
+
         return _listener
 
-    async def _handle_lox_value(
-        self, ab: _ActiveBridge, uuid: str, value: Any
-    ) -> None:
+    async def _handle_lox_value(self, ab: _ActiveBridge, uuid: str, value: Any) -> None:
+        """Push one Loxone value into Home Assistant via the mapper."""
         _LOGGER.debug(
             "Bridge %s <- %s: received %r",
             ab.bridge.entity_id,
@@ -391,15 +331,15 @@ class BridgeRuntime:
         except Exception:
             _LOGGER.exception(
                 "Failed to update %s from Loxone value %r",
-                ab.bridge.entity_id, value,
+                ab.bridge.entity_id,
+                value,
             )
 
     # -- persistence ---------------------------------------------------------
 
     def _persist(self) -> None:
+        """Persist the active bridge list into the config entry options."""
         self._self_update = True
         new_opts = dict(self.config_entry.options)
         new_opts["bridges"] = [ab.bridge.to_dict() for ab in self._active]
-        self.hass.config_entries.async_update_entry(
-            self.config_entry, options=new_opts
-        )
+        self.hass.config_entries.async_update_entry(self.config_entry, options=new_opts)

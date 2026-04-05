@@ -1,19 +1,15 @@
 """Tests for the Loxone config flow."""
 
-import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import MagicMock, patch
+
 import aiohttp
-from homeassistant.config_entries import SOURCE_USER, SOURCE_REAUTH, SOURCE_RECONFIGURE
-from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResultType
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import (
-    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
-    CONF_SCENE_GEN,
-    CONF_SCENE_GEN_DELAY,
-    DOMAIN,
-)
+from custom_components.loxone.const import DOMAIN
+from homeassistant.config_entries import SOURCE_REAUTH, SOURCE_RECONFIGURE, SOURCE_USER
+from homeassistant.core import HomeAssistant
+from homeassistant.data_entry_flow import FlowResultType
 
 VALID_USER_INPUT = {
     "username": "admin",
@@ -48,9 +44,7 @@ def mock_miniserver_reachable(request):
     async def _mock_get(*args, **kwargs):
         return _mock_response(200)
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
@@ -64,9 +58,7 @@ def mock_miniserver_reachable(request):
 
 async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
     """Complete user flow should create a config entry."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     assert result["type"] is FlowResultType.FORM
     assert result["step_id"] == "user"
 
@@ -83,9 +75,7 @@ async def test_user_flow_creates_entry(hass: HomeAssistant) -> None:
 
 async def test_user_flow_coerces_port_to_int(hass: HomeAssistant) -> None:
     """Port should be stored as int even if input is float."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={**VALID_USER_INPUT, "port": 9090.0},
@@ -97,9 +87,7 @@ async def test_user_flow_coerces_port_to_int(hass: HomeAssistant) -> None:
 
 async def test_user_flow_rejects_non_latin1_username(hass: HomeAssistant) -> None:
     """Username with non-latin-1 chars should fail validation."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={**VALID_USER_INPUT, "username": "user\u4e16"},
@@ -110,9 +98,7 @@ async def test_user_flow_rejects_non_latin1_username(hass: HomeAssistant) -> Non
 
 async def test_user_flow_rejects_non_latin1_password(hass: HomeAssistant) -> None:
     """Password with non-latin-1 chars should fail validation."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={**VALID_USER_INPUT, "password": "p\u00e4ss\u4e16"},
@@ -123,9 +109,7 @@ async def test_user_flow_rejects_non_latin1_password(hass: HomeAssistant) -> Non
 
 async def test_user_flow_accepts_latin1_special_chars(hass: HomeAssistant) -> None:
     """Latin-1 special chars (umlauts, accents) should be accepted."""
-    result = await hass.config_entries.flow.async_init(
-        DOMAIN, context={"source": SOURCE_USER}
-    )
+    result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
     result = await hass.config_entries.flow.async_configure(
         result["flow_id"],
         user_input={
@@ -145,19 +129,16 @@ async def test_user_flow_accepts_latin1_special_chars(hass: HomeAssistant) -> No
 @pytest.mark.no_auto_mock_connection
 async def test_user_flow_rejects_invalid_credentials(hass: HomeAssistant) -> None:
     """HTTP 401 from the Miniserver should show invalid_auth error."""
+
     async def _mock_get(*args, **kwargs):
         return _mock_response(401)
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
 
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input=VALID_USER_INPUT,
@@ -169,21 +150,16 @@ async def test_user_flow_rejects_invalid_credentials(hass: HomeAssistant) -> Non
 @pytest.mark.no_auto_mock_connection
 async def test_user_flow_rejects_unreachable_host(hass: HomeAssistant) -> None:
     """Connection error should show cannot_connect."""
-    async def _mock_get(*args, **kwargs):
-        raise aiohttp.ClientConnectorError(
-            connection_key=MagicMock(), os_error=OSError("Connection refused")
-        )
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    async def _mock_get(*args, **kwargs):
+        raise aiohttp.ClientConnectorError(connection_key=MagicMock(), os_error=OSError("Connection refused"))
+
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
 
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input=VALID_USER_INPUT,
@@ -195,19 +171,16 @@ async def test_user_flow_rejects_unreachable_host(hass: HomeAssistant) -> None:
 @pytest.mark.no_auto_mock_connection
 async def test_user_flow_rejects_timeout(hass: HomeAssistant) -> None:
     """Timeout should show cannot_connect."""
-    async def _mock_get(*args, **kwargs):
-        raise TimeoutError()
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    async def _mock_get(*args, **kwargs):
+        raise TimeoutError
+
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
 
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input=VALID_USER_INPUT,
@@ -438,9 +411,7 @@ async def test_bridge_remove(
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
 
-    result = await hass.config_entries.options.async_init(
-        mock_config_entry.entry_id
-    )
+    result = await hass.config_entries.options.async_init(mock_config_entry.entry_id)
     result = await hass.config_entries.options.async_configure(
         result["flow_id"],
         user_input={"next_step_id": "bridge_menu"},
@@ -508,9 +479,7 @@ async def test_user_flow_aborts_duplicate_serial(hass: HomeAssistant) -> None:
         "custom_components.loxone.config_flow._async_fetch_serial",
         return_value="AABBCCDDEEFF",
     ):
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input=VALID_USER_INPUT,
@@ -527,19 +496,16 @@ async def test_user_flow_aborts_duplicate_serial(hass: HomeAssistant) -> None:
 @pytest.mark.no_auto_mock_connection
 async def test_user_flow_rejects_server_error(hass: HomeAssistant) -> None:
     """HTTP 500 should show cannot_connect."""
+
     async def _mock_get(*args, **kwargs):
         return _mock_response(500)
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
 
-        result = await hass.config_entries.flow.async_init(
-            DOMAIN, context={"source": SOURCE_USER}
-        )
+        result = await hass.config_entries.flow.async_init(DOMAIN, context={"source": SOURCE_USER})
         result = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             user_input=VALID_USER_INPUT,
@@ -593,9 +559,7 @@ async def test_reauth_flow_rejects_invalid_auth(
     async def _mock_get(*args, **kwargs):
         return _mock_response(401)
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session
@@ -663,9 +627,7 @@ async def test_reconfigure_flow_rejects_bad_credentials(
     async def _mock_get(*args, **kwargs):
         return _mock_response(401)
 
-    with patch(
-        "custom_components.loxone.config_flow.async_get_clientsession"
-    ) as mock_session_fn:
+    with patch("custom_components.loxone.config_flow.async_get_clientsession") as mock_session_fn:
         session = MagicMock()
         session.get = _mock_get
         mock_session_fn.return_value = session

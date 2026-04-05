@@ -1,19 +1,11 @@
 """Tests for the Device Bridge module."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import HomeAssistant, State
+import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from tests.components.loxone.conftest import fire_loxone_event
-
-from custom_components.loxone.bridge import (
-    BridgeRuntime,
-    DeviceBridge,
-    _values_equal,
-)
+from custom_components.loxone.bridge import BridgeRuntime, DeviceBridge, _values_equal
 from custom_components.loxone.bridge_mappers import (
     AnalogExposeMapper,
     BinarySensorExposeMapper,
@@ -24,6 +16,9 @@ from custom_components.loxone.bridge_mappers import (
     get_mapper,
 )
 from custom_components.loxone.const import DOMAIN
+from homeassistant.core import HomeAssistant, State
+
+from .conftest import fire_loxone_event
 
 
 def _mock_hass():
@@ -202,7 +197,8 @@ class TestDimmerMapper:
         hass = _mock_hass()
         await m.loxone_value_to_ha(hass, "pos-uuid", 50.0)
         hass.services.async_call.assert_called_once_with(
-            "light", "turn_on",
+            "light",
+            "turn_on",
             {"entity_id": "light.test", "brightness": 128},
         )
 
@@ -212,7 +208,9 @@ class TestDimmerMapper:
         hass = _mock_hass()
         await m.loxone_value_to_ha(hass, "pos-uuid", 0.0)
         hass.services.async_call.assert_called_once_with(
-            "light", "turn_off", {"entity_id": "light.test"},
+            "light",
+            "turn_off",
+            {"entity_id": "light.test"},
         )
 
 
@@ -242,11 +240,15 @@ class TestColorPickerMapper:
         assert cmd == ("cp-uuid", "Off")
 
     def test_ha_hs_color(self):
-        state = State("light.hue", "on", {
-            "brightness": 255,
-            "color_mode": "hs",
-            "hs_color": (120, 50),
-        })
+        state = State(
+            "light.hue",
+            "on",
+            {
+                "brightness": 255,
+                "color_mode": "hs",
+                "hs_color": (120, 50),
+            },
+        )
         cmd = self._make().ha_state_to_command(state)
         uuid, value = cmd
         assert uuid == "cp-uuid"
@@ -255,12 +257,16 @@ class TestColorPickerMapper:
 
     def test_ha_rgbw_color(self):
         """RGBW lights still have hs_color derived by HA."""
-        state = State("light.hue", "on", {
-            "brightness": 200,
-            "color_mode": "rgbw",
-            "hs_color": (240, 100),
-            "rgbw_color": (0, 0, 255, 50),
-        })
+        state = State(
+            "light.hue",
+            "on",
+            {
+                "brightness": 200,
+                "color_mode": "rgbw",
+                "hs_color": (240, 100),
+                "rgbw_color": (0, 0, 255, 50),
+            },
+        )
         cmd = self._make().ha_state_to_command(state)
         uuid, value = cmd
         assert uuid == "cp-uuid"
@@ -268,12 +274,16 @@ class TestColorPickerMapper:
 
     def test_ha_rgb_color(self):
         """RGB color mode uses hs_color derived by HA."""
-        state = State("light.hue", "on", {
-            "brightness": 255,
-            "color_mode": "rgb",
-            "hs_color": (0, 100),
-            "rgb_color": (255, 0, 0),
-        })
+        state = State(
+            "light.hue",
+            "on",
+            {
+                "brightness": 255,
+                "color_mode": "rgb",
+                "hs_color": (0, 100),
+                "rgb_color": (255, 0, 0),
+            },
+        )
         cmd = self._make().ha_state_to_command(state)
         uuid, value = cmd
         assert uuid == "cp-uuid"
@@ -282,23 +292,31 @@ class TestColorPickerMapper:
 
     def test_ha_xy_color(self):
         """XY color mode uses hs_color derived by HA."""
-        state = State("light.hue", "on", {
-            "brightness": 128,
-            "color_mode": "xy",
-            "hs_color": (30, 80),
-            "xy_color": (0.5, 0.4),
-        })
+        state = State(
+            "light.hue",
+            "on",
+            {
+                "brightness": 128,
+                "color_mode": "xy",
+                "hs_color": (30, 80),
+                "xy_color": (0.5, 0.4),
+            },
+        )
         cmd = self._make().ha_state_to_command(state)
         uuid, value = cmd
         assert uuid == "cp-uuid"
         assert value.startswith("hsv(")
 
     def test_ha_color_temp(self):
-        state = State("light.hue", "on", {
-            "brightness": 128,
-            "color_mode": "color_temp",
-            "color_temp_kelvin": 4000,
-        })
+        state = State(
+            "light.hue",
+            "on",
+            {
+                "brightness": 128,
+                "color_mode": "color_temp",
+                "color_temp_kelvin": 4000,
+            },
+        )
         cmd = self._make().ha_state_to_command(state)
         uuid, value = cmd
         assert uuid == "cp-uuid"
@@ -334,7 +352,9 @@ class TestColorPickerMapper:
         hass = _mock_hass()
         await m.loxone_value_to_ha(hass, "color-uuid", "hsv(0,0,0)")
         hass.services.async_call.assert_called_once_with(
-            "light", "turn_off", {"entity_id": "light.hue"},
+            "light",
+            "turn_off",
+            {"entity_id": "light.hue"},
         )
 
 
@@ -367,7 +387,9 @@ class TestLightSwitchMapper:
         hass = _mock_hass()
         await m.loxone_value_to_ha(hass, "active-uuid", 1.0)
         hass.services.async_call.assert_called_once_with(
-            "light", "turn_on", {"entity_id": "light.test"},
+            "light",
+            "turn_on",
+            {"entity_id": "light.test"},
         )
 
 
@@ -441,11 +463,6 @@ class TestAnalogExposeMapper:
         assert cmd is None
 
 
-# ---------------------------------------------------------------------------
-# BridgeRuntime (integration-level)
-# ---------------------------------------------------------------------------
-
-
 class TestBridgeRuntime:
     @pytest.fixture
     def bridge_config(self):
@@ -466,9 +483,7 @@ class TestBridgeRuntime:
         return coord
 
     @pytest.mark.asyncio
-    async def test_setup_restores_bridges(
-        self, hass: HomeAssistant, bridge_config, mock_coordinator
-    ):
+    async def test_setup_restores_bridges(self, hass: HomeAssistant, bridge_config, mock_coordinator):
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={},
@@ -486,9 +501,7 @@ class TestBridgeRuntime:
         await runtime.async_teardown()
 
     @pytest.mark.asyncio
-    async def test_expose_sends_command(
-        self, hass: HomeAssistant, bridge_config, mock_coordinator
-    ):
+    async def test_expose_sends_command(self, hass: HomeAssistant, bridge_config, mock_coordinator):
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={},
@@ -502,16 +515,12 @@ class TestBridgeRuntime:
         await runtime.async_setup()
         await hass.async_block_till_done()
 
-        mock_coordinator.api.send_websocket_command.assert_called_once_with(
-            "dim-uuid", 50
-        )
+        mock_coordinator.api.send_websocket_command.assert_called_once_with("dim-uuid", 50)
 
         await runtime.async_teardown()
 
     @pytest.mark.asyncio
-    async def test_subscribe_fires_loxone_value(
-        self, hass: HomeAssistant, bridge_config, mock_coordinator
-    ):
+    async def test_subscribe_fires_loxone_value(self, hass: HomeAssistant, bridge_config, mock_coordinator):
         """When a Loxone event arrives, the mapper's loxone_value_to_ha is called."""
         entry = MockConfigEntry(
             domain=DOMAIN,
@@ -525,9 +534,7 @@ class TestBridgeRuntime:
         await runtime.async_setup()
 
         ab = runtime._active[0]
-        with patch.object(
-            ab.mapper, "loxone_value_to_ha", new_callable=AsyncMock
-        ) as mock_lox:
+        with patch.object(ab.mapper, "loxone_value_to_ha", new_callable=AsyncMock) as mock_lox:
             fire_loxone_event(hass, {"pos-uuid": 75.0})
             await hass.async_block_till_done()
 
@@ -536,9 +543,7 @@ class TestBridgeRuntime:
         await runtime.async_teardown()
 
     @pytest.mark.asyncio
-    async def test_teardown_cleans_listeners(
-        self, hass: HomeAssistant, bridge_config, mock_coordinator
-    ):
+    async def test_teardown_cleans_listeners(self, hass: HomeAssistant, bridge_config, mock_coordinator):
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={},
@@ -554,9 +559,7 @@ class TestBridgeRuntime:
         assert len(runtime._active) == 0
 
     @pytest.mark.asyncio
-    async def test_empty_bridges(
-        self, hass: HomeAssistant, mock_coordinator
-    ):
+    async def test_empty_bridges(self, hass: HomeAssistant, mock_coordinator):
         entry = MockConfigEntry(
             domain=DOMAIN,
             data={},
@@ -586,7 +589,6 @@ async def test_bridged_entity_is_disabled_not_removed(
     mock_loxone_connection: MagicMock,
 ) -> None:
     """Bridged sub-controls should be created but disabled by integration."""
-    from homeassistant.helpers import entity_registry as er
     from custom_components.loxone.const import (
         CONF_CREATE_AREAS,
         CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
@@ -594,6 +596,7 @@ async def test_bridged_entity_is_disabled_not_removed(
         CONF_SCENE_GEN_DELAY,
     )
     from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
+    from homeassistant.helpers import entity_registry as er
 
     bridged_uuid = "lc01sp00-0000-0000-0000000000000000"
     opts = {
@@ -632,9 +635,7 @@ async def test_bridged_entity_is_disabled_not_removed(
             ent_entry = ent
             break
 
-    assert ent_entry is not None, (
-        "Bridged entity should still exist in the entity registry"
-    )
+    assert ent_entry is not None, "Bridged entity should still exist in the entity registry"
     assert ent_entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION, (
         "Bridged entity should be disabled by integration"
     )

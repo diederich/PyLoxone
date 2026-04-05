@@ -2,9 +2,10 @@
 
 import json
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
@@ -12,10 +13,9 @@ from homeassistant.helpers.dispatcher import async_dispatcher_send
 @pytest.fixture(autouse=True)
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Enable custom integrations in all HA unit tests."""
-    yield
+    return
 
 
-from homeassistant.core import HomeAssistant
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import (
@@ -25,6 +25,7 @@ from custom_components.loxone.const import (
     CONF_SCENE_GEN_DELAY,
     DOMAIN,
 )
+from homeassistant.core import HomeAssistant
 
 FIXTURE_DIR = Path(__file__).parent / "fixtures"
 
@@ -42,6 +43,7 @@ def fire_loxone_event(hass: "HomeAssistant", data: dict, entry_id: str | None = 
     prefix = f"loxone_{entry_id}_uuid_" if entry_id else "loxone_uuid_"
     for uuid in data:
         async_dispatcher_send(hass, f"{prefix}{uuid}", data)
+
 
 MOCK_OPTIONS = {
     CONF_HOST: "192.168.1.100",
@@ -91,9 +93,7 @@ def mock_loxone_connection(structure_fixture_name: str):
         api.start_listening = AsyncMock()
         api.send_websocket_command = AsyncMock()
         api.send_secured__websocket_command = AsyncMock()
-        api.get_token_dict = MagicMock(
-            return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"}
-        )
+        api.get_token_dict = MagicMock(return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"})
         api.structure_file = structure
         api.connection = MagicMock()
 

@@ -1,30 +1,43 @@
-"""
-Loxone Sensors
+"""Loxone Sensors.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
-import logging
-import re
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import cached_property
+import logging
+import re
 from typing import Any
 
-import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
-from homeassistant.components.sensor import (CONF_STATE_CLASS, PLATFORM_SCHEMA,
-                                             SensorDeviceClass, SensorEntity,
-                                             SensorEntityDescription,
-                                             SensorStateClass)
-from homeassistant.const import (CONF_DEVICE_CLASS, CONF_NAME,
-                                 CONF_UNIT_OF_MEASUREMENT, CONF_VALUE_TEMPLATE,
-                                 EntityCategory, LIGHT_LUX, PERCENTAGE,
-                                 STATE_UNKNOWN, UnitOfEnergy, UnitOfPower,
-                                 UnitOfSpeed, UnitOfTemperature,
-                                 UnitOfVolume)
+
+from homeassistant.components.sensor import (
+    CONF_STATE_CLASS,
+    PLATFORM_SCHEMA as SENSOR_PLATFORM_SCHEMA,
+    SensorDeviceClass,
+    SensorEntity,
+    SensorEntityDescription,
+    SensorStateClass,
+)
+from homeassistant.const import (
+    CONF_DEVICE_CLASS,
+    CONF_NAME,
+    CONF_UNIT_OF_MEASUREMENT,
+    CONF_VALUE_TEMPLATE,
+    LIGHT_LUX,
+    PERCENTAGE,
+    STATE_UNKNOWN,
+    EntityCategory,
+    UnitOfEnergy,
+    UnitOfPower,
+    UnitOfSpeed,
+    UnitOfTemperature,
+    UnitOfVolume,
+)
 from homeassistant.core import HomeAssistant, callback
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -33,7 +46,7 @@ from homeassistant.helpers.typing import ConfigType, DiscoveryInfoType
 from homeassistant.util import dt as dt_util
 
 from . import LoxoneConfigEntry, LoxoneEntity
-from .const import CONF_ACTIONID, DOMAIN, SENDDOMAIN, THROTTLE_KEEP_ALIVE_TIME
+from .const import CONF_ACTIONID, DOMAIN, THROTTLE_KEEP_ALIVE_TIME
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 from .miniserver import MiniServer
@@ -46,7 +59,7 @@ DEFAULT_NAME = "Loxone Sensor"
 
 PARALLEL_UPDATES = 0
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+SENSOR_PLATFORM_SCHEMA = SENSOR_PLATFORM_SCHEMA.extend(
     {
         vol.Required(CONF_ACTIONID): cv.string,
         vol.Optional(CONF_NAME): cv.string,
@@ -157,9 +170,7 @@ SENSOR_FORMATS = [desc.loxone_format_string for desc in SENSOR_TYPES]
 # Meter type → (state_key → (device_class, state_class, fallback_unit))
 # Used when the format string doesn't match a known SENSOR_FORMAT, so the
 # meter subsensor still gets the right classification for HA energy dashboard.
-_METER_CLASSIFICATION: dict[
-    str, dict[str, tuple[SensorDeviceClass, SensorStateClass, str]]
-] = {
+_METER_CLASSIFICATION: dict[str, dict[str, tuple[SensorDeviceClass, SensorStateClass, str]]] = {
     "energy": {
         "actual": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT),
         "total": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
@@ -192,6 +203,7 @@ _METER_EXPECTED_CLASSES: dict[str, set[SensorDeviceClass]] = {
 
 
 def _no_extra_attrs(_ms: MiniServer) -> dict[str, Any]:
+    """Return no extra attrs."""
     return {}
 
 
@@ -207,6 +219,7 @@ class MiniserverSensorDescription:
 
 
 def _location_attrs(ms: MiniServer) -> dict[str, Any]:
+    """Return location attrs."""
     attrs: dict[str, Any] = {}
     if ms.latitude is not None:
         attrs["latitude"] = ms.latitude
@@ -218,6 +231,7 @@ def _location_attrs(ms: MiniServer) -> dict[str, Any]:
 
 
 def _current_user_attrs(ms: MiniServer) -> dict[str, Any]:
+    """Return current user attrs."""
     user = ms.current_user
     if user and "isAdmin" in user:
         return {"is_admin": user["isAdmin"]}
@@ -255,25 +269,24 @@ class LoxoneMiniserverInfoSensor(LoxoneEntity, SensorEntity):
     _attr_should_poll = False
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
-    def __init__(
-        self, description: MiniserverSensorDescription, miniserver: MiniServer
-    ) -> None:
+    def __init__(self, description: MiniserverSensorDescription, miniserver: MiniServer) -> None:
+        """Initialize the LoxoneMiniserverInfoSensor."""
         super().__init__()
         self._serial = miniserver.serial
         self._attr_translation_key = description.key
         self._attr_icon = description.icon
         self._attr_unique_id = f"{miniserver.serial}_{description.key}"
         self._attr_native_value = description.value_fn(miniserver)
-        self._attr_extra_state_attributes.update(
-            {k: v for k, v in description.extra_attrs_fn(miniserver).items()}
-        )
+        self._attr_extra_state_attributes.update(description.extra_attrs_fn(miniserver))
 
     @cached_property
     def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
         return self._attr_unique_id
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         if self._serial:
             return DeviceInfo(identifiers={(DOMAIN, self._serial)})
         return None
@@ -289,7 +302,7 @@ async def async_setup_platform(
     async_add_devices: AddEntitiesCallback,
     discovery_info: DiscoveryInfoType | None = None,
 ) -> None:
-    """Set up Loxone Sensor from yaml"""
+    """Set up Loxone Sensor from yaml."""
     value_template = config.get(CONF_VALUE_TEMPLATE)
     if value_template is not None:
         value_template.hass = hass
@@ -318,9 +331,11 @@ async def async_setup_entry(
         entities.append(LoxoneVersionSensor(loxconfig["softwareVersion"], serial=serial, coordinator=coordinator))
 
     if miniserver:
-        for desc in MINISERVER_SENSOR_DESCRIPTIONS:
-            if desc.value_fn(miniserver) is not None:
-                entities.append(LoxoneMiniserverInfoSensor(desc, miniserver))
+        entities.extend(
+            LoxoneMiniserverInfoSensor(desc, miniserver)
+            for desc in MINISERVER_SENSOR_DESCRIPTIONS
+            if desc.value_fn(miniserver) is not None
+        )
 
     for sensor in get_all(loxconfig, "InfoOnlyAnalog"):
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
@@ -330,7 +345,7 @@ async def async_setup_entry(
     for sensor in get_all(loxconfig, "Meter"):
         _LOGGER.info("Found Meter: %s", sensor)
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        device_info = LoxoneMeterSensor.create_DeviceInfo_from_sensor(sensor)
+        device_info = LoxoneMeterSensor.create_device_info_from_sensor(sensor)
         meter_type = sensor.get("details", {}).get("type", "").lower()
 
         for state_key, suffix, translation_key, format_key in [
@@ -393,33 +408,27 @@ async def async_setup_entry(
                         )
 
     if miniserver and miniserver.serial:
-        entities.append(
-            LoxoneConnectionStateSensor(
-                serial=miniserver.serial, coordinator=coordinator
-            )
-        )
-        entities.append(
-            LoxoneReconnectCountSensor(
-                serial=miniserver.serial, coordinator=coordinator
-            )
-        )
+        entities.append(LoxoneConnectionStateSensor(serial=miniserver.serial, coordinator=coordinator))
+        entities.append(LoxoneReconnectCountSensor(serial=miniserver.serial, coordinator=coordinator))
 
     if miniserver:
+
         @callback
         def async_add_sensors(_):
             async_add_entities(_, True)
 
         miniserver.listeners.append(
-            async_dispatcher_connect(
-                hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_sensors
-            )
+            async_dispatcher_connect(hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_sensors)
         )
 
     async_add_entities(entities, update_before_add=True)
 
 
 class LoxoneCustomSensor(LoxoneEntity, SensorEntity):
+    """Represent loxone custom sensor."""
+
     def __init__(self, **kwargs):
+        """Initialize the LoxoneCustomSensor."""
         self._attr_name = kwargs.pop("name", None)
         self._attr_state_class = kwargs.pop("state_class", None)
         self._attr_device_class = kwargs.pop("device_class", None)
@@ -434,6 +443,7 @@ class LoxoneCustomSensor(LoxoneEntity, SensorEntity):
         return self.uuidAction + self._attr_name
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self.uuidAction in e:
             data = e[self.uuidAction]
             if isinstance(data, (list, dict)):
@@ -461,6 +471,8 @@ class LoxoneCustomSensor(LoxoneEntity, SensorEntity):
 
 
 class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
+    """Represent loxone keep alive sensor."""
+
     _attr_has_entity_name = True
     _attr_name = "Keep alive"
     _attr_icon = "mdi:heart-pulse"
@@ -468,12 +480,11 @@ class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, serial: str | None = None, **kwargs):
+        """Initialize the LoxoneKeepAliveSensor."""
         super().__init__(**kwargs)
         self._serial = serial
         self._attr_native_value = None
-        self._attr_unique_id = (
-            f"{serial}_keep_alive" if serial else "loxone_keep_alive_sensor_uuid"
-        )
+        self._attr_unique_id = f"{serial}_keep_alive" if serial else "loxone_keep_alive_sensor_uuid"
 
     @cached_property
     def unique_id(self) -> str:
@@ -482,11 +493,13 @@ class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         if self._serial:
             return DeviceInfo(identifiers={(DOMAIN, self._serial)})
         return None
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if "keep_alive" in e and e["keep_alive"] == "received":
             now = dt_util.utcnow()
             if self._attr_native_value is not None:
@@ -499,6 +512,8 @@ class LoxoneKeepAliveSensor(LoxoneEntity, SensorEntity):
 
 
 class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
+    """Represent loxone version sensor."""
+
     _attr_has_entity_name = True
     _attr_should_poll = False
     _attr_name = "Software version"
@@ -507,14 +522,13 @@ class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, version_list, serial: str | None = None, **kwargs):
+        """Initialize the LoxoneVersionSensor."""
         super().__init__(**kwargs)
         self._serial = serial
-        self._attr_unique_id = (
-            f"{serial}_software_version" if serial else "loxone_software_version"
-        )
+        self._attr_unique_id = f"{serial}_software_version" if serial else "loxone_software_version"
         try:
             self._attr_native_value = ".".join([str(x) for x in version_list])
-        except Exception:
+        except TypeError:
             self._attr_native_value = STATE_UNKNOWN
 
     @cached_property
@@ -524,6 +538,7 @@ class LoxoneVersionSensor(LoxoneEntity, SensorEntity):
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         if self._serial:
             return DeviceInfo(identifiers={(DOMAIN, self._serial)})
         return None
@@ -535,12 +550,13 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
     _attr_has_entity_name = True
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneSensor."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._format = self._get_format(self.details["format"])
         self._attr_should_poll = False
         self._attr_native_unit_of_measurement = self._clean_unit(self.details["format"])
-        self._parent_id = kwargs.get("parent_id", None)
+        self._parent_id = kwargs.get("parent_id")
 
         if entity_description := self._get_entity_description():
             self.entity_description = entity_description
@@ -557,16 +573,13 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
         pattern = r"\.(\d+)"
         match = re.search(pattern, format_string)
         if match:
-            digits = int(match.group(1))
-            return digits
+            return int(match.group(1))
         return None
 
     def _get_entity_description(self) -> SensorEntityDescription | None:
         """Return the sensor entity description."""
         if self._attr_native_unit_of_measurement in SENSOR_FORMATS:
-            return SENSOR_TYPES[
-                SENSOR_FORMATS.index(self._attr_native_unit_of_measurement)
-            ]
+            return SENSOR_TYPES[SENSOR_FORMATS.index(self._attr_native_unit_of_measurement)]
         return None
 
     @property
@@ -575,12 +588,14 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
         return self.state is not None
 
     def _get_lox_rounded_value(self, value):
+        """Return get lox rounded value."""
         try:
             return float(self._format % float(value))
         except ValueError:
             return value
 
     async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
         if self.uuidAction in e:
             self._attr_native_value = e[self.uuidAction]
             self.async_schedule_update_ha_state()
@@ -595,13 +610,16 @@ class LoxoneSensor(LoxoneEntity, SensorEntity):
 
 
 class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
+    """Represent loxone meter sensor."""
+
     def __init__(self, **kwargs):
+        """Initialize the LoxoneMeterSensor."""
         name_suffix = kwargs.pop("name_suffix", None)
         tkey = kwargs.pop("translation_key", None)
         meter_type = kwargs.pop("meter_type", "")
         meter_state_key = kwargs.pop("meter_state_key", "")
         super().__init__(**kwargs)
-        device_info = kwargs.get("device_info", None)
+        device_info = kwargs.get("device_info")
         if device_info:
             self._attr_device_info = device_info
         if tkey:
@@ -622,7 +640,8 @@ class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
                     self._attr_native_unit_of_measurement = fallback_unit
 
     @staticmethod
-    def create_DeviceInfo_from_sensor(sensor) -> DeviceInfo:
+    def create_device_info_from_sensor(sensor) -> DeviceInfo:
+        """Create device info from sensor."""
         try:
             # For legacy Meter
             model = sensor["details"]["type"].capitalize() + " Meter"
@@ -646,6 +665,7 @@ class LoxoneConnectionStateSensor(LoxoneEntity, SensorEntity):
     _attr_translation_key = "connection_state"
 
     def __init__(self, *, serial: str, coordinator: LoxoneCoordinator) -> None:
+        """Initialize the LoxoneConnectionStateSensor."""
         super().__init__()
         self._serial = serial
         self._coordinator = coordinator
@@ -653,13 +673,16 @@ class LoxoneConnectionStateSensor(LoxoneEntity, SensorEntity):
 
     @property
     def native_value(self) -> str:
+        """Return the native value."""
         return self._coordinator.connection_state.value
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         return DeviceInfo(identifiers={(DOMAIN, self._serial)})
 
     async def async_added_to_hass(self) -> None:
+        """Run when this entity is added to Home Assistant."""
         self._register_coordinator_listener()
 
 
@@ -674,6 +697,7 @@ class LoxoneReconnectCountSensor(LoxoneEntity, SensorEntity):
     _attr_translation_key = "reconnect_count"
 
     def __init__(self, *, serial: str, coordinator: LoxoneCoordinator) -> None:
+        """Initialize the LoxoneReconnectCountSensor."""
         super().__init__()
         self._serial = serial
         self._coordinator = coordinator
@@ -681,11 +705,14 @@ class LoxoneReconnectCountSensor(LoxoneEntity, SensorEntity):
 
     @property
     def native_value(self) -> int:
+        """Return the native value."""
         return self._coordinator.reconnect_count
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         return DeviceInfo(identifiers={(DOMAIN, self._serial)})
 
     async def async_added_to_hass(self) -> None:
+        """Run when this entity is added to Home Assistant."""
         self._register_coordinator_listener()

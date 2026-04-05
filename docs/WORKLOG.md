@@ -4,6 +4,35 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-05 — Ruff: Home Assistant Core alignment and MED-014 (lint + pydocstyle)
+
+Adopted Ruff **rule sets aligned with** [Home Assistant Core `pyproject.toml`](https://github.com/home-assistant/core/blob/dev/pyproject.toml) (curated `select` / `ignore`, not `select = ["ALL"]`). Burned down per-file suppressions on **`custom_components/loxone/**`** so only **`TID252`** remains—other issues are fixed or carry a tight inline `noqa`. Completed **MED-014**: non-docstring waivers, then pydocstyle on the integration; removed the MED-014 issue from `ISSUES_AND_TODOS.md`. **`ruff check .` is clean; `python -m pytest tests/ -q` → 378 passed.**
+
+### Decisions
+
+- **Policy:** Rebase `ruff.toml` from core when upstream changes; PyLoxone-only deltas stay in `docs/LINTING.md`.
+- **Burn-down:** Dropped blanket `per-file-ignores` for `BLE001`, `PLC0415`, `TRY300`/`TRY301`, `C901`, `TRY203`, `G201`, `PLC0206`, and finally **`D100`–`D107` / `D205`** on the integration—prefer real fixes or scoped `noqa` with rationale.
+- **Tests layout:** `tests/components/loxone/**` matches our flat paths (not core’s extra package segment under `tests/components/`).
+- **`bridge_types.py`:** Holds `DeviceBridge` + `BridgeMapper` so `bridge_mappers` imports types without a cycle; `bridge.py` imports `get_mapper` at module level.
+- **`async_setup_entry`:** `# noqa: C901`; bus listeners stay inner closures for readability.
+- **`async_unload_entry`:** `except Exception  # noqa: BLE001` — unload must survive messy teardown.
+- **WS / group helpers:** `# noqa: BLE001` only where a catch-all is required to respond safely.
+- **Docstrings:** Broad pass over the integration; hand-fixed `bridge.py` (no docstring between `@callback` and inner `def`), **D205** / indentation in `cover.py` and `media_player.py`.
+- **Test harness vs `homeassistant` pin:** `pytest-homeassistant-custom-component` declares an exact `Requires-Dist: homeassistant==…`. **`0.13.314`** required **2026.2.1** while **`requirements.txt`** had **2026.2.2**, so repeated installs bounced HA. Bumped to **`pytest-homeassistant-custom-component==0.13.315`** (matches **2026.2.2**).
+
+### Changes (summary)
+
+- **`ruff.toml`**, **`requirements.txt`**, **`requirements_test.txt`**, **`scripts/lint`**, **`docs/LINTING.md`**, **`AGENTS.md`**, **`docs/API_LAYER.md`**
+- **`custom_components/loxone/**`** (incl. **`bridge_types.py`**, **`lights/__init__.py`** package docstring), **`tests/components/loxone/**`**, **`tests_e2e_miniserver/**`**
+- **`docs/ISSUES_AND_TODOS.md`:** MED-014 removed; testing strategy note updated for pytest-hacc / HA version lockstep
+
+### Testplan
+
+- `ruff check .`
+- `python -m pytest tests/ -q`
+
+---
+
 ## 2026-04-04 — Panel accessibility (tabs, focus, labels)
 
 ### Decisions
@@ -823,3 +852,4 @@ Session-by-session record of work done on PyLoxone. Newest first.
 - Mapped complete light entity hierarchy: `LightControllerV2` → sub-controls (Switch, Dimmer, EIBDimmer, ColorPickerV2 with Rgb/LumiTech/TunableWhite picker types)
 - Analyzed connection.py god object (1420 lines) and proposed decomposition
 - Reviewed event bus broadcast pattern — O(entities × events) scaling issue documented
+

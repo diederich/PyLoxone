@@ -4,15 +4,15 @@ import json
 from pathlib import Path
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.loxone.const import DOMAIN
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr, entity_registry as er
-from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from tests.components.loxone.conftest import fire_loxone_event
-
-from custom_components.loxone.const import DOMAIN
+from .conftest import fire_loxone_event
 
 MINISERVER_SERIAL = "504F94A0FEA2"
 
@@ -43,9 +43,7 @@ USER_ENTITY_ID = "sensor.test_miniserver_connected_user"
 # -- Built-in sensors (always created) ----------------------------------------
 
 
-async def test_version_sensor_disabled_by_default(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_version_sensor_disabled_by_default(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Version sensor should be registered but disabled by default."""
     ent_reg = er.async_get(hass)
     entry = ent_reg.async_get(VERSION_ENTITY_ID)
@@ -54,9 +52,7 @@ async def test_version_sensor_disabled_by_default(
     assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
 
 
-async def test_version_sensor_on_miniserver_device(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_version_sensor_on_miniserver_device(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Version sensor should be attached to the miniserver device."""
     ent_reg = er.async_get(hass)
     entry = ent_reg.async_get(VERSION_ENTITY_ID)
@@ -69,17 +65,13 @@ async def test_version_sensor_on_miniserver_device(
     assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
 
 
-async def test_keep_alive_sensor_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_keep_alive_sensor_created(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Keep-alive sensor should always be present."""
     state = hass.states.get(KEEPALIVE_ENTITY_ID)
     assert state is not None
 
 
-async def test_keep_alive_sensor_on_miniserver_device(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_keep_alive_sensor_on_miniserver_device(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Keep-alive sensor should be attached to the miniserver device."""
     ent_reg = er.async_get(hass)
     entry = ent_reg.async_get(KEEPALIVE_ENTITY_ID)
@@ -96,9 +88,7 @@ async def test_keep_alive_sensor_on_miniserver_device(
 # -- Miniserver info sensors (Tier 2) ----------------------------------------
 
 
-async def test_project_name_sensor(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_project_name_sensor(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Project name sensor should show the Loxone Config project name."""
     state = hass.states.get(PROJECT_ENTITY_ID)
     assert state is not None
@@ -114,9 +104,7 @@ async def test_project_name_sensor(
     assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
 
 
-async def test_location_sensor(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_location_sensor(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Location sensor should show the location name with coordinate attributes."""
     state = hass.states.get(LOCATION_ENTITY_ID)
     assert state is not None
@@ -135,9 +123,7 @@ async def test_location_sensor(
     assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
 
 
-async def test_connected_user_sensor(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_connected_user_sensor(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Connected user sensor should show the API username with is_admin attribute."""
     state = hass.states.get(USER_ENTITY_ID)
     assert state is not None
@@ -176,33 +162,25 @@ async def test_miniserver_sensors_missing_data(
 # -- InfoOnlyAnalog (LoxoneSensor) -------------------------------------------
 
 
-async def test_analog_sensor_created(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_analog_sensor_created(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """InfoOnlyAnalog should create a sensor entity."""
     state = hass.states.get(TEMP_ENTITY_ID)
     assert state is not None
 
 
-async def test_sensor_unit_from_format(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_sensor_unit_from_format(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Format '%.1f °C' should yield '°C' as unit."""
     state = hass.states.get(TEMP_ENTITY_ID)
     assert state.attributes.get("unit_of_measurement") == "°C"
 
 
-async def test_sensor_entity_description_matched(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_sensor_entity_description_matched(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Temperature unit should match SENSOR_TYPES and set device_class."""
     state = hass.states.get(TEMP_ENTITY_ID)
     assert state.attributes.get("device_class") == SensorDeviceClass.TEMPERATURE
 
 
-async def test_wind_sensor_unit(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_wind_sensor_unit(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Wind sensor with '%.1f km/h' should get wind_speed device_class."""
     state = hass.states.get(WIND_ENTITY_ID)
     assert state is not None
@@ -210,9 +188,7 @@ async def test_wind_sensor_unit(
     assert state.attributes.get("device_class") == SensorDeviceClass.WIND_SPEED
 
 
-async def test_sensor_state_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_sensor_state_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Firing the sensor UUID should update native_value."""
     fire_loxone_event(hass, {TEMP_ACTION_UUID: 21.5})
     await hass.async_block_till_done()
@@ -221,9 +197,7 @@ async def test_sensor_state_from_event(
     assert float(state.state) == pytest.approx(21.5)
 
 
-async def test_sensor_ignores_unrelated_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_sensor_ignores_unrelated_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Unrelated UUID should not change sensor state."""
     fire_loxone_event(hass, {TEMP_ACTION_UUID: 20.0})
     await hass.async_block_till_done()
@@ -238,9 +212,7 @@ async def test_sensor_ignores_unrelated_event(
 # -- Meter (LoxoneMeterSensor subsensors) ------------------------------------
 
 
-async def test_meter_creates_subsensors(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_creates_subsensors(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """One Meter control should produce Actual, Total, and TotalNeg child sensors."""
     actual = hass.states.get("sensor.energy_meter_actual")
     total = hass.states.get("sensor.energy_meter_total")
@@ -251,9 +223,7 @@ async def test_meter_creates_subsensors(
     assert total_returned is not None, "Total Returned subsensor missing"
 
 
-async def test_meter_actual_state_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_actual_state_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Firing the actual state UUID should update the actual subsensor."""
     fire_loxone_event(hass, {METER_ACTUAL_UUID: 1234.5})
     await hass.async_block_till_done()
@@ -262,9 +232,7 @@ async def test_meter_actual_state_from_event(
     assert float(state.state) == pytest.approx(1234.5)
 
 
-async def test_meter_total_state_from_event(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_total_state_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Firing the total state UUID should update the total subsensor."""
     fire_loxone_event(hass, {METER_TOTAL_UUID: 9876.0})
     await hass.async_block_till_done()
@@ -273,18 +241,14 @@ async def test_meter_total_state_from_event(
     assert float(state.state) == pytest.approx(9876.0)
 
 
-async def test_meter_actual_unit(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_actual_unit(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Actual subsensor with '%.1f W' format should have W unit and POWER class."""
     state = hass.states.get("sensor.energy_meter_actual")
     assert state.attributes.get("unit_of_measurement") == "W"
     assert state.attributes.get("device_class") == SensorDeviceClass.POWER
 
 
-async def test_meter_total_energy_dashboard_attrs(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_total_energy_dashboard_attrs(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Total subsensor should be ENERGY/TOTAL_INCREASING for the energy dashboard."""
     state = hass.states.get("sensor.energy_meter_total")
     assert state.attributes.get("device_class") == SensorDeviceClass.ENERGY
@@ -302,9 +266,7 @@ async def test_meter_total_returned_energy_dashboard_attrs(
     assert state.attributes.get("unit_of_measurement") == "kWh"
 
 
-async def test_meter_actual_state_class(
-    hass: HomeAssistant, init_integration: MockConfigEntry
-) -> None:
+async def test_meter_actual_state_class(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
     """Actual (power) subsensor should be POWER/MEASUREMENT."""
     state = hass.states.get("sensor.energy_meter_actual")
     assert state.attributes.get("state_class") == SensorStateClass.MEASUREMENT
@@ -317,9 +279,7 @@ async def test_meter_fallback_classification_from_type(
 ) -> None:
     """When the format string has no recognisable unit, details.type forces classification."""
     fixture = json.loads((FIXTURE_DIR / "structure_sensors.json").read_text())
-    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"][
-        "totalFormat"
-    ] = "%.2f units"
+    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"]["totalFormat"] = "%.2f units"
     mock_loxone_connection.structure_file = fixture
 
     mock_config_entry.add_to_hass(hass)
@@ -343,9 +303,7 @@ async def test_meter_unit_mismatch_creates_repair(
     fixture = json.loads((FIXTURE_DIR / "structure_sensors.json").read_text())
     # Energy meter with a temperature format → device_class will resolve to
     # TEMPERATURE, which conflicts with the declared meter type "energy".
-    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"][
-        "totalFormat"
-    ] = "%.1f °C"
+    fixture["controls"]["mtr10000-0000-0000-0000000000000000"]["details"]["totalFormat"] = "%.1f °C"
     mock_loxone_connection.structure_file = fixture
 
     mock_config_entry.add_to_hass(hass)
@@ -353,9 +311,7 @@ async def test_meter_unit_mismatch_creates_repair(
     await hass.async_block_till_done()
 
     issues = ir.async_get(hass)
-    issue = issues.async_get_issue(
-        DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total"
-    )
+    issue = issues.async_get_issue(DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total")
     assert issue is not None
     assert issue.severity == ir.IssueSeverity.WARNING
     assert issue.translation_key == "meter_unit_mismatch"
@@ -374,7 +330,5 @@ async def test_meter_matching_unit_no_repair(
     await hass.async_block_till_done()
 
     issues = ir.async_get(hass)
-    issue = issues.async_get_issue(
-        DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total"
-    )
+    issue = issues.async_get_issue(DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total")
     assert issue is None

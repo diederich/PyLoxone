@@ -1,11 +1,12 @@
-"""
-Helper functions
+"""Helper functions.
 
 For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/loxone/
 """
 
+
 def map_range(value, in_min, in_max, out_min, out_max):
+    """Map range."""
     return out_min + (((value - in_min) / (in_max - in_min)) * (out_max - out_min))
 
 
@@ -20,6 +21,7 @@ def lox_to_hass(lox_val):
 
 
 def lox2lox_mapped(x, min_v, max_v):
+    """Lox2lox mapped."""
     if x <= min_v:
         return 0
     if x >= max_v:
@@ -28,6 +30,7 @@ def lox2lox_mapped(x, min_v, max_v):
 
 
 def lox2hass_mapped(x, min_v, max_v):
+    """Lox2hass mapped."""
     if x <= min_v:
         return 0
     if x >= max_v:
@@ -35,18 +38,8 @@ def lox2hass_mapped(x, min_v, max_v):
     return lox_to_hass(x)
 
 
-# def to_hass_color_temp(temp: float):
-#     """Linear interpolation between Loxone values from 2700 to 6500"""
-#     return np.interp(temp, [2700, 6500], [500, 153])
-#
-#
-# def to_loxone_color_temp(temp: float):
-#     """Linear interpolation between HASS values from 153 to 500"""
-#     return np.interp(temp, [153, 500], [6500, 2700])
-
-
 def to_hass_color_temp(temp: float):
-    """Linear interpolation between Loxone values from 2700 to 6500"""
+    """Linear interpolation between Loxone values from 2700 to 6500."""
     if temp <= 2700:
         return 500
     if temp >= 6500:
@@ -55,7 +48,7 @@ def to_hass_color_temp(temp: float):
 
 
 def to_loxone_color_temp(temp: float):
-    """Linear interpolation between HASS values from 153 to 500"""
+    """Linear interpolation between HASS values from 153 to 500."""
     if temp <= 153:
         return 6500
     if temp >= 500:
@@ -64,6 +57,7 @@ def to_loxone_color_temp(temp: float):
 
 
 def get_room_name_from_room_uuid(lox_config: dict, room_uuid: str):
+    """Return room name from room uuid."""
     if "rooms" in lox_config:
         if room_uuid in lox_config["rooms"]:
             return lox_config["rooms"][room_uuid]["name"]
@@ -72,6 +66,7 @@ def get_room_name_from_room_uuid(lox_config: dict, room_uuid: str):
 
 
 def get_cat_name_from_cat_uuid(lox_config: dict, cat_uuid: str):
+    """Return cat name from cat uuid."""
     if "cats" in lox_config:
         if cat_uuid in lox_config["cats"]:
             return lox_config["cats"][cat_uuid]["name"]
@@ -79,6 +74,7 @@ def get_cat_name_from_cat_uuid(lox_config: dict, cat_uuid: str):
 
 
 def add_room_and_cat_to_value_values(loxconfig: dict, sensor: dict):
+    """Add room and cat to value values."""
     sensor.update(
         {
             "room": get_room_name_from_room_uuid(loxconfig, sensor.get("room", "")),
@@ -89,27 +85,23 @@ def add_room_and_cat_to_value_values(loxconfig: dict, sensor: dict):
 
 
 def get_miniserver_type(t):
+    """Return miniserver type."""
     if t == 0:
         return "Miniserver (Gen 1)"
-    elif t == 1:
+    if t == 1:
         return "Miniserver Go (Gen 1)"
-    elif t == 2:
+    if t == 2:
         return "Miniserver (Gen 2)"
-    elif t == 3:
+    if t == 3:
         return "Miniserver Go (Gen 2)"
-    elif t == 4:
+    if t == 4:
         return "Miniserver Compact"
     return "Unknown type"
 
 
 def get_all(json_data, name):
-    controls = []
+    """Return all."""
+    ctrls = json_data["controls"]
     if isinstance(name, list):
-        for c in json_data["controls"].keys():
-            if json_data["controls"][c]["type"] in name:
-                controls.append(json_data["controls"][c])
-    else:
-        for c in json_data["controls"].keys():
-            if json_data["controls"][c]["type"] == name:
-                controls.append(json_data["controls"][c])
-    return controls
+        return [ctrls[c] for c in ctrls if ctrls[c]["type"] in name]
+    return [ctrls[c] for c in ctrls if ctrls[c]["type"] == name]

@@ -1,12 +1,11 @@
-"""
-Loxone Buttons
+"""Loxone Buttons.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
-import logging
 from functools import cached_property
+import logging
 from typing import final
 
 from homeassistant.components.button import ButtonEntity
@@ -15,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
 from . import LoxoneConfigEntry, LoxoneEntity
-from .const import DOMAIN, SENDDOMAIN
+from .const import SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
 
@@ -50,6 +49,7 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
     _attr_name = None
 
     def __init__(self, **kwargs):
+        """Initialize the LoxoneButton."""
         super().__init__(**kwargs)
         self._attr_name = None
         self._attr_unique_id = self.uuidAction
@@ -68,11 +68,12 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
         self.__last_pressed_isoformat = state
 
     async def event_handler(self, event):
+        """Handle a state update message from Loxone."""
         request_update = False
         if "active" in self.states:
             if self.states["active"] in event:
                 active = event[self.states["active"]]
-                new_state = True if active == 1.0 else False
+                new_state = active == 1.0
                 if new_state != self._attr_state:
                     self.__set_state(dt_util.utcnow().isoformat())
                     request_update = True
@@ -86,7 +87,7 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
 
     def press(self, **kwargs):
         """Press the button."""
-        self.hass.bus.fire(SENDDOMAIN, dict(uuid=self.uuidAction, value="pulse"))
+        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
         self.schedule_update_ha_state()
 
     @property
@@ -97,4 +98,3 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
             "state_uuid": self.states["active"],
             "device_type": self.type,
         }
-

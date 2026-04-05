@@ -227,6 +227,9 @@ Two dataclasses:
 
 ## discover.py — LAN Discovery
 
+`discover(*, discovery_timeout=5, host="255.255.255.255")` waits up to *discovery_timeout*
+seconds for a UDP reply (keyword-only so the name is not confused with `asyncio` timeout APIs).
+
 Uses UDP broadcast to find Miniservers:
 
 ```

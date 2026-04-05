@@ -5,18 +5,14 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pytest_homeassistant_custom_component.common import MockConfigEntry
+
+from custom_components.loxone.const import ATTR_AREA_CREATE, DOMAIN
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers import (
-    area_registry as ar,
-    device_registry as dr,
-)
-from pytest_homeassistant_custom_component.common import MockConfigEntry
-
-from custom_components.loxone.const import ATTR_AREA_CREATE, DOMAIN
-
+from homeassistant.helpers import area_registry as ar, device_registry as dr
 
 # -- Setup / unload -----------------------------------------------------------
 
@@ -65,9 +61,7 @@ async def test_services_registered_before_entry_setup(
         "sync_device_names",
         "reload",
     ):
-        assert hass.services.has_service(DOMAIN, service), (
-            f"Service {DOMAIN}.{service} should be registered"
-        )
+        assert hass.services.has_service(DOMAIN, service), f"Service {DOMAIN}.{service} should be registered"
 
 
 async def test_services_survive_entry_unload(
@@ -87,9 +81,7 @@ async def test_services_survive_entry_unload(
         "sync_device_names",
         "reload",
     ):
-        assert hass.services.has_service(DOMAIN, service), (
-            f"Service {DOMAIN}.{service} should survive entry unload"
-        )
+        assert hass.services.has_service(DOMAIN, service), f"Service {DOMAIN}.{service} should survive entry unload"
 
 
 async def test_websocket_command_raises_when_no_coordinator(
@@ -230,9 +222,7 @@ async def test_auto_sync_assigns_devices_to_areas_on_setup(
             continue
         for domain, _uuid in device.identifiers:
             if domain == DOMAIN:
-                assert device.area_id == area.id, (
-                    f"Device {device.name} should be in Living Room area"
-                )
+                assert device.area_id == area.id, f"Device {device.name} should be in Living Room area"
 
 
 async def test_auto_sync_sets_initial_sync_done_flag(
@@ -253,25 +243,25 @@ async def test_auto_sync_does_not_create_areas_when_opted_out(
     should not add any *extra* areas beyond what HA creates automatically.
     """
     from custom_components.loxone.const import CONF_CREATE_AREAS
-    from tests.components.loxone.conftest import MOCK_OPTIONS
 
-    with patch(
-        "custom_components.loxone._async_sync_areas",
-    ) as mock_sync_areas, patch(
-        "custom_components.loxone.coordinator.LoxoneConnection",
-    ) as mock_cls:
+    from .conftest import MOCK_OPTIONS
+
+    with (
+        patch(
+            "custom_components.loxone._async_sync_areas",
+        ) as mock_sync_areas,
+        patch(
+            "custom_components.loxone.coordinator.LoxoneConnection",
+        ) as mock_cls,
+    ):
         api = MagicMock()
         api.open = AsyncMock()
         api.close = AsyncMock()
         api.start_listening = AsyncMock()
         api.send_websocket_command = AsyncMock()
         api.send_secured__websocket_command = AsyncMock()
-        api.get_token_dict = MagicMock(
-            return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"}
-        )
-        structure = json.loads(
-            (Path(__file__).parent / "fixtures" / "structure_switches.json").read_text()
-        )
+        api.get_token_dict = MagicMock(return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"})
+        structure = json.loads((Path(__file__).parent / "fixtures" / "structure_switches.json").read_text())
         api.structure_file = structure
         api.connection = MagicMock()
         mock_cls.return_value = api

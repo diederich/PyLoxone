@@ -12,6 +12,7 @@ This project maintains living documentation in `docs/`. Always read the relevant
 | [LIGHTS_SUBSYSTEM.md](docs/LIGHTS_SUBSYSTEM.md) | Light entity hierarchy, color pickers, mood handling            |
 | [SYNC_ENGINE.md](docs/SYNC_ENGINE.md)           | Sync lifecycle, registry sync services, device bridges overview |
 | [ISSUES_AND_TODOS.md](docs/ISSUES_AND_TODOS.md) | Known bugs, improvements, quick wins, testing strategy          |
+| [LINTING.md](docs/LINTING.md)                   | Ruff config aligned with [Home Assistant Core](https://github.com/home-assistant/core/blob/dev/pyproject.toml) (`[tool.ruff]`) |
 | [WORKLOG.md](docs/WORKLOG.md)                   | Session-by-session record of decisions, changes, investigations |
 
 ## Loxone API Reference

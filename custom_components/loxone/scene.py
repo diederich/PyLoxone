@@ -1,5 +1,4 @@
-"""
-Loxone Scenes
+"""Loxone Scenes.
 
 For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
@@ -14,8 +13,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_call_later
 
 from . import LoxoneConfigEntry
-from .const import (CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE,
-                    DOMAIN, SENDDOMAIN)
+from .const import CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE, DOMAIN, SENDDOMAIN
 from .coordinator import LoxoneCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -91,6 +89,7 @@ class LoxoneLightScene(Scene):
     _attr_has_entity_name = True
 
     def __init__(self, name, mood_id, uuid, light_controller_id, entry_id, miniserver_serial=None):
+        """Initialize the LoxoneLightScene."""
         self._attr_name = name
         self.mood_id = mood_id
         self.uuidAction = uuid
@@ -100,10 +99,12 @@ class LoxoneLightScene(Scene):
 
     @property
     def unique_id(self) -> str:
+        """Return a unique ID for this entity."""
         return f"{self._light_controller_id}-{self.mood_id}"
 
     @property
     def device_info(self) -> DeviceInfo | None:
+        """Return device information."""
         if self._miniserver_serial:
             return DeviceInfo(
                 identifiers={(DOMAIN, self._light_controller_id)},
@@ -114,6 +115,7 @@ class LoxoneLightScene(Scene):
         )
 
     async def async_activate(self, **kwargs):
+        """Activate asynchronously."""
         self.hass.bus.async_fire(
             SENDDOMAIN,
             {

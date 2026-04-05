@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 import voluptuous as vol
+
 from homeassistant.components.device_automation import DEVICE_TRIGGER_BASE_SCHEMA
 from homeassistant.components.homeassistant.triggers import event as event_trigger
 from homeassistant.const import CONF_DEVICE_ID, CONF_DOMAIN, CONF_PLATFORM, CONF_TYPE
@@ -32,9 +33,7 @@ TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
 )
 
 
-async def async_get_triggers(
-    hass: HomeAssistant, device_id: str
-) -> list[dict[str, Any]]:
+async def async_get_triggers(hass: HomeAssistant, device_id: str) -> list[dict[str, Any]]:
     """Return a list of triggers for a Loxone device."""
     device_registry = dr.async_get(hass)
     device = device_registry.async_get(device_id)
@@ -88,6 +87,4 @@ async def async_attach_trigger(
             event_trigger.CONF_EVENT_DATA: event_data,
         }
     )
-    return await event_trigger.async_attach_trigger(
-        hass, event_config, action, trigger_info, platform_type="device"
-    )
+    return await event_trigger.async_attach_trigger(hass, event_config, action, trigger_info, platform_type="device")

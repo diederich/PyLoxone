@@ -8,18 +8,15 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from homeassistant.components.dhcp import DhcpServiceInfo
 
 import aiohttp
 import voluptuous as vol
-from homeassistant.config_entries import (
-    ConfigEntry,
-    ConfigFlow,
-    OptionsFlow,
-)
+
+from homeassistant.config_entries import ConfigEntry, ConfigFlow, OptionsFlow
 from homeassistant.const import CONF_HOST, CONF_PASSWORD, CONF_PORT, CONF_USERNAME
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -66,36 +63,28 @@ def _setup_schema(defaults: dict[str, Any] | None = None) -> vol.Schema:
     d = defaults or {}
     return vol.Schema(
         {
-            vol.Required(
-                CONF_USERNAME, default=d.get(CONF_USERNAME, "")
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-            vol.Required(
-                CONF_PASSWORD, default=d.get(CONF_PASSWORD, "")
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
-            vol.Required(
-                CONF_HOST, default=d.get(CONF_HOST, DEFAULT_IP)
-            ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-            vol.Required(
-                CONF_PORT, default=d.get(CONF_PORT, DEFAULT_PORT)
-            ): NumberSelector(
+            vol.Required(CONF_USERNAME, default=d.get(CONF_USERNAME, "")): TextSelector(
+                TextSelectorConfig(type=TextSelectorType.TEXT)
+            ),
+            vol.Required(CONF_PASSWORD, default=d.get(CONF_PASSWORD, "")): TextSelector(
+                TextSelectorConfig(type=TextSelectorType.PASSWORD)
+            ),
+            vol.Required(CONF_HOST, default=d.get(CONF_HOST, DEFAULT_IP)): TextSelector(
+                TextSelectorConfig(type=TextSelectorType.TEXT)
+            ),
+            vol.Required(CONF_PORT, default=d.get(CONF_PORT, DEFAULT_PORT)): NumberSelector(
                 NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
             ),
-            vol.Required(
-                CONF_SCENE_GEN, default=d.get(CONF_SCENE_GEN, True)
-            ): BooleanSelector(),
+            vol.Required(CONF_SCENE_GEN, default=d.get(CONF_SCENE_GEN, True)): BooleanSelector(),
             vol.Optional(
                 CONF_SCENE_GEN_DELAY,
                 default=d.get(CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE),
-            ): NumberSelector(
-                NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)
-            ),
+            ): NumberSelector(NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)),
             vol.Required(
                 CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
                 default=d.get(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN, False),
             ): BooleanSelector(),
-            vol.Required(
-                CONF_CREATE_AREAS, default=d.get(CONF_CREATE_AREAS, True)
-            ): BooleanSelector(),
+            vol.Required(CONF_CREATE_AREAS, default=d.get(CONF_CREATE_AREAS, True)): BooleanSelector(),
         }
     )
 
@@ -115,37 +104,31 @@ async def _async_validate_credentials(
     try:
         username.encode("latin-1")
     except UnicodeEncodeError:
-        raise ValueError("username_not_latin1")
+        raise ValueError("username_not_latin1") from None
 
     try:
         password.encode("latin-1")
     except UnicodeEncodeError:
-        raise ValueError("password_not_latin1")
+        raise ValueError("password_not_latin1") from None
 
     url = f"http://{host}:{port}{_TEST_ENDPOINT}"
     try:
         async with asyncio.timeout(10):
-            resp = await session.get(
-                url, auth=aiohttp.BasicAuth(username, password)
-            )
-            if resp.status == 401:
-                raise ValueError("invalid_auth")
-            if resp.status not in (200, 301, 302):
-                _LOGGER.warning(
-                    "Miniserver returned HTTP %s for %s", resp.status, url
-                )
-                raise ValueError("cannot_connect")
-    except ValueError:
-        raise
-    except (asyncio.TimeoutError, TimeoutError):
-        raise ValueError("cannot_connect")
-    except aiohttp.ClientError:
-        raise ValueError("cannot_connect")
-    except OSError:
+            resp = await session.get(url, auth=aiohttp.BasicAuth(username, password))
+    except TimeoutError:
+        raise ValueError("cannot_connect") from None
+    except aiohttp.ClientError as err:
+        raise ValueError("cannot_connect") from err
+    except OSError as err:
+        raise ValueError("cannot_connect") from err
+
+    if resp.status == 401:
+        raise ValueError("invalid_auth")
+    if resp.status not in (200, 301, 302):
+        _LOGGER.warning("Miniserver returned HTTP %s for %s", resp.status, url)
         raise ValueError("cannot_connect")
 
-    serial = await _async_fetch_serial(session, host, port, username, password)
-    return serial
+    return await _async_fetch_serial(session, host, port, username, password)
 
 
 async def _async_fetch_serial(
@@ -159,15 +142,13 @@ async def _async_fetch_serial(
     url = f"http://{host}:{port}{_SERIAL_ENDPOINT}"
     try:
         async with asyncio.timeout(5):
-            resp = await session.get(
-                url, auth=aiohttp.BasicAuth(username, password)
-            )
+            resp = await session.get(url, auth=aiohttp.BasicAuth(username, password))
             if resp.status == 200:
                 data = await resp.json(content_type=None)
                 value = data.get("LL", {}).get("value", "")
                 if isinstance(value, str) and value:
                     return value.replace(":", "").upper()
-    except Exception:
+    except (TimeoutError, aiohttp.ClientError, OSError, ValueError, KeyError, TypeError, AttributeError):
         _LOGGER.debug("Could not fetch Miniserver serial", exc_info=True)
     return None
 
@@ -178,13 +159,12 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
     VERSION = 3
 
     def __init__(self) -> None:
+        """Initialize the LoxoneFlowHandler."""
         super().__init__()
         self._reauth_entry: ConfigEntry | None = None
         self._discovered_host: str | None = None
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> Any:
         """Handle the initial configuration step."""
         errors: dict[str, str] = {}
 
@@ -192,9 +172,7 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
             if CONF_PORT in user_input:
                 user_input[CONF_PORT] = int(user_input[CONF_PORT])
             if CONF_SCENE_GEN_DELAY in user_input:
-                user_input[CONF_SCENE_GEN_DELAY] = int(
-                    user_input[CONF_SCENE_GEN_DELAY]
-                )
+                user_input[CONF_SCENE_GEN_DELAY] = int(user_input[CONF_SCENE_GEN_DELAY])
 
             session = async_get_clientsession(self.hass)
             try:
@@ -213,9 +191,7 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
 
                 title = f"PyLoxone ({user_input.get(CONF_HOST, 'Loxone')})"
-                return self.async_create_entry(
-                    title=title, data={}, options=user_input
-                )
+                return self.async_create_entry(title=title, data={}, options=user_input)
 
         defaults = {}
         if self._discovered_host:
@@ -228,9 +204,7 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
 
     # -- DHCP discovery --------------------------------------------------------
 
-    async def async_step_dhcp(
-        self, discovery_info: DhcpServiceInfo
-    ) -> Any:
+    async def async_step_dhcp(self, discovery_info: DhcpServiceInfo) -> Any:
         """Handle DHCP discovery of a Loxone Miniserver.
 
         A single Miniserver may be discovered multiple times with different
@@ -253,28 +227,21 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
 
     # -- Reauth flow -----------------------------------------------------------
 
-    async def async_step_reauth(
-        self, entry_data: dict[str, Any]
-    ) -> Any:
+    async def async_step_reauth(self, entry_data: dict[str, Any]) -> Any:
         """Handle reauth triggered by the coordinator on auth failure."""
-        self._reauth_entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
+        self._reauth_entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> Any:
         """Show reauth form and validate new credentials."""
         errors: dict[str, str] = {}
-        assert self._reauth_entry is not None
+        if self._reauth_entry is None:
+            return self.async_abort(reason="entry_not_found")
 
         if user_input is not None:
             session = async_get_clientsession(self.hass)
             host = user_input.get(CONF_HOST, self._reauth_entry.options.get(CONF_HOST))
-            port = int(
-                user_input.get(CONF_PORT, self._reauth_entry.options.get(CONF_PORT))
-            )
+            port = int(user_input.get(CONF_PORT, self._reauth_entry.options.get(CONF_PORT)))
             try:
                 await _async_validate_credentials(
                     session,
@@ -296,12 +263,8 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
                 if CONF_PORT in user_input:
                     updated_options[CONF_PORT] = int(user_input[CONF_PORT])
 
-                self.hass.config_entries.async_update_entry(
-                    self._reauth_entry, options=updated_options
-                )
-                await self.hass.config_entries.async_reload(
-                    self._reauth_entry.entry_id
-                )
+                self.hass.config_entries.async_update_entry(self._reauth_entry, options=updated_options)
+                await self.hass.config_entries.async_reload(self._reauth_entry.entry_id)
                 return self.async_abort(reason="reauth_successful")
 
         defaults = {
@@ -312,21 +275,17 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
         }
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_USERNAME, default=defaults[CONF_USERNAME]
-                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(CONF_USERNAME, default=defaults[CONF_USERNAME]): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.TEXT)
+                ),
                 vol.Required(CONF_PASSWORD, default=""): TextSelector(
                     TextSelectorConfig(type=TextSelectorType.PASSWORD)
                 ),
-                vol.Required(
-                    CONF_HOST, default=defaults[CONF_HOST]
-                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-                vol.Required(
-                    CONF_PORT, default=defaults[CONF_PORT]
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        mode=NumberSelectorMode.BOX, min=1, max=65535
-                    )
+                vol.Required(CONF_HOST, default=defaults[CONF_HOST]): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.TEXT)
+                ),
+                vol.Required(CONF_PORT, default=defaults[CONF_PORT]): NumberSelector(
+                    NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
                 ),
             }
         )
@@ -338,15 +297,12 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
 
     # -- Reconfigure flow -----------------------------------------------------
 
-    async def async_step_reconfigure(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> Any:
         """Allow the user to change connection settings from the integration menu."""
         errors: dict[str, str] = {}
-        entry = self.hass.config_entries.async_get_entry(
-            self.context["entry_id"]
-        )
-        assert entry is not None
+        entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+        if entry is None:
+            return self.async_abort(reason="entry_not_found")
 
         if user_input is not None:
             if CONF_PORT in user_input:
@@ -369,9 +325,7 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
                     self._abort_if_unique_id_configured()
 
                 updated = {**entry.options, **user_input}
-                self.hass.config_entries.async_update_entry(
-                    entry, options=updated
-                )
+                self.hass.config_entries.async_update_entry(entry, options=updated)
                 await self.hass.config_entries.async_reload(entry.entry_id)
                 return self.async_abort(reason="reconfigure_successful")
 
@@ -383,21 +337,17 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
         }
         schema = vol.Schema(
             {
-                vol.Required(
-                    CONF_USERNAME, default=defaults[CONF_USERNAME]
-                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+                vol.Required(CONF_USERNAME, default=defaults[CONF_USERNAME]): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.TEXT)
+                ),
                 vol.Required(CONF_PASSWORD, default=""): TextSelector(
                     TextSelectorConfig(type=TextSelectorType.PASSWORD)
                 ),
-                vol.Required(
-                    CONF_HOST, default=defaults[CONF_HOST]
-                ): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
-                vol.Required(
-                    CONF_PORT, default=defaults[CONF_PORT]
-                ): NumberSelector(
-                    NumberSelectorConfig(
-                        mode=NumberSelectorMode.BOX, min=1, max=65535
-                    )
+                vol.Required(CONF_HOST, default=defaults[CONF_HOST]): TextSelector(
+                    TextSelectorConfig(type=TextSelectorType.TEXT)
+                ),
+                vol.Required(CONF_PORT, default=defaults[CONF_PORT]): NumberSelector(
+                    NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
                 ),
             }
         )
@@ -409,38 +359,25 @@ class LoxoneFlowHandler(ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry: ConfigEntry) -> "LoxoneOptionsFlowHandler":
+    def async_get_options_flow(config_entry: ConfigEntry) -> LoxoneOptionsFlowHandler:
+        """Get options flow asynchronously."""
         return LoxoneOptionsFlowHandler(config_entry)
 
 
 SETTINGS_SCHEMA = vol.Schema(
     {
-        vol.Required(CONF_USERNAME): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.TEXT)
-        ),
-        vol.Required(CONF_PASSWORD): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.PASSWORD)
-        ),
-        vol.Required(CONF_HOST): TextSelector(
-            TextSelectorConfig(type=TextSelectorType.TEXT)
-        ),
-        vol.Required(CONF_PORT): NumberSelector(
-            NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)
-        ),
+        vol.Required(CONF_USERNAME): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+        vol.Required(CONF_PASSWORD): TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD)),
+        vol.Required(CONF_HOST): TextSelector(TextSelectorConfig(type=TextSelectorType.TEXT)),
+        vol.Required(CONF_PORT): NumberSelector(NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=1, max=65535)),
         vol.Required(CONF_SCENE_GEN): BooleanSelector(),
-        vol.Optional(CONF_SCENE_GEN_DELAY): NumberSelector(
-            NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)
-        ),
+        vol.Optional(CONF_SCENE_GEN_DELAY): NumberSelector(NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=3)),
         vol.Required(CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN): BooleanSelector(),
         vol.Required(CONF_CREATE_AREAS): BooleanSelector(),
         vol.Optional(
             CONF_STRUCTURE_POLL_INTERVAL,
             default=DEFAULT_STRUCTURE_POLL_INTERVAL,
-        ): NumberSelector(
-            NumberSelectorConfig(
-                mode=NumberSelectorMode.BOX, min=0, max=3600, unit_of_measurement="s"
-            )
-        ),
+        ): NumberSelector(NumberSelectorConfig(mode=NumberSelectorMode.BOX, min=0, max=3600, unit_of_measurement="s")),
     }
 )
 
@@ -449,14 +386,14 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
     """Options flow with menu: Settings / Device Bridges."""
 
     def __init__(self, config_entry: ConfigEntry) -> None:
+        """Initialize the LoxoneOptionsFlowHandler."""
         super().__init__()
         self._options: dict[str, Any] = dict(config_entry.options)
 
     # -- Menu ----------------------------------------------------------------
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step init asynchronously."""
         return self.async_show_menu(
             step_id="init",
             menu_options=["settings", "bridge_menu"],
@@ -464,9 +401,8 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
     # -- Settings (existing connection options) ------------------------------
 
-    async def async_step_settings(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_settings(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step settings asynchronously."""
         if user_input is not None:
             try:
                 user_input[CONF_USERNAME].encode("latin-1")
@@ -488,13 +424,9 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
             if CONF_PORT in user_input:
                 user_input[CONF_PORT] = int(user_input[CONF_PORT])
             if CONF_STRUCTURE_POLL_INTERVAL in user_input:
-                user_input[CONF_STRUCTURE_POLL_INTERVAL] = int(
-                    user_input[CONF_STRUCTURE_POLL_INTERVAL]
-                )
+                user_input[CONF_STRUCTURE_POLL_INTERVAL] = int(user_input[CONF_STRUCTURE_POLL_INTERVAL])
             if CONF_SCENE_GEN_DELAY in user_input:
-                user_input[CONF_SCENE_GEN_DELAY] = int(
-                    user_input[CONF_SCENE_GEN_DELAY]
-                )
+                user_input[CONF_SCENE_GEN_DELAY] = int(user_input[CONF_SCENE_GEN_DELAY])
 
             self._options.update(user_input)
             return self.async_create_entry(title="", data=self._options)
@@ -505,13 +437,13 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
         )
 
     def _settings_schema(self) -> vol.Schema:
+        """Return settings schema."""
         return self.add_suggested_values_to_schema(SETTINGS_SCHEMA, self._options)
 
     # -- Device Bridges Menu -------------------------------------------------
 
-    async def async_step_bridge_menu(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_bridge_menu(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step bridge menu asynchronously."""
         bridges = self._options.get("bridges", [])
 
         if bridges:
@@ -533,9 +465,8 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
     # -- Add Bridge ----------------------------------------------------------
 
-    async def async_step_bridge_add(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_bridge_add(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step bridge add asynchronously."""
         if user_input is not None:
             entity_id = user_input["entity_id"]
             loxone_control = user_input["loxone_control"]
@@ -571,9 +502,8 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
     # -- Remove Bridge -------------------------------------------------------
 
-    async def async_step_bridge_remove(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_bridge_remove(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step bridge remove asynchronously."""
         bridge_list = list(self._options.get("bridges", []))
 
         if user_input is not None:
@@ -605,14 +535,14 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
     # -- Done (save) ---------------------------------------------------------
 
-    async def async_step_bridge_done(
-        self, user_input: dict[str, Any] | None = None
-    ) -> Any:
+    async def async_step_bridge_done(self, user_input: dict[str, Any] | None = None) -> Any:
+        """Step bridge done asynchronously."""
         return self.async_create_entry(title="", data=self._options)
 
     # -- Helpers -------------------------------------------------------------
 
     def _get_structure_file(self) -> dict:
+        """Return get structure file."""
         coordinator = getattr(self.config_entry, "runtime_data", None)
         if coordinator and hasattr(coordinator, "api"):
             return coordinator.api.structure_file or {}
@@ -662,7 +592,7 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
         controls = structure.get("controls", {})
         rooms = structure.get("rooms", {})
 
-        for _uuid, ctrl in controls.items():
+        for ctrl in controls.values():
             room_name = rooms.get(ctrl.get("room", ""), {}).get("name", "")
 
             if ctrl.get("uuidAction") == uuid_action:
@@ -671,12 +601,10 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
                     "type": ctrl.get("type", ""),
                     "states": ctrl.get("states", {}),
                     "details": ctrl.get("details", {}),
-                    "label": f"{ctrl.get('name', '')} ({room_name})"
-                    if room_name
-                    else ctrl.get("name", ""),
+                    "label": f"{ctrl.get('name', '')} ({room_name})" if room_name else ctrl.get("name", ""),
                 }
 
-            for _sc_key, sc in ctrl.get("subControls", {}).items():
+            for sc in ctrl.get("subControls", {}).values():
                 if sc.get("uuidAction") == uuid_action:
                     ctrl_name = ctrl.get("name", "")
                     sc_name = sc.get("name", "")
@@ -693,6 +621,7 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
         return None
 
     def _bridge_add_schema(self) -> vol.Schema:
+        """Return bridge add schema."""
         control_options = self._build_control_options()
 
         fields: dict[Any, Any] = {
@@ -717,6 +646,7 @@ class LoxoneOptionsFlowHandler(OptionsFlow):
 
     @staticmethod
     def _bridge_label(b: dict) -> str:
+        """Return bridge label."""
         entity = b.get("entity_id", "?")
         lox = b.get("loxone_name") or b.get("loxone_uuid", "?")
         lox_type = b.get("loxone_type", "")
