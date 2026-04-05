@@ -5,6 +5,7 @@ import { showToast } from "./types";
 import { fetchBridges, addBridge, removeBridge, fetchDevices } from "./api";
 
 const BRIDGEABLE_DOMAINS = [
+  "cover",
   "sensor",
   "binary_sensor",
   "switch",
@@ -13,6 +14,24 @@ const BRIDGEABLE_DOMAINS = [
   "input_boolean",
   "input_number",
 ];
+
+// Keys for the three optional VO UUID fields in a cover bridge.
+const COVER_VO_KEYS = ["uuid_up_vo", "uuid_down_vo", "uuid_target_vo"] as const;
+type CoverVoKey = (typeof COVER_VO_KEYS)[number];
+
+const COVER_VO_LABELS: Record<CoverVoKey, string> = {
+  uuid_up_vo: "Move-up VO",
+  uuid_down_vo: "Move-down VO",
+  uuid_target_vo: "Target position VO",
+};
+
+function coverVoHints(block: string, upLabel: string, downLabel: string, posLabel: string): Record<CoverVoKey, string> {
+  return {
+    uuid_up_vo: `Switch VO — connect to ${block}'s "${upLabel}" output`,
+    uuid_down_vo: `Switch VO — connect to ${block}'s "${downLabel}" output`,
+    uuid_target_vo: `Slider VO — connect to ${block}'s "${posLabel}" output`,
+  };
+}
 
 interface HaEntityOption {
   entity_id: string;
@@ -45,6 +64,14 @@ export class BridgesView extends LitElement {
   @state() private _showLoxoneDropdown = false;
   @state() private _tableFilter = "";
   @state() private _confirmRemove: string | null = null;
+
+  // Cover bridge VO pickers (uuid keyed by COVER_VO_KEYS)
+  @state() private _coverVoUuids: Record<CoverVoKey, string> = {
+    uuid_up_vo: "",
+    uuid_down_vo: "",
+    uuid_target_vo: "",
+  };
+  @state() private _coverGuideOpen = false;
 
   static styles = css`
     :host {
@@ -239,6 +266,77 @@ export class BridgesView extends LitElement {
       letter-spacing: 0.5px; color: var(--secondary-text-color, #727272);
       background: var(--table-header-background-color, var(--primary-background-color, #fafafa));
     }
+    .cover-section {
+      margin-top: 12px;
+      padding: 12px 16px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      border-radius: 8px;
+      background: var(--primary-background-color, #fafafa);
+    }
+    .cover-section h4 {
+      margin: 0 0 10px 0;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--secondary-text-color, #727272);
+    }
+    .cover-vo-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 10px;
+    }
+    .cover-vo-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .cover-vo-field label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--secondary-text-color, #727272);
+    }
+    .cover-vo-field .hint {
+      font-size: 10px;
+      color: var(--disabled-text-color, #9e9e9e);
+      font-style: italic;
+    }
+    .cover-guide {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: var(--card-background-color, #fff);
+      border-radius: 6px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      font-size: 12px;
+    }
+    .cover-guide summary {
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--primary-color, #03a9f4);
+      user-select: none;
+    }
+    .cover-guide ol {
+      margin: 8px 0 0 0;
+      padding-left: 18px;
+      line-height: 1.7;
+    }
+    .cover-guide code {
+      font-family: var(--ha-font-family-code, monospace);
+      background: var(--primary-background-color, #f5f5f5);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-size: 11px;
+    }
+    .cover-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    button.secondary {
+      background: var(--secondary-background-color, #e0e0e0);
+      color: var(--primary-text-color, #212121);
+    }
     .confirm-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0;
       background: rgba(0,0,0,0.4); z-index: 100;
@@ -388,6 +486,10 @@ export class BridgesView extends LitElement {
     this._newEntityId = entityId;
     this._entityFilter = entityId;
     this._showEntityDropdown = false;
+    // Reset cover VO state when a new entity is selected
+    if (!entityId.startsWith("cover.")) {
+      this._resetCoverVos();
+    }
   }
 
   private _onLoxoneFocus(): void {
@@ -404,6 +506,83 @@ export class BridgesView extends LitElement {
     this._newLoxoneUuid = uuid;
     this._loxoneFilter = name;
     this._showLoxoneDropdown = false;
+  }
+
+  // -- Cover-specific helpers -------------------------------------------------
+
+  private get _isCoverEntity(): boolean {
+    return this._newEntityId.startsWith("cover.");
+  }
+
+  /** Derive a readable prefix from the entity_id for naming suggestions. */
+  private get _coverNamePrefix(): string {
+    const name = this._newEntityId.replace(/^cover\./, "").replace(/_/g, " ");
+    return name
+      .split(" ")
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+      .join("_");
+  }
+
+  /** HA device_class of the currently selected cover entity, if known. */
+  private get _coverDeviceClass(): string {
+    const st = this.hass.states[this._newEntityId];
+    return (st?.attributes["device_class"] as string) ?? "";
+  }
+
+  /**
+   * Returns the appropriate Loxone block name for the setup guide.
+   * Blinds/awnings/shutters → Jalousie; windows → Window (Fenster).
+   */
+  private get _loxoneBlockName(): { block: string; upLabel: string; downLabel: string; posLabel: string } {
+    const dc = this._coverDeviceClass;
+    if (dc === "window") {
+      return {
+        block: "Window (Fenster)",
+        upLabel: "open",
+        downLabel: "close",
+        posLabel: "position",
+      };
+    }
+    return {
+      block: "Jalousie",
+      upLabel: "up",
+      downLabel: "down",
+      posLabel: "manualPosition",
+    };
+  }
+
+  /** Scan loaded Loxone devices for controls matching the cover naming convention. */
+  private _scanLoxoneForCover(): void {
+    const prefix = this._coverNamePrefix.toLowerCase();
+    const updated: Record<CoverVoKey, string> = { ...this._coverVoUuids };
+    let positionFound = false;
+
+    for (const dev of this._devices) {
+      const nameLower = dev.name.toLowerCase();
+      if (!positionFound && (nameLower.includes(prefix) && nameLower.includes("position"))) {
+        this._newLoxoneUuid = dev.uuid;
+        this._loxoneFilter = dev.name;
+        positionFound = true;
+      }
+      if (!updated.uuid_up_vo && nameLower.includes(prefix) && nameLower.includes("up")) {
+        updated.uuid_up_vo = dev.uuid;
+      }
+      if (!updated.uuid_down_vo && nameLower.includes(prefix) && nameLower.includes("down")) {
+        updated.uuid_down_vo = dev.uuid;
+      }
+      if (!updated.uuid_target_vo && (nameLower.includes(prefix) && nameLower.includes("target"))) {
+        updated.uuid_target_vo = dev.uuid;
+      }
+    }
+    this._coverVoUuids = updated;
+    this._message = positionFound
+      ? "Scan complete — matched controls pre-filled. Verify before saving."
+      : "Scan found no matching controls. Create them in Loxone Config first (see setup guide).";
+  }
+
+  private _resetCoverVos(): void {
+    this._coverVoUuids = { uuid_up_vo: "", uuid_down_vo: "", uuid_target_vo: "" };
+    this._coverGuideOpen = false;
   }
 
   // -- Actions ----------------------------------------------------------------
@@ -423,13 +602,21 @@ export class BridgesView extends LitElement {
     this._error = "";
     this._message = "";
     try {
-      await addBridge(this.hass, this._newEntityId, this._newLoxoneUuid, this.miniserverId);
+      // Build details for cover bridges (omit empty VO fields)
+      const details: Record<string, string> | undefined = this._isCoverEntity
+        ? Object.fromEntries(
+            Object.entries(this._coverVoUuids).filter(([, v]) => v !== ""),
+          )
+        : undefined;
+
+      await addBridge(this.hass, this._newEntityId, this._newLoxoneUuid, this.miniserverId, details);
       showToast(this, `Bridge added: ${this._newEntityId}`);
       this._message = `Bridge added: ${this._newEntityId}`;
       this._newEntityId = "";
       this._newLoxoneUuid = "";
       this._entityFilter = "";
       this._loxoneFilter = "";
+      this._resetCoverVos();
       await this._load();
     } catch (err: unknown) {
       this._error = err instanceof Error ? err.message : String(err);
@@ -568,8 +755,86 @@ export class BridgesView extends LitElement {
               : ""}
           </div>
         </div>
-        <button @click=${this._addBridge}>Add Bridge</button>
+        <button @click=${this._addBridge} ?disabled=${!this._newEntityId || !this._newLoxoneUuid}>Add Bridge</button>
       </div>
+
+      ${this._isCoverEntity ? html`
+        <div class="cover-section">
+          <h4>${this._coverDeviceClass === "window" ? "Window" : "Cover"} Bridge — optional VO controls</h4>
+          ${(() => {
+            const { block, upLabel, downLabel, posLabel } = this._loxoneBlockName;
+            const hints = coverVoHints(block, upLabel, downLabel, posLabel);
+            return html`
+              <div class="cover-vo-grid">
+                ${COVER_VO_KEYS.map((key) => html`
+                  <div class="cover-vo-field">
+                    <label>${COVER_VO_LABELS[key]} <em style="font-weight:normal">(optional)</em></label>
+                    <input
+                      type="text"
+                      placeholder="Paste UUID or use Scan…"
+                      .value=${this._coverVoUuids[key]}
+                      @input=${(e: Event) => {
+                        this._coverVoUuids = {
+                          ...this._coverVoUuids,
+                          [key]: (e.target as HTMLInputElement).value.trim(),
+                        };
+                      }}
+                    />
+                    <span class="hint">${hints[key]}</span>
+                  </div>
+                `)}
+              </div>
+            `;
+          })()}
+
+          <div class="cover-actions">
+            <button class="secondary" @click=${this._scanLoxoneForCover}>
+              🔍 Scan Loxone for matching controls
+            </button>
+          </div>
+
+          ${(() => {
+            const { block, upLabel, downLabel, posLabel } = this._loxoneBlockName;
+            const prefix = this._coverNamePrefix;
+            return html`
+              <details class="cover-guide" ?open=${this._coverGuideOpen}
+                @toggle=${(e: Event) => { this._coverGuideOpen = (e.target as HTMLDetailsElement).open; }}>
+                <summary>Loxone Config setup guide — <em>${block}</em></summary>
+                <ol>
+                  <li>
+                    Create a <strong>Slider Virtual Input</strong> (Virtueller Eingang, analog, 0–100) named
+                    <code>${prefix}_Position</code>
+                    — PyLoxone writes the actual position here so Loxone always knows where it is.
+                  </li>
+                  <li>
+                    (Optional) Create a <strong>Slider Virtual Output</strong> (Virtueller Ausgang, analog) named
+                    <code>${prefix}_Target</code>
+                    — connect to the <em>${block}</em>'s <em>${posLabel}</em> output.
+                    PyLoxone subscribes to this and calls <code>set_cover_position</code>.
+                  </li>
+                  <li>
+                    (Optional) Create a <strong>Switch Virtual Output</strong> named
+                    <code>${prefix}_Up</code>
+                    — connect to the <em>${block}</em>'s <em>${upLabel}</em> output (drives 1 when opening).
+                    PyLoxone calls <code>open_cover</code>.
+                  </li>
+                  <li>
+                    (Optional) Create a <strong>Switch Virtual Output</strong> named
+                    <code>${prefix}_Down</code>
+                    — connect to the <em>${block}</em>'s <em>${downLabel}</em> output (drives 1 when closing).
+                    PyLoxone calls <code>close_cover</code>.
+                  </li>
+                  <li>
+                    Deploy Loxone Config to the Miniserver, then use
+                    <strong>🔍 Scan Loxone</strong> above to auto-fill the UUID fields,
+                    or paste the UUIDs from the Loxone Config device tree manually.
+                  </li>
+                </ol>
+              </details>
+            `;
+          })()}
+        </div>
+      ` : ""}
       ${this._message ? html`<p class="message">${this._message}</p>` : ""}
       ${this._bridges.length > 0 ? html`
         <p class="summary"><span class="count">${this._bridges.length}</span> bridge${this._bridges.length !== 1 ? "s" : ""} configured</p>
