@@ -94,6 +94,13 @@ export class DevicesView extends LitElement {
     tr:last-child td {
       border-bottom: none;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     tr.sub-control td:first-child {
       padding-left: 32px;
     }
@@ -382,6 +389,11 @@ export class DevicesView extends LitElement {
       .join(", ");
 
     return html`
+      <p class="page-intro">
+        All Loxone controls discovered from the structure file, alongside their Home Assistant entities.
+        Click any row to inspect live state, UUIDs, and sub-controls.
+        Use the ✓ toggle on an entity chip to enable or disable it without removing it.
+      </p>
       <div class="toolbar">
         <input
           type="search"

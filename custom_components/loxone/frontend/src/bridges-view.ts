@@ -77,6 +77,13 @@ export class BridgesView extends LitElement {
     :host {
       display: block;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .add-form {
       display: flex;
       gap: 8px;
@@ -660,6 +667,12 @@ export class BridgesView extends LitElement {
     const groupedLoxone = this._groupByKey(filteredLoxone, (c) => c.room);
 
     return html`
+      <p class="page-intro">
+        Links a Home Assistant entity to a Loxone virtual output (VO) so state changes
+        flow bidirectionally. Useful for integrating third-party devices — KNX, KLF200 covers,
+        Z-Wave switches — with Loxone without native support. Cover entities get extra
+        VO pickers for up/down/position controls.
+      </p>
       <div class="add-form">
         <div class="field">
           <label>HA Entity</label>

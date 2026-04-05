@@ -32,6 +32,13 @@ export class ConsoleView extends LitElement {
     :host {
       display: block;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .card {
       background: var(--card-background-color, #fff);
       border-radius: 12px;
@@ -345,6 +352,12 @@ export class ConsoleView extends LitElement {
 
   protected render() {
     return html`
+      <p class="page-intro">
+        Send raw commands directly to a Loxone control by UUID.
+        Type a UUID or control name to search, then enter a command string —
+        e.g. <code>On</code>, <code>Off</code>, <code>50</code>, or <code>pulse</code>.
+        Commands are forwarded over the live WebSocket connection and take effect immediately.
+      </p>
       <div class="card">
         <h3 class="card-title">Send Command</h3>
         <div class="form">

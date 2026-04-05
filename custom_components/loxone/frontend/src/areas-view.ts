@@ -20,6 +20,13 @@ export class AreasView extends LitElement {
     :host {
       display: block;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .toolbar {
       display: flex;
       align-items: center;
@@ -162,6 +169,12 @@ export class AreasView extends LitElement {
     const total = this._rooms.length;
 
     return html`
+      <p class="page-intro">
+        Maps Loxone rooms to Home Assistant areas.
+        <em>Sync to existing areas</em> links rooms to HA areas by name;
+        <em>Sync and create</em> also creates new HA areas for any unmatched rooms.
+        After syncing, assign devices to areas via the HA device registry.
+      </p>
       <div class="toolbar">
         <button
           ?disabled=${this._syncing}

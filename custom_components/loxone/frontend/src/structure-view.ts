@@ -19,6 +19,13 @@ export class StructureView extends LitElement {
 
   static styles = css`
     :host { display: block; }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .toolbar {
       display: flex; align-items: center; gap: 12px;
       margin-bottom: 16px; flex-wrap: wrap;
@@ -161,6 +168,12 @@ export class StructureView extends LitElement {
     const totalSub = controls.reduce((n, c) => n + c.sub_controls.length, 0);
 
     return html`
+      <p class="page-intro">
+        The full control hierarchy from <code>LoxAPP3.json</code> — rooms, categories, controls,
+        and their sub-controls with state key names. Use this to find a control's UUID before
+        adding a bridge or sending a console command, or to verify what the Miniserver exposes
+        after a structure change.
+      </p>
       <div class="toolbar">
         <input type="search" placeholder="Search controls…" .value=${this._filter}
           @input=${(e: Event) => { this._filter = (e.target as HTMLInputElement).value; }} />

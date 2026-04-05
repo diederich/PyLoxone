@@ -18,6 +18,13 @@ export class StatusView extends LitElement {
     :host {
       display: block;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -195,6 +202,13 @@ export class StatusView extends LitElement {
     const orphanCount = s.entities_without_state.length;
 
     return html`
+      <p class="page-intro">
+        Miniserver connection state, firmware details, and entity counts at a glance.
+        The <em>Structure diff</em> section shows controls added, removed, or renamed
+        since the last structure sync — use it to decide when to re-run the integration setup.
+        <em>Entities without state</em> are enabled entities that have never received a
+        value from the Miniserver.
+      </p>
       <div class="grid">
         <div class="card">
           <h3 class="card-title">Connection</h3>

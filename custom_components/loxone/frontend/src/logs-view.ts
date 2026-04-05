@@ -31,6 +31,13 @@ export class LogsView extends LitElement {
 
   static styles = css`
     :host { display: block; }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .toolbar {
       display: flex; align-items: center; gap: 12px;
       margin-bottom: 16px; flex-wrap: wrap;
@@ -194,6 +201,12 @@ export class LogsView extends LitElement {
     }
 
     return html`
+      <p class="page-intro">
+        Live log output from all <code>loxone.*</code> loggers, streamed over WebSocket.
+        To see <code>DEBUG</code> messages, add <code>custom_components.loxone: debug</code>
+        under <code>logger:</code> in your <code>configuration.yaml</code>, then restart.
+        Use the level filter to reduce noise, or the text filter to focus on a specific area.
+      </p>
       <div class="toolbar">
         <span class="status-dot ${this._connected ? "on" : "off"}"></span>
         <button

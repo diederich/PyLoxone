@@ -21,6 +21,13 @@ export class MonitorView extends LitElement {
     :host {
       display: block;
     }
+    .page-intro {
+      font-size: 13px;
+      color: var(--secondary-text-color, #727272);
+      margin: 0 0 20px;
+      line-height: 1.6;
+      max-width: 800px;
+    }
     .toolbar {
       display: flex;
       align-items: center;
@@ -250,6 +257,12 @@ export class MonitorView extends LitElement {
       : this._events;
 
     return html`
+      <p class="page-intro">
+        Live event stream from the Miniserver WebSocket — every state change pushed by
+        Loxone appears here in real time. Useful for verifying automations fire, debugging
+        timing issues, or finding the UUID of a control by operating it physically.
+        Filter by name, room, or UUID. The stream buffers the last ${MAX_EVENTS} events.
+      </p>
       <div class="toolbar">
         <span class="status-dot ${this._connected ? "on" : "off"}"></span>
         <button

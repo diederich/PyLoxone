@@ -4,6 +4,21 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-05 — Add page intro blurbs to all frontend panel views
+
+Each of the eight panel tabs (Devices, Areas, Bridges, Monitor, Console, Logs, Structure, Status) now shows a short orienting paragraph at the top of the view, following the KNX integration pattern. Each blurb answers "what is this view?" and "what would I do here?" in one or two sentences.
+
+### Changes
+
+- `frontend/src/devices-view.ts`, `areas-view.ts`, `bridges-view.ts`, `monitor-view.ts`, `console-view.ts`, `logs-view.ts`, `structure-view.ts`, `status-view.ts` — added `.page-intro` CSS class and rendered `<p class="page-intro">` at the top of each view's render method.
+- `frontend/loxone-panel.js` — rebuilt bundle (115 kb).
+
+### Testplan
+
+- Deploy and open each tab — intro text appears below the tab bar in muted secondary colour.
+
+---
+
 ## 2026-04-05 — Velux cover bridge: compound VI/VO bridge for HA cover entities
 
 Added `CoverMapper` — a compound bridge type that maps a HA `cover.*` entity (e.g. Velux shades via KLF200) to up to four Loxone VI/VO controls: one Slider VI for position feedback and up to three optional VOs (move-up, move-down, target position). The bridge panel gains cover-specific UX: a multi-picker form, a collapsible Loxone setup guide with naming suggestions, and a "Scan Loxone" button that auto-fills UUID fields by name-convention matching against the loaded structure file.
