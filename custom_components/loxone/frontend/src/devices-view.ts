@@ -330,9 +330,13 @@ export class DevicesView extends LitElement {
   private async _openDetail(uuid: string): Promise<void> {
     this._detailLoading = true;
     this._detail = null;
-    try { this._detail = await fetchControlDetail(this.hass, uuid, this.miniserverId); }
-    catch { this._detail = null; }
-    finally { this._detailLoading = false; }
+    try {
+      this._detail = await fetchControlDetail(this.hass, uuid, this.miniserverId);
+    } catch (err: unknown) {
+      this._error = err instanceof Error ? err.message : String(err);
+    } finally {
+      this._detailLoading = false;
+    }
   }
 
   private _closeDetail(): void { this._detail = null; }

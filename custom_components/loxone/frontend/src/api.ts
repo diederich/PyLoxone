@@ -80,12 +80,14 @@ export async function addBridge(
   entityId: string,
   loxoneUuid: string,
   miniserverId?: string,
+  details?: Record<string, string>,
 ): Promise<AddBridgeResult> {
   return hass.callWS<AddBridgeResult>({
     type: "loxone/add_bridge",
     entity_id: entityId,
     loxone_uuid: loxoneUuid,
     ...(miniserverId ? { miniserver: miniserverId } : {}),
+    ...(details && Object.keys(details).length > 0 ? { details } : {}),
   });
 }
 

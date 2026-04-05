@@ -4,6 +4,24 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+--
+
+## 2026-04-05 — Fix devices view detail panel immediately closing
+Tapping an entry in the Devices tab opened a brief loading overlay then immediately closed, with no drawer ever appearing.
+### Decisions
+- **Read from `structure_file` not `api.*`** — `coordinator.api` is a `LoxoneConnection`; it only exposes `structure_file`. The attributes `api.controls`, `api.rooms`, and `api.categories` don't exist — consistent with every other WS handler which reads `coordinator.api.structure_file`.
+- **Resolve by `uuidAction`** — `ws_get_devices` exposes devices using `uuidAction` as the UUID. `ws_get_control_detail` was looking up by raw dict key, so sub-controls (whose `uuidAction` differs from their key) were never found. The lookup now searches both top-level and sub-controls by `uuidAction`.
+- **Surface errors in frontend** — the silent `catch { this._detail = null; }` is replaced with one that sets `this._error`, making future backend failures visible.
+### Changes
+- `custom_components/loxone/websocket.py` — `ws_get_control_detail`: replaced `api.controls/.rooms/.categories` with `structure_file`; added `uuidAction`-aware lookup including sub-controls; added `uuidAction` and `subControls` to `safe_keys` exclusion list. `ws_get_structure`: same `structure_file` fix; UUIDs now use `uuidAction` for consistency with `ws_get_devices`.
+- `custom_components/loxone/frontend/src/devices-view.ts` — `_openDetail` catch block now sets `this._error` instead of silently swallowing it.
+- `custom_components/loxone/frontend/loxone-panel.js` — rebuilt bundle.
+### Testplan
+- Deploy and tap a device row in the Devices tab — drawer opens and shows UUID, states, and HA entities.
+- Tap a sub-control row — drawer opens correctly (was "not found" before).
+- All 398 unit tests pass.
+---
+
 ## 2026-04-05 — Ruff: Home Assistant Core alignment and MED-014 (lint + pydocstyle)
 
 Adopted Ruff **rule sets aligned with** [Home Assistant Core `pyproject.toml`](https://github.com/home-assistant/core/blob/dev/pyproject.toml) (curated `select` / `ignore`, not `select = ["ALL"]`). Burned down per-file suppressions on **`custom_components/loxone/**`** so only **`TID252`** remains—other issues are fixed or carry a tight inline `noqa`. Completed **MED-014**: non-docstring waivers, then pydocstyle on the integration; removed the MED-014 issue from `ISSUES_AND_TODOS.md`. **`ruff check .` is clean; `python -m pytest tests/ -q` → 378 passed.**
