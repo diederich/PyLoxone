@@ -18,7 +18,9 @@
                 "github.vscode-pull-request-github",
                 "ms-python.python",
                 "ms-python.vscode-pylance",
-                "ryanluker.vscode-coverage-gutters"
+                "ryanluker.vscode-coverage-gutters",
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode"
             ],
             "settings": {
                 "files.eol": "\n",
@@ -42,6 +44,9 @@
     },
     "remoteUser": "vscode",
     "features": {
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20"
+        },
         "ghcr.io/devcontainers-extra/features/apt-packages:1": {
             "packages": "ffmpeg,libturbojpeg0,libpcap-dev"
         }
