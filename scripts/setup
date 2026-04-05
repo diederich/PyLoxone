@@ -9,8 +9,12 @@ python3 -m pip install --requirement requirements_test.txt
 
 hass --config "config" --script ensure_config
 
-echo "Installing frontend dependencies…"
-cd custom_components/loxone/frontend
-npm install
-echo "Building frontend panel…"
-node build.mjs
+if command -v npm &>/dev/null; then
+    echo "Installing frontend dependencies…"
+    cd custom_components/loxone/frontend
+    npm install
+    echo "Building frontend panel…"
+    node build.mjs
+else
+    echo "⚠️  npm not found — skipping frontend build (rebuild the devcontainer to get Node 20)"
+fi
