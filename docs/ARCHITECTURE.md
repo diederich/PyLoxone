@@ -160,26 +160,24 @@ PyLoxone/
 
 ### Connection Setup
 
+See [Connection Lifecycle](#connection-lifecycle) below for full detail. Summary:
+
 ```
-1. User adds integration via config flow
-2. async_setup_entry() creates LoxoneCoordinator
-3. Coordinator calls api.open():
-   a. HTTP GET → API key from Miniserver
-   b. HTTP GET → LoxAPP3.json (structure file with all controls)
-   c. HTTP GET → RSA public key
-4. Coordinator builds MiniServer from structure file
-5. Platforms forwarded → entities created from structure controls
-6. coordinator.async_start_listening() opens WebSocket:
-   a. AES key exchange (RSA-encrypted)
-   b. Token-based authentication
-   c. Async listen loop begins
-7. On disconnect → coordinator reconnects in-process with exponential backoff
-   (entities stay registered, toggle available via last_update_success)
+1. async_setup_entry() creates LoxoneCoordinator
+2. api.open() → HTTP bootstrap: API key, structure file, RSA public key
+3. MiniServer built from structure file; platforms forwarded → entities created
+4. coordinator.async_start_listening() — starts WebSocket as a background task:
+   a. AES-256 key exchange + token authentication
+   b. CMD_ENABLE_UPDATES → Miniserver sends full state dump then push updates
+   c. Keepalive tasks begin (both directions, 30s cycle — see Keepalive Protocol)
+5. loxone_{entry_id}_reconnected signal fires → scene generation triggered (with delay)
+6. On disconnect → coordinator reconnects with exponential backoff (1s → 300s)
+   Entities stay registered; state recovers via next full state dump
 ```
 
 ### Coordinator (`coordinator.py`)
 
-The coordinator manages the Miniserver connection lifecycle, reconnect with exponential backoff, structure change polling, and repair issue management. It provides `dispatcher_prefix` and `monitor_signal` properties for multi-Miniserver namespacing.
+The coordinator is the **connection manager** for one Miniserver. It owns the `LoxoneConnection` (`api`) and `MiniServer` objects, manages the listen and reconnect background tasks, dispatches per-UUID state signals, and fires the `_reconnected` signal after every successful connection. See [HA_INTEGRATION.md](HA_INTEGRATION.md) for the full reconnect flow.
 
 ### Runtime event routing (dispatcher, not broadcast)
 
@@ -192,22 +190,124 @@ Loxone Miniserver
     │
     │  WebSocket (binary/text)
     ▼
-LoxoneConnection._listen()
+LoxoneConnection._do_start_listening()    [pyloxone_api/connection.py]
     │  Parses header + payload via websocket_protocol
+    │  On KEEPALIVE header → responds with "keepalive" (required by Miniserver protocol)
     ▼
-coordinator._message_callback()        [coordinator.py]
+coordinator._message_callback()           [coordinator.py]
     │  Per-UUID dispatch: async_dispatcher_send(hass, "loxone_{entry_id}_uuid_{uuid}", message)
     ▼
 async_dispatcher → "loxone_{entry_id}_uuid_{uuid}"
     │  O(1) routing — only entities subscribed to that UUID wake up
     ▼
-LoxoneEntity._dispatch_handler()       [__init__.py base class]
-    │  Forwards raw dict to entity's event_handler(data)
+LoxoneEntity._dispatch_handler()          [__init__.py — @callback, sync]
+    │  Schedules async event_handler via hass.async_create_task
     ▼
-LoxoneEntity.event_handler()           [per-entity subclass]
+LoxoneEntity.event_handler()              [per-entity subclass]
     │  Updates internal state
     ▼
-async_schedule_update_ha_state()       [HA core]
+async_schedule_update_ha_state()          [HA core]
+```
+
+### Connection Lifecycle
+
+The connection has two sequential phases on every connect (initial and reconnect):
+
+```
+Phase 1 — HTTP bootstrap  (api.open())
+    ├── GET /jdev/cfg/apiKey          → version, serial, local/remote
+    ├── GET /data/LoxAPP3.json        → full structure file (controls, rooms, cats)
+    └── GET /jdev/sys/getPublicKey    → RSA public key for key exchange
+
+Phase 2 — WebSocket session  (api.start_listening())
+    ├── AES-256 key exchange (RSA-encrypted session key → server)
+    ├── HMAC auth (username + password + server salt → token request or authwithtoken)
+    ├── CMD_ENABLE_UPDATES → server sends full state dump + begins push updates
+    └── Concurrent background tasks (all within the API layer):
+          _do_start_listening   — message receive/parse/dispatch loop
+          _process_message      — outbound command queue processor
+          _keep_alive           — sends "keepalive" every 30s (client-initiated)
+          _check_and_refresh_token — proactive token refresh before expiry
+          _reconnect_task       — watches for reconnect_event (token errors)
+```
+
+After Phase 2 completes, the coordinator fires `loxone_{entry_id}_reconnected` — see below.
+
+### Keepalive Protocol
+
+Both sides independently send keepalives on a 30-second cycle:
+
+| Direction | Trigger | Protocol | Consequence of missing |
+|---|---|---|---|
+| Server → client | Server timer, every 30s | 8-byte KEEPALIVE header | Server closes connection (code 1000) after ~3s of no response |
+| Client → server | `_keep_alive` task, every 30s | `"keepalive"` text command | Server marks connection idle; may close after several missed pings |
+
+**Critical:** when the server sends a KEEPALIVE header, the client *must* immediately respond with a `"keepalive"` text command (`_do_start_listening` handles this). Without the response, the server closes the connection ~3 seconds after its ping — causing a spurious disconnect-reconnect cycle every 30 seconds.
+
+### Task Management Rules
+
+HA's event loop has strict rules about how long-running tasks are created:
+
+| API | Blocks bootstrap? | Tracked for shutdown? | Use for |
+|---|---|---|---|
+| `hass.async_create_task(coro)` | **Yes** — HA waits for it | Yes | Short-lived tasks (command dispatch, event handlers) |
+| `config_entry.async_create_background_task(hass, coro, name)` | **No** | Yes — cancelled on entry unload | Long-running tasks (WebSocket listen loop, reconnect loop) |
+| `asyncio.create_task(coro)` | No | No | Internal tasks inside `pyloxone_api` that HA doesn't own |
+
+**The listen and reconnect tasks are `async_create_background_task`** — they run indefinitely and must not block HA startup. Using `hass.async_create_task` for them causes HA's bootstrap to wait forever and reboot after a 5-minute timeout.
+
+### Reconnect & State Recovery
+
+On disconnect, the coordinator's done-callback (`_handle_task_result`) classifies the exception and starts `_async_reconnect` as a background task. Reconnect uses exponential backoff (1s → 300s). After a successful reconnect, the full connection lifecycle runs again.
+
+**What recovers automatically:**
+
+| State | Mechanism |
+|---|---|
+| Entity states (all UUIDs) | Miniserver sends full state dump after `CMD_ENABLE_UPDATES`. Dispatcher routes to each entity's `event_handler`. |
+| Device registry | `miniserver.async_update_device_registry()` called explicitly on reconnect. |
+| Structure file | Re-downloaded in `api.open()` on every reconnect. |
+| Token | Fresh token requested or existing token re-authenticated. `_check_and_refresh_token` restarts. |
+| Bridges (HA ↔ Loxone) | Dispatcher subscriptions remain active; state updates flow through normally. |
+
+**What needs explicit re-triggering (via `_reconnected` signal):**
+
+| State | Why it needs re-triggering |
+|---|---|
+| LightControllerV2 scenes | `gen_scenes()` queries `entity.effect_list` which is populated by mood events in the state dump. Scenes must be generated *after* moods arrive, not at reconnect time. |
+
+**What is intentionally one-time:**
+
+| State | Reason |
+|---|---|
+| Group creation | Depends on HA entity IDs, not live Miniserver data. |
+| Area/device auto-sync | Run once at initial setup; user can re-run manually via service. |
+
+### The `_reconnected` Dispatcher Signal
+
+Signal name: `loxone_{entry_id}_reconnected`
+
+**Who fires it:** `LoxoneCoordinator` — after both initial `async_start_listening()` (in `__init__.py`) and after every successful reconnect (in `_async_reconnect`).
+
+**Who subscribes:** Platform `async_setup_entry` functions that need to perform one-time-per-session work requiring live Miniserver data. Currently: `scene.py`.
+
+**Contract:**
+- The signal fires on the event loop (from a `@callback` context or equivalent).
+- At signal time, the connection is established but the state dump may not have arrived yet. Subscribers that depend on state dump data must impose their own delay.
+- Subscribers register with `async_dispatcher_connect` and deregister via `config_entry.async_on_unload`.
+- `gen_scenes()` uses the entity registry to deduplicate — calling it multiple times is idempotent.
+
+**Pattern for new subscribers:**
+
+```python
+# In async_setup_entry:
+@callback
+def _on_connected() -> None:
+    hass.async_create_task(_do_work_after_state_dump())
+
+config_entry.async_on_unload(
+    async_dispatcher_connect(hass, f"loxone_{entry_id}_reconnected", _on_connected)
+)
 ```
 
 ### Command Flow (User → Miniserver)

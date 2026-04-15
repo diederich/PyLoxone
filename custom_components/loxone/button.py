@@ -78,17 +78,17 @@ class LoxoneButton(LoxoneEntity, ButtonEntity):
                     self.__set_state(dt_util.utcnow().isoformat())
                     request_update = True
         if request_update:
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     @cached_property
     def unique_id(self) -> str:
         """Return a unique ID."""
         return self._attr_unique_id
 
-    def press(self, **kwargs):
+    async def async_press(self, **kwargs):
         """Press the button."""
-        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
-        self.schedule_update_ha_state()
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
+        self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):

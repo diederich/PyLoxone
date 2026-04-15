@@ -24,7 +24,7 @@ from homeassistant.helpers import (
 )
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.discovery import async_load_platform
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.dispatcher import async_dispatcher_connect, async_dispatcher_send
 from homeassistant.helpers.entity import DeviceInfo, Entity
 from homeassistant.setup import async_setup_component
 
@@ -346,9 +346,9 @@ def _async_register_services(hass: HomeAssistant):
         _LOGGER.info("Reloading Loxone integration via service call")
         entries = hass.config_entries.async_entries(DOMAIN)
         unloads = [hass.config_entries.async_unload(entry.entry_id) for entry in entries]
-        await asyncio.gather(*unloads)
+        await asyncio.gather(*unloads, return_exceptions=True)
         loads = [hass.config_entries.async_reload(entry.entry_id) for entry in entries]
-        await asyncio.gather(*loads)
+        await asyncio.gather(*loads, return_exceptions=True)
         _LOGGER.info("Loxone integration reload complete")
 
     hass.services.async_register(DOMAIN, "event_websocket_command", handle_websocket_command)
@@ -615,12 +615,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry
 
     # YAML-based custom sensors/binary_sensors (documented "Advanced usage" escape hatch)
     yaml_platforms = [Platform.SENSOR, Platform.BINARY_SENSOR]
-    yaml_tasks = [
-        hass.async_create_task(async_load_platform(hass, platform, DOMAIN, {}, config_entry))
-        for platform in yaml_platforms
-    ]
-    if yaml_tasks:
-        await asyncio.wait(yaml_tasks)
+    await asyncio.gather(
+        *(async_load_platform(hass, platform, DOMAIN, {}, config_entry) for platform in yaml_platforms),
+        return_exceptions=True,
+    )
 
     my_entry_id = config_entry.entry_id
 
@@ -657,7 +655,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry
                     value = DEFAULT
                 if device_uuid is None:
                     device_uuid = DEFAULT
-                hass.async_create_task(coordinator.async_send_command(device_uuid, value))
+                await coordinator.async_send_command(device_uuid, value)
 
             elif event.event_type == SECUREDSENDDOMAIN:
                 value = event.data.get(ATTR_VALUE, DEFAULT)
@@ -669,7 +667,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry
                     value = DEFAULT
                 if device_uuid is None:
                     device_uuid = DEFAULT
-                hass.async_create_task(coordinator.async_send_secured_command(device_uuid, value, code))
+                await coordinator.async_send_secured_command(device_uuid, value, code)
 
         except (TypeError, KeyError, AttributeError) as e:
             _LOGGER.error(e)
@@ -713,15 +711,15 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry
 
     config_entry.async_on_unload(config_entry.add_update_listener(_async_handle_options_updated))
 
-    hass.bus.async_listen_once(EVENT_COMPONENT_LOADED, loxone_discovered)
-
     # Store listeners for cleanup
     coordinator.listeners = [
+        hass.bus.async_listen_once(EVENT_COMPONENT_LOADED, loxone_discovered),
         hass.bus.async_listen(SENDDOMAIN, loxone_send),
         hass.bus.async_listen(SECUREDSENDDOMAIN, loxone_send),
     ]
 
     await coordinator.async_start_listening()
+    async_dispatcher_send(hass, f"loxone_{config_entry.entry_id}_reconnected")
 
     return True
 

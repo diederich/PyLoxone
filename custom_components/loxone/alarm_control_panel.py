@@ -160,15 +160,6 @@ class LoxoneAlarm(LoxoneEntity, AlarmControlPanelEntity):
         """Return the icon to use in the frontend, if any."""
         return None
 
-    def alarm_disarm(self, code=None):
-        """Alarm disarm."""
-
-    def alarm_arm_home(self, code=None):
-        """Alarm arm home."""
-
-    def alarm_arm_away(self, code=None):
-        """Alarm arm away."""
-
     async def async_alarm_disarm(self, code=None):
         """Send disarm command."""
         if self.isSecured:

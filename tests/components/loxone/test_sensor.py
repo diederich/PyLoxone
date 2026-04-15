@@ -2,11 +2,14 @@
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
 from custom_components.loxone.const import DOMAIN
+from custom_components.loxone.coordinator import ConnectionState, LoxoneCoordinator
+from custom_components.loxone.pyloxone_api.exceptions import LoxoneConnectionError
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
@@ -38,6 +41,48 @@ KEEPALIVE_ENTITY_ID = "sensor.test_miniserver_keep_alive"
 PROJECT_ENTITY_ID = "sensor.test_miniserver_project_name"
 LOCATION_ENTITY_ID = "sensor.test_miniserver_location"
 USER_ENTITY_ID = "sensor.test_miniserver_connected_user"
+
+# Unique IDs for the coordinator diagnostic sensors
+CONN_STATE_UNIQUE_ID = f"{MINISERVER_SERIAL}_connection_state"
+RECONNECT_COUNT_UNIQUE_ID = f"{MINISERVER_SERIAL}_reconnect_count"
+
+
+def _get_entity_id_by_unique_id(hass: HomeAssistant, unique_id: str) -> str | None:
+    """Look up an entity's actual entity_id from its unique_id.
+
+    This avoids hardcoding entity_id slugs which depend on the device name
+    and HA's slug generation rules (especially for has_entity_name=True).
+    """
+    ent_reg = er.async_get(hass)
+    return ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+
+
+async def _setup_with_enabled_sensor(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    unique_id: str,
+) -> str:
+    """Set up the integration with a normally-disabled sensor force-enabled.
+
+    Returns the entity_id of the enabled sensor.
+    """
+    mock_config_entry.add_to_hass(hass)
+
+    ent_reg = er.async_get(hass)
+    ent_reg.async_get_or_create(
+        "sensor",
+        DOMAIN,
+        unique_id,
+        config_entry=mock_config_entry,
+        disabled_by=None,
+    )
+
+    await hass.config_entries.async_setup(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id)
+    assert entity_id is not None, f"Entity with unique_id={unique_id} not found after setup"
+    return entity_id
 
 
 # -- Built-in sensors (always created) ----------------------------------------
@@ -332,3 +377,138 @@ async def test_meter_matching_unit_no_repair(
     issues = ir.async_get(hass)
     issue = issues.async_get_issue(DOMAIN, "meter_unit_mismatch_mtr10000-0000-0000-0000000000000000_total")
     assert issue is None
+
+
+# -- Connection state diagnostic sensor (LoxoneConnectionStateSensor) ---------
+
+
+async def test_connection_state_sensor_registered(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Connection state sensor should be registered (disabled by default)."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, CONN_STATE_UNIQUE_ID)
+    assert entity_id is not None, f"No entity registered with unique_id={CONN_STATE_UNIQUE_ID}"
+
+    entry = ent_reg.async_get(entity_id)
+    assert entry.unique_id == CONN_STATE_UNIQUE_ID
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_connection_state_sensor_unique_id_no_uuidaction(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Connection state sensor unique_id must not require uuidAction (regression)."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, CONN_STATE_UNIQUE_ID)
+    assert entity_id is not None
+    entry = ent_reg.async_get(entity_id)
+    assert entry.unique_id == CONN_STATE_UNIQUE_ID
+
+
+async def test_connection_state_sensor_on_miniserver_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Connection state sensor should be attached to the miniserver device."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, CONN_STATE_UNIQUE_ID)
+    assert entity_id is not None
+
+    entry = ent_reg.async_get(entity_id)
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+async def test_connection_state_sensor_shows_connected(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection: MagicMock,
+) -> None:
+    """When enabled, connection state sensor should show 'connected' after setup."""
+    entity_id = await _setup_with_enabled_sensor(hass, mock_config_entry, CONN_STATE_UNIQUE_ID)
+
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == ConnectionState.CONNECTED.value
+
+
+async def test_connection_state_sensor_reflects_disconnect(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection: MagicMock,
+) -> None:
+    """Connection state sensor should update when coordinator disconnects."""
+    entity_id = await _setup_with_enabled_sensor(hass, mock_config_entry, CONN_STATE_UNIQUE_ID)
+
+    coordinator: LoxoneCoordinator = mock_config_entry.runtime_data
+    coordinator.connection_state = ConnectionState.DISCONNECTED
+    coordinator.async_set_update_error(LoxoneConnectionError("Disconnected"))
+    await hass.async_block_till_done()
+
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert state.state == ConnectionState.DISCONNECTED.value
+
+
+# -- Reconnect count diagnostic sensor (LoxoneReconnectCountSensor) -----------
+
+
+async def test_reconnect_count_sensor_registered(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Reconnect count sensor should be registered (disabled by default)."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, RECONNECT_COUNT_UNIQUE_ID)
+    assert entity_id is not None, f"No entity registered with unique_id={RECONNECT_COUNT_UNIQUE_ID}"
+
+    entry = ent_reg.async_get(entity_id)
+    assert entry.unique_id == RECONNECT_COUNT_UNIQUE_ID
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_reconnect_count_sensor_unique_id_no_uuidaction(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Reconnect count sensor unique_id must not require uuidAction (regression)."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, RECONNECT_COUNT_UNIQUE_ID)
+    assert entity_id is not None
+    entry = ent_reg.async_get(entity_id)
+    assert entry.unique_id == RECONNECT_COUNT_UNIQUE_ID
+
+
+async def test_reconnect_count_sensor_on_miniserver_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Reconnect count sensor should be attached to the miniserver device."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, RECONNECT_COUNT_UNIQUE_ID)
+    assert entity_id is not None
+
+    entry = ent_reg.async_get(entity_id)
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+
+    dev_reg = dr.async_get(hass)
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, MINISERVER_SERIAL) in device.identifiers
+
+
+async def test_reconnect_count_sensor_initial_value(
+    hass: HomeAssistant,
+    mock_config_entry: MockConfigEntry,
+    mock_loxone_connection: MagicMock,
+) -> None:
+    """When enabled, reconnect count should start at 0."""
+    entity_id = await _setup_with_enabled_sensor(hass, mock_config_entry, RECONNECT_COUNT_UNIQUE_ID)
+
+    state = hass.states.get(entity_id)
+    assert state is not None
+    assert int(state.state) == 0
+
+
+async def test_reconnect_count_sensor_state_class(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Reconnect count sensor should be TOTAL_INCREASING."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, RECONNECT_COUNT_UNIQUE_ID)
+    assert entity_id is not None

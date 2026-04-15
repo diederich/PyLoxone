@@ -1,6 +1,6 @@
 """Tests for Loxone WebSocket API commands (custom panel backend)."""
 
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
@@ -390,3 +390,53 @@ async def test_ws_add_bridge_rejects_duplicate(
     resp = await client.receive_json()
     assert resp["success"] is False
     assert resp["error"]["code"] == "already_bridged"
+
+
+# -- Panel JS hash (blocking I/O safety) -------------------------------------
+
+
+def test_panel_js_hash_sync_returns_string() -> None:
+    """_panel_js_hash_sync should return a hex string."""
+    from custom_components.loxone.websocket import _panel_js_hash_sync
+
+    result = _panel_js_hash_sync()
+    assert isinstance(result, str)
+    assert len(result) <= 8
+
+
+def test_panel_js_hash_sync_returns_zero_on_missing_file() -> None:
+    """_panel_js_hash_sync should return '0' when the JS file doesn't exist."""
+    from custom_components.loxone.websocket import _panel_js_hash_sync
+
+    with patch("custom_components.loxone.websocket.PANEL_FRONTEND_PATH", "/nonexistent/path"):
+        result = _panel_js_hash_sync()
+        assert result == "0"
+
+
+async def test_register_panel_calls_hash_in_executor(
+    hass: HomeAssistant,
+    init_integration: MockConfigEntry,
+) -> None:
+    """register_panel should call _panel_js_hash_sync via async_add_executor_job."""
+    with patch.object(
+        hass, "async_add_executor_job", new_callable=AsyncMock, return_value="abcd1234"
+    ) as mock_executor:
+        with patch("custom_components.loxone.websocket.panel_custom") as mock_panel:
+            mock_panel.async_register_panel = AsyncMock()
+            hass.data.pop("frontend_panels", None)
+
+            with patch("custom_components.loxone.websocket.async_setup_component", return_value=True):
+                with patch.object(hass.http, "async_register_static_paths", new_callable=AsyncMock):
+                    from custom_components.loxone.websocket import register_panel
+
+                    await register_panel(hass)
+
+        executor_calls = [
+            call
+            for call in mock_executor.call_args_list
+            if "_panel_js_hash_sync" in str(call)
+        ]
+        assert len(executor_calls) >= 1, (
+            f"_panel_js_hash_sync should be called via async_add_executor_job, "
+            f"got calls: {mock_executor.call_args_list}"
+        )

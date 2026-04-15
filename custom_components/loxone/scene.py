@@ -4,13 +4,15 @@ For more details about this component, please refer to the documentation at
 https://github.com/JoDehli/PyLoxone
 """
 
+import asyncio
 import logging
 
 from homeassistant.components.scene import Scene
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.event import async_call_later
+from homeassistant.helpers.entity_registry import async_get as er_async_get
 
 from . import LoxoneConfigEntry
 from .const import CONF_SCENE_GEN, CONF_SCENE_GEN_DELAY, DEFAULT_DELAY_SCENE, DOMAIN, SENDDOMAIN
@@ -40,6 +42,7 @@ async def async_setup_entry(
         """Generate scenes from light entities."""
         _LOGGER.debug("Loading scenes...")
         scenes = []
+        ent_reg = er_async_get(hass)
 
         if "light" not in hass.data:
             _LOGGER.warning("Light platform not ready, skipping scene generation")
@@ -63,6 +66,9 @@ async def async_setup_entry(
             for effect in entity.effect_list:
                 mood_id = entity.get_id_by_moodname(effect)
                 uuid = entity.uuidAction
+                unique_id = f"{entity.unique_id}-{mood_id}"
+                if ent_reg.async_get_entity_id("scene", DOMAIN, unique_id) is not None:
+                    continue
                 scenes.append(
                     LoxoneLightScene(
                         name=f"{entity.name}-{effect}",
@@ -78,9 +84,24 @@ async def async_setup_entry(
             async_add_entities(scenes)
             _LOGGER.info("Generated %d scenes", len(scenes))
         else:
-            _LOGGER.warning("No scenes generated")
+            _LOGGER.debug("No new scenes to add")
 
-    async_call_later(hass, delay_scene, lambda _now: hass.async_create_task(gen_scenes()))
+    async def run_delayed_scene_gen() -> None:
+        await asyncio.sleep(float(delay_scene))
+        await gen_scenes()
+
+    @callback
+    def _on_reconnect() -> None:
+        """Generate (or re-generate) scenes after connect/reconnect."""
+        hass.async_create_task(run_delayed_scene_gen())
+
+    config_entry.async_on_unload(
+        async_dispatcher_connect(
+            hass,
+            f"loxone_{entry_id}_reconnected",
+            _on_reconnect,
+        )
+    )
 
 
 class LoxoneLightScene(Scene):

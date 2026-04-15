@@ -21,7 +21,7 @@ The largest file in the integration layer. Handles:
 ```python
 async_setup(hass, config)
     │
-    ├── hass.data[DOMAIN] = {}       ← marker only, coordinator stored in runtime_data
+    ├── hass.data[DOMAIN] = {}              ← marker only; coordinator stored in runtime_data
     ├── _async_register_services(hass)      ← domain-level services (lazy coordinator lookup)
     │     event_websocket_command
     │     event_secured_websocket_command
@@ -32,12 +32,12 @@ async_setup_entry(hass, config_entry: LoxoneConfigEntry)
     │
     ├── Create LoxoneCoordinator
     ├── coordinator.async_config_entry_first_refresh()
-    │     └── api.open() → HTTP setup, structure file
+    │     └── api.open() → HTTP bootstrap (API key, structure file, RSA public key)
     │
     ├── Build MiniServer from structure file
     ├── config_entry.runtime_data = coordinator    ← typed via LoxoneConfigEntry
     │
-    ├── async_forward_entry_setups(LOXONE_PLATFORMS)    ← loads platforms
+    ├── async_forward_entry_setups(LOXONE_PLATFORMS)    ← loads all platforms (entities created here)
     ├── async_load_platform() for sensor + binary_sensor ← YAML custom entity escape hatch
     │
     ├── BridgeRuntime.async_setup()   ← restore persisted device bridges
@@ -46,7 +46,12 @@ async_setup_entry(hass, config_entry: LoxoneConfigEntry)
     │     loxone_send → loxone_send()
     │     loxone_send_secured → (secured variant)
     │
-    └── api.start_listening(message_callback) → WebSocket
+    ├── await coordinator.async_start_listening()
+    │     └── Starts WebSocket session as background task (does not block bootstrap)
+    │
+    └── async_dispatcher_send("loxone_{entry_id}_reconnected")
+          └── Triggers one-time-per-session work (scene generation etc.)
+              See "The _reconnected signal" in ARCHITECTURE.md
 ```
 
 ### Service Definitions
@@ -68,7 +73,7 @@ All platform entities inherit from `LoxoneEntity(Entity)`:
 
 ```python
 class LoxoneEntity(Entity):
-    _attr_should_poll = False       # Event-driven, not polled
+    _attr_should_poll = False       # Push-driven via dispatcher, not polled
 
     def __init__(self, **kwargs):
         # Extracts: name, type, uuidAction, states, room, cat,
@@ -79,17 +84,23 @@ class LoxoneEntity(Entity):
         ...
 
     async def async_added_to_hass(self):
-        # Subscribes to ALL loxone_event events
-        # Filters by UUID match in event_handler()
+        # Subscribes to per-UUID dispatcher signals for uuidAction and each value in states{}
+        # Deregisters on config_entry.async_on_unload
+        for uuid in {self.uuidAction, *self.states.values()}:
+            self.async_on_remove(
+                async_dispatcher_connect(hass, f"loxone_{entry_id}_uuid_{uuid}", self._handle)
+            )
 
-    def event_handler(self, event):
-        # Override in subclasses
-        if self.uuidAction in event.data:
-            self._state = event.data[self.uuidAction]
-            self.schedule_update_ha_state()
+    @callback
+    def _handle(self, message: dict) -> None:
+        hass.async_create_task(self.event_handler(message))
+
+    async def event_handler(self, message: dict) -> None:
+        # Override in subclasses — receives the full parsed message dict for the entity's UUID
+        ...
 ```
 
-**Concern:** Every entity receives every event and filters client-side. With many entities and frequent updates, this is O(entities × events).
+**Routing is O(1) per event.** Each incoming UUID fires a single dispatcher signal; only the one entity (or few entities) subscribed to that UUID wakes up. See [ARCHITECTURE.md — Runtime Event Flow](ARCHITECTURE.md) for the full dispatch chain.
 
 ## Device Bridge (`bridge.py` + `bridge_mappers.py`)
 
@@ -137,23 +148,58 @@ Rain sensors (`binary_sensor.*_rain`) are bridged separately using the existing 
 
 ## Coordinator (`coordinator.py`)
 
-Wraps `DataUpdateCoordinator` but does **not** use it for polling:
+`LoxoneCoordinator` wraps `DataUpdateCoordinator` but does **not** use it for polling. The base class is used only for its lifecycle integration with HA (config entry, first-refresh pattern).
+
+The coordinator is the **connection manager** for one Miniserver. Its responsibilities:
+
+- Owns one `LoxoneConnection` (`self.api`) and one `MiniServer` (`self.miniserver`)
+- Starts and monitors the WebSocket listen task
+- On disconnect: classifies the failure, starts reconnect with exponential backoff
+- On reconnect: rebuilds `MiniServer`, fires `_reconnected` signal
+- Cleans up `miniserver.listeners` before replacing the `MiniServer` object (prevents listener leaks)
+
+### Task lifecycle
+
+Both the listen task and the reconnect task are `config_entry.async_create_background_task`:
 
 ```python
-class LoxoneCoordinator(DataUpdateCoordinator):
-    def __init__(self, ...):
-        super().__init__(hass, _LOGGER, name="LoxoneCoordinator", update_method=None)
-        self.api = LoxoneConnection(host, port, user, pass)
+# listen task — runs indefinitely; replaced after each reconnect
+self._listening_task = config_entry.async_create_background_task(
+    hass, coordinator.async_start_listening(), "loxone-listen"
+)
 
-    async def _async_update_data(self):
-        print("_async_update_data")   # Debug print left in
-        return None
-
-    async def async_cleanup(self):
-        await self.api.close()
+# reconnect task — started when _handle_task_result detects a disconnect
+self._reconnect_task = config_entry.async_create_background_task(
+    hass, self._async_reconnect(), "loxone-reconnect"
+)
 ```
 
-The coordinator is really a **connection manager**, not a data coordinator. The `DataUpdateCoordinator` base class is used only for its lifecycle integration with HA, not for its polling capability.
+**Why `async_create_background_task` and not `hass.async_create_task`?**
+`hass.async_create_task` is tracked by the HA bootstrap watchdog — if the task is still running when HA checks progress, it triggers a restart. Long-running tasks must use `async_create_background_task`, which signals to HA "this task runs in the background and should not block startup."
+
+### Reconnect flow
+
+```
+_handle_task_result(task)          ← done-callback registered on listen task
+    │
+    ├── Classify exception:
+    │     LoxoneAuthError          → raise RepairIssue (no reconnect)
+    │     ConnectionRefused        → exponential backoff, reconnect
+    │     asyncio.CancelledError   → entry is unloading, stop
+    │     other                    → exponential backoff, reconnect
+    │
+    └── config_entry.async_create_background_task(_async_reconnect())
+
+_async_reconnect()
+    ├── Cleanup: call all unsub callables in miniserver.listeners
+    ├── api.close()
+    ├── Backoff sleep (1s → 300s)
+    ├── api.open()                 ← re-downloads structure file
+    ├── self.miniserver = MiniServer(...)
+    ├── miniserver.async_update_device_registry()
+    ├── config_entry.async_create_background_task(_do_start_listening())
+    └── async_dispatcher_send("loxone_{entry_id}_reconnected")
+```
 
 ## MiniServer (`miniserver.py`)
 
@@ -335,11 +381,24 @@ def is_overridden(self):
 | ------------------- | ----------------- | ------------------ |
 | `LoxoneLightScene`  | LightControllerV2 | Moods as HA scenes |
 
-- Uses `hass.data["light"].get_entity()` — depends on internal HA structure (same pattern as light platform discovery)
-- Implements `device_info` linking the scene to the light controller device (and `via_device` to the Miniserver serial when known)
-- `async_activate` fires `SENDDOMAIN` with `"miniserver": entry_id` so commands route to the correct integration entry in multi-Miniserver setups
-- Does not extend `LoxoneEntity` — scenes only send commands; they do not need WS state subscriptions
-- Inconsistent defaults: options default `False`, config flow default `True`
+**Scene generation is event-driven, not startup-once.**
+
+Scenes are created dynamically by `gen_scenes()`, which is called each time `loxone_{entry_id}_reconnected` fires (initial connect + every reconnect). This keeps scenes valid even after a Miniserver disconnect.
+
+**Why delayed generation?**
+
+`gen_scenes()` reads `entity.effect_list`, which is populated by mood events in the Miniserver's state dump. The state dump arrives *after* the connection is established. A short `asyncio.sleep` delay (1 second, inside `run_delayed_scene_gen`) ensures moods are populated before scene entities are built.
+
+**Deduplication:**
+
+Before adding a scene, `gen_scenes()` checks the entity registry (`ent_reg.async_get_entity_id`). Scenes that already exist are skipped. This makes the function safe to call on every reconnect without producing "ID already exists" warnings.
+
+**Other notes:**
+
+- Does not extend `LoxoneEntity` — scenes only send commands and do not need WS state subscriptions
+- `async_activate` fires `SENDDOMAIN` with `"miniserver": entry_id` so commands route to the correct config entry in multi-Miniserver setups
+- Implements `device_info` linking each scene to its LightControllerV2 device (and `via_device` to the Miniserver serial when known)
+- Uses `hass.data["light"].get_entity()` to look up the LightControllerV2 entity — this is a fragile internal HA API and should eventually be replaced with an entity registry lookup
 
 ### text.py
 
@@ -351,15 +410,21 @@ def is_overridden(self):
 
 ## Cross-Cutting Concerns
 
-### Sync vs Async Inconsistency
+### Async Rules for this Codebase
 
-Many entities mix sync and async patterns:
+Follow these rules when writing any code in `custom_components/loxone/`:
 
-| Pattern                      | Locations                      | Should Be                          |
-| ---------------------------- | ------------------------------ | ---------------------------------- |
-| `hass.bus.fire()`            | switch.py, button.py           | `hass.bus.async_fire()`            |
-| `schedule_update_ha_state()` | cover.py, number.py, button.py | `async_schedule_update_ha_state()` |
-| `hass.loop.call_later()`     | scene.py                       | `hass.async_create_task()`         |
+| Rule | Correct | Wrong |
+|---|---|---|
+| Fire HA bus events from async context | `hass.bus.async_fire()` | `hass.bus.fire()` |
+| Schedule a state push | `async_schedule_update_ha_state()` | `schedule_update_ha_state()` |
+| Short-lived tasks (commands, events) | `hass.async_create_task(coro)` | `asyncio.create_task(coro)` |
+| Long-running tasks (listen, reconnect) | `config_entry.async_create_background_task(hass, coro, name)` | `hass.async_create_task(coro)` |
+| Blocking I/O from async context | `await hass.async_add_executor_job(fn, *args)` | `fn(*args)` directly |
+| Sync callback registered with dispatcher | `@callback` decorator | bare `async def` |
+| Subscribe → auto-deregister on unload | `config_entry.async_on_unload(async_dispatcher_connect(...))` | bare `async_dispatcher_connect(...)` |
+
+**Rationale for the `async_create_background_task` rule:** `hass.async_create_task` tasks are watched by HA's bootstrap supervisor. A never-ending task registered this way will eventually trigger a reboot (HA waits for all registered tasks to complete before finalising startup). The listen loop and reconnect loop are indefinite — they must not block startup.
 
 ### `eval()` Usage
 

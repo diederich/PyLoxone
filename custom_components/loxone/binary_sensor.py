@@ -21,7 +21,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
     EntityCategory,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -99,16 +99,11 @@ async def async_setup_entry(
         entities.append(LoxoneConnectivitySensor(coordinator, miniserver.serial))
 
     if miniserver:
-
-        @callback
-        def async_add_binary_sensors(_):
-            async_add_entities(_, True)
-
         miniserver.listeners.append(
             async_dispatcher_connect(
                 hass,
                 miniserver.async_signal_new_device("sensors"),
-                async_add_binary_sensors,
+                async_add_entities,
             )
         )
     async_add_entities(entities)

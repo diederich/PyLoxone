@@ -4,6 +4,80 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-04-15 — Async compliance, keepalive fix, scene reconnect, architecture docs
+
+Full async compliance sweep across all entity platforms, a Loxone protocol fix for the keepalive handshake, reliable scene generation after reconnects, and comprehensive architecture documentation.
+
+### Decisions
+
+- **`config_entry.async_create_background_task` for long-running tasks.** `hass.async_create_task` is tracked by HA's bootstrap watchdog and will block startup if the task never completes. The listen loop and reconnect loop are indefinite — they must use `async_create_background_task`, which is tied to the config entry lifecycle but does not block bootstrap.
+- **Keepalive is bidirectional.** The Miniserver sends its own keepalive header every 30 seconds and expects a `"keepalive"` text response within ~3 seconds. The client was not responding, causing the Miniserver to close the connection every 30s. Added the response in `_do_start_listening`.
+- **Scene regeneration via dispatcher signal.** Scenes were only generated once at startup. After a reconnect, moods re-arrive but nothing re-triggered scene generation. The coordinator now fires `loxone_{entry_id}_reconnected` after every successful connection; scene.py subscribes and re-runs scene gen (with delay, and dedup via entity registry).
+- **Diagnostic sensors must stay `available`.** `LoxoneConnectionStateSensor` and `LoxoneReconnectCountSensor` report connection health — they should always show their value, not go `unavailable` when the coordinator is disconnected.
+
+### Changes
+
+- **`pyloxone_api/connection.py`** — respond to server KEEPALIVE header with `"keepalive"` text command.
+- **`coordinator.py`** — `async_create_background_task` for listen and reconnect tasks; `async_dispatcher_send` for `_reconnected` signal; cleanup `miniserver.listeners` before replacing `MiniServer` on reconnect.
+- **`__init__.py`** — fire `_reconnected` signal at end of `async_setup_entry`; `await` send commands directly; `asyncio.gather(..., return_exceptions=True)` for YAML platform loading and service reload.
+- **`scene.py`** — signal-driven scene generation (`_on_reconnect` callback via `async_dispatcher_connect`); entity registry dedup before adding scenes; `config_entry.async_on_unload` for cleanup.
+- **`sensor.py`** — `available = True` on diagnostic sensors; `@cached_property unique_id` override to avoid `uuidAction` AttributeError; pass `async_add_entities` directly to dispatcher (no wrapper).
+- **`cover.py`, `switch.py`, `climate.py`, `fan.py`, `button.py`, `number.py`, `alarm_control_panel.py`** — all sync service methods converted to `async_*`; `hass.bus.async_fire` throughout; `async_schedule_update_ha_state` throughout.
+- **`websocket.py`** — `_panel_js_hash_sync` called via executor; PLR1714 compound comparison fixes.
+- **`binary_sensor.py`** — pass `async_add_entities` directly to dispatcher (no wrapper).
+- **`docs/ARCHITECTURE.md`** — new sections: Connection Lifecycle, Keepalive Protocol, Task Management Rules, Reconnect & State Recovery, `_reconnected` signal contract.
+- **`docs/HA_INTEGRATION.md`** — updated Setup Flow diagram, Coordinator section (reconnect flow, task lifecycle), Base Entity, Scene platform, async rules table.
+- **Tests** — `test_scene.py` (new, 5 tests); `test_sensor.py` (+10 tests for diagnostic sensors); `test_websocket.py` (+3 tests for executor-wrapped hash).
+
+### Testplan
+
+- `python -m pytest tests/ -q` — 417 passed, 0 failed.
+- Deployed; confirmed stable connection with no 30s disconnect cycle and no reboot loop.
+
+---
+
+## 2026-04-12 — Async safety audit and fixes
+
+Comprehensive audit of all async usage against Home Assistant best practices, fixing thread-safety violations and modernizing entity service methods.
+
+### Decisions
+
+- **All entity service methods converted to async** — `def turn_on` → `async def async_turn_on`, etc. These no longer run in the executor; they fire events and schedule state updates directly on the event loop, avoiding unnecessary thread round-trips.
+- **`asyncio.create_task` → `hass.async_create_task`** in coordinator — HA can now track the listening task for shutdown/cancellation.
+- **`asyncio.wait` → `asyncio.gather`** for YAML platform loading — exceptions are no longer silently swallowed.
+- **Dispatcher wrappers removed** in sensor.py/binary_sensor.py — `async_add_entities` is passed directly (same pattern as cover.py), removing unnecessary `@callback` indirection.
+
+### Changes
+
+- `scene.py` — replaced `async_call_later` + lambda callback with `hass.async_create_task` + `asyncio.sleep` coroutine (fixes the thread-safety crash).
+- `cover.py` — converted 15 sync service methods to async (`async_open_cover`, `async_close_cover`, `async_stop_cover`, `async_set_cover_position`, tilt methods, sun automation methods); fixed `event_handler` to use `async_schedule_update_ha_state()`.
+- `switch.py` — converted `turn_on`/`turn_off` to async across all 3 switch classes; fixed `event_handler`.
+- `climate.py` — converted `set_temperature`, `set_hvac_mode`, `set_preset_mode`, `set_fan_mode`, `set_swing_mode` to async across all 3 climate classes; fixed `event_handler`.
+- `fan.py` — converted `set_percentage`, `set_preset_mode`, `turn_off` to async; fixed `async_turn_on`/`async_turn_off` to await the helper methods; fixed `event_handler`.
+- `button.py` — converted `press` to `async_press`; fixed `event_handler`.
+- `number.py` — fixed `event_handler` and `async_set_native_value` to use `async_schedule_update_ha_state()`.
+- `coordinator.py` — changed `asyncio.create_task` to `hass.async_create_task` in `async_start_listening`.
+- `__init__.py` — moved `EVENT_COMPONENT_LOADED` listener into `coordinator.listeners` for cleanup on unload; replaced `asyncio.wait` with `asyncio.gather` for YAML platform loading.
+- `sensor.py`, `binary_sensor.py` — removed unnecessary `@callback` wrappers around `async_add_entities`; removed unused `callback` import.
+- `alarm_control_panel.py` — removed empty sync `alarm_disarm`/`alarm_arm_home`/`alarm_arm_away` methods that shadowed the working `async_alarm_*` versions.
+- `__init__.py` `handle_reload` — added `return_exceptions=True` to both `asyncio.gather` calls to prevent partial reload on failure.
+- `docs/HA_INTEGRATION.md` — updated sync/async inconsistency section to reflect resolved state.
+
+### Additional fixes (from deploy testing)
+
+- `sensor.py` — `LoxoneConnectionStateSensor` and `LoxoneReconnectCountSensor` crashed on startup because `LoxoneEntity.unique_id` accesses `self.uuidAction` but these sensors don't have one (they call `super().__init__()` with no kwargs). Added `unique_id` property override returning `_attr_unique_id`.
+- `websocket.py` — `_panel_js_hash()` used `Path.read_bytes()` on the event loop, triggering HA's blocking I/O detector. Moved to `async_add_executor_job`.
+
+### Testplan
+
+- Run `python -m pytest tests/ -v` — verify no regressions.
+- Deploy and verify all entity types respond correctly: covers open/close/stop, switches toggle, climate set temperature/mode, fan speed, button press, scene activation.
+- Verify no `async_create_task from a thread` warnings in HA logs.
+- Verify no `Detected blocking call to read_bytes` warnings in HA logs.
+- Verify no `LoxoneConnectionStateSensor has no attribute 'uuidAction'` errors in HA logs.
+
+---
+
 ## 2026-04-05 — Add page intro blurbs to all frontend panel views
 
 Each of the eight panel tabs (Devices, Areas, Bridges, Monitor, Console, Logs, Structure, Status) now shows a short orienting paragraph at the top of the view, following the KNX integration pattern. Each blurb answers "what is this view?" and "what would I do here?" in one or two sentences.

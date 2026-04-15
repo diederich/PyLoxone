@@ -75,7 +75,7 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
             else:
                 self._state = data
 
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
@@ -93,4 +93,4 @@ class LoxoneNumber(LoxoneEntity, NumberEntity):
     async def async_set_native_value(self, value: float):
         """Set new value."""
         self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": f"{value}"})
-        self.schedule_update_ha_state()
+        self.async_schedule_update_ha_state()

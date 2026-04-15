@@ -36,7 +36,7 @@ from homeassistant.const import (
     UnitOfTemperature,
     UnitOfVolume,
 )
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -412,13 +412,8 @@ async def async_setup_entry(
         entities.append(LoxoneReconnectCountSensor(serial=miniserver.serial, coordinator=coordinator))
 
     if miniserver:
-
-        @callback
-        def async_add_sensors(_):
-            async_add_entities(_, True)
-
         miniserver.listeners.append(
-            async_dispatcher_connect(hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_sensors)
+            async_dispatcher_connect(hass, miniserver.async_signal_new_device(NEW_SENSOR), async_add_entities)
         )
 
     async_add_entities(entities, update_before_add=True)
@@ -671,10 +666,20 @@ class LoxoneConnectionStateSensor(LoxoneEntity, SensorEntity):
         self._coordinator = coordinator
         self._attr_unique_id = f"{serial}_connection_state"
 
+    @cached_property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._attr_unique_id
+
     @property
     def native_value(self) -> str:
         """Return the native value."""
         return self._coordinator.connection_state.value
+
+    @property
+    def available(self) -> bool:
+        """Always available — this sensor reports state even when disconnected."""
+        return True
 
     @property
     def device_info(self) -> DeviceInfo | None:
@@ -703,10 +708,20 @@ class LoxoneReconnectCountSensor(LoxoneEntity, SensorEntity):
         self._coordinator = coordinator
         self._attr_unique_id = f"{serial}_reconnect_count"
 
+    @cached_property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._attr_unique_id
+
     @property
     def native_value(self) -> int:
         """Return the native value."""
         return self._coordinator.reconnect_count
+
+    @property
+    def available(self) -> bool:
+        """Always available — this sensor reports state even when disconnected."""
+        return True
 
     @property
     def device_info(self) -> DeviceInfo | None:

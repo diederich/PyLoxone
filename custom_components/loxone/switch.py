@@ -87,17 +87,17 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
         """Return true if switch is on."""
         return self._state
 
-    def turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "pulse"})
         self._state = True
-        self.schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
 
-    def turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs):
         """Turn the device off."""
-        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "off"})
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "off"})
         self._state = False
-        self.schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
 
     async def event_handler(self, e):
         """Handle a state update message from Loxone."""
@@ -116,7 +116,7 @@ class LoxoneTimedSwitch(LoxoneEntity, SwitchEntity):
             should_update = True
 
         if should_update:
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
@@ -161,26 +161,26 @@ class LoxoneSwitch(LoxoneEntity, SwitchEntity):
         """Return true if switch is on."""
         return self._state
 
-    def turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
         if not self._state:
-            self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "On"})
+            self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "On"})
             self._state = True
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
-    def turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs):
         """Turn the device off."""
         if self._state:
-            self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "Off"})
+            self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "Off"})
             self._state = False
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     async def event_handler(self, event):
         """Handle a state update message from Loxone."""
         if self.uuidAction in event or self.states["active"] in event:
             if self.states["active"] in event:
                 self._state = event[self.states["active"]]
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):
@@ -207,11 +207,11 @@ class LoxoneIntercomSubControl(LoxoneSwitch):
 
         self.type = "IntercomSubControl"
 
-    def turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs):
         """Turn the switch on."""
-        self.hass.bus.fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "on"})
+        self.hass.bus.async_fire(SENDDOMAIN, {"uuid": self.uuidAction, "value": "on"})
         self._state = True
-        self.schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
 
     @property
     def extra_state_attributes(self):

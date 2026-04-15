@@ -168,7 +168,7 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
             update = True
 
         if update:
-            self.schedule_update_ha_state()
+            self.async_schedule_update_ha_state()
 
     @property
     def icon(self):
@@ -217,23 +217,19 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
         uuid = self._stateAttribUuids[name]
         return self._stateAttribValues.get(uuid, None)
 
-    def set_preset_mode(self, preset_mode: str) -> None:
+    async def async_set_preset_mode(self, preset_mode: str) -> None:
         """Set the preset mode of the fan."""
 
-    def set_percentage(self, percentage: int) -> None:
+    async def async_set_percentage(self, percentage: int) -> None:
         """Set the speed percentage of the fan."""
         interval = 3600
-        self.hass.bus.fire(
+        self.hass.bus.async_fire(
             SENDDOMAIN,
             {
                 "uuid": self.uuidAction,
                 "value": f"setTimer/{interval}/{percentage}/{VENTELATION_INT_TO_STR.get(self.get_state_value('mode'))}/-1",
             },
         )
-
-    # def turn_on(self, speed: Optional[str] = None, percentage: Optional[int] = None, preset_mode: Optional[str] = None,
-    #             **kwargs: Any) -> None:
-    #     """Turn on the fan."""
 
     async def async_turn_on(
         self,
@@ -243,20 +239,14 @@ class LoxoneVentilation(LoxoneEntity, FanEntity):
     ) -> None:
         """Turn the fan on."""
         if preset_mode:
-            self.set_preset_mode(preset_mode)
+            await self.async_set_preset_mode(preset_mode)
         if percentage:
-            self.set_percentage(percentage)
+            await self.async_set_percentage(percentage)
         _LOGGER.debug("Turn on")
-
-    def turn_off(self, **kwargs: Any) -> None:
-        """Turn the fan off."""
-        if hasattr(self, "preset_mode"):
-            self.set_preset_mode(kwargs.get("preset_mode", "Auto"))
-        self.set_percentage(0)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the fan off."""
         if not self.is_on:
             return
-        self.set_preset_mode("Auto")
-        self.set_percentage(0)
+        await self.async_set_preset_mode("Auto")
+        await self.async_set_percentage(0)

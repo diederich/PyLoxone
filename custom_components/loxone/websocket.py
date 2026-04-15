@@ -38,8 +38,8 @@ PANEL_FRONTEND_PATH = str(Path(__file__).parent / "frontend")
 URL_BASE = "/loxone_static"
 
 
-def _panel_js_hash() -> str:
-    """Short hash of the bundled JS for cache-busting."""
+def _panel_js_hash_sync() -> str:
+    """Short hash of the bundled JS for cache-busting (sync, run in executor)."""
     js_path = Path(PANEL_FRONTEND_PATH) / "loxone-panel.js"
     try:
         return hashlib.md5(js_path.read_bytes(), usedforsecurity=False).hexdigest()[:8]
@@ -99,7 +99,7 @@ async def register_panel(hass: HomeAssistant) -> None:
             hass=hass,
             frontend_url_path=DOMAIN,
             webcomponent_name="loxone-panel",
-            module_url=f"{URL_BASE}/loxone-panel.js?v={_panel_js_hash()}",
+            module_url=f"{URL_BASE}/loxone-panel.js?v={await hass.async_add_executor_job(_panel_js_hash_sync)}",
             sidebar_title="Loxone",
             sidebar_icon="mdi:home-automation",
             embed_iframe=False,
@@ -765,12 +765,12 @@ def ws_get_control_detail(
 
     for raw_uuid, top_ctrl in controls_raw.items():
         top_action = top_ctrl.get("uuidAction", raw_uuid)
-        if top_action == uuid or raw_uuid == uuid:
+        if uuid in (top_action, raw_uuid):
             ctrl = top_ctrl
             break
         for sc_key, sc in top_ctrl.get("subControls", {}).items():
             sc_action = sc.get("uuidAction", sc_key)
-            if sc_action == uuid or sc_key == uuid:
+            if uuid in (sc_action, sc_key):
                 ctrl = sc
                 parent_ctrl = top_ctrl
                 break

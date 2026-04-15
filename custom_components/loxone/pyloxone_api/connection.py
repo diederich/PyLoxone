@@ -707,6 +707,13 @@ class LoxoneConnection:
                     if last_header.message_type == MessageType.OUT_OF_SERVICE:
                         _raise_out_of_service()
                     if last_header.message_type == MessageType.KEEPALIVE:
+                        # Respond to the server's keepalive ping — required by the Loxone
+                        # protocol.  Without this, the Miniserver closes the connection
+                        # ~3s after sending its ping (every 30s), causing a spurious
+                        # disconnect-reconnect cycle on every boot.
+                        self._track_background_task(
+                            asyncio.create_task(self._send_text_command(CMD_KEEP_ALIVE, encrypted=False))
+                        )
                         self._track_background_task(asyncio.create_task(_run_callback(Keepalive(""))))
 
                 elif last_header and last_header.payload_length == message_length:

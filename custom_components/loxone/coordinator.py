@@ -216,7 +216,11 @@ class LoxoneCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Reconnect already in progress, skipping")
             return
 
-        self._reconnect_task = self.hass.async_create_task(self._async_reconnect(clear_token=clear_token))
+        self._reconnect_task = self.config_entry.async_create_background_task(
+            self.hass,
+            self._async_reconnect(clear_token=clear_token),
+            "loxone_reconnect",
+        )
 
     async def _async_reconnect(self, clear_token: bool = False) -> None:
         """Reconnect to the Miniserver with exponential backoff."""
@@ -256,6 +260,12 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 self._create_api()
                 session = async_get_clientsession(self.hass)
                 self.api.connection = await self.api.open(session)
+
+                if self.miniserver:
+                    for unsub in self.miniserver.listeners:
+                        if callable(unsub):
+                            unsub()
+                    self.miniserver.listeners.clear()
 
                 self.miniserver = MiniServer(self.hass, self.api.structure_file, self.config_entry)
                 await self.miniserver.async_update_device_registry()
@@ -318,6 +328,10 @@ class LoxoneCoordinator(DataUpdateCoordinator):
                 ir.async_delete_issue(self.hass, DOMAIN, f"token_expired_{_eid}")
                 ir.async_delete_issue(self.hass, DOMAIN, f"persistent_disconnect_{_eid}")
                 _LOGGER.info("Reconnected to Miniserver at %s", self._host)
+                async_dispatcher_send(
+                    self.hass,
+                    f"loxone_{self.config_entry.entry_id}_reconnected",
+                )
                 return
 
     async def async_send_command(self, uuid: str, value) -> None:
@@ -344,7 +358,11 @@ class LoxoneCoordinator(DataUpdateCoordinator):
 
     async def async_start_listening(self) -> None:
         """Start the WebSocket listening task and structure poll."""
-        self._listening_task = asyncio.create_task(self.api.start_listening(callback=self._message_callback))
+        self._listening_task = self.config_entry.async_create_background_task(
+            self.hass,
+            self.api.start_listening(callback=self._message_callback),
+            "loxone_listen",
+        )
         self._listening_task.add_done_callback(self._handle_task_result)
         self._start_structure_poll()
 
