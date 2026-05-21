@@ -146,6 +146,24 @@ Rain sensors (`binary_sensor.*_rain`) are bridged separately using the existing 
 - **Options Flow UI** — menu-based: Settings / Device Bridges, with Add Bridge (entity selector + Loxone control picker) / Remove Bridge / Done steps. Cover bridges show additional VO pickers, a setup guide, and a Scan button.
 - **Direction auto-detection** — derived from the Loxone control type and available state UUIDs. Sub-controls with feedback states are bidirectional; top-level VIs without feedback are expose-only. Cover bridges derive directionality from which VO fields are populated.
 
+### Bridge sync contract
+
+Bidirectional bridges treat HA state changes and Loxone WebSocket values as two independent event streams. `BridgeRuntime` keeps per-bridge runtime state for the last HA → Loxone command, the last Loxone → HA value, pending cooldown commands, echo suppression, and a short HA feedback suppression window.
+
+Loop prevention has three layers:
+
+| Layer | Direction | Purpose |
+| --- | --- | --- |
+| Echo match | HA → Loxone → Loxone event | Suppresses a Loxone value only when it semantically matches the command PyLoxone just sent. Non-identical Loxone app changes are still processed. |
+| HA feedback window | Loxone → HA → HA state event | Suppresses immediate HA state changes caused by the HA service call that applied a Loxone-originated update. |
+| Last-value convergence | both | Ignores HA states that already match the last Loxone value, and duplicate Loxone values that already match the last received value. |
+
+Mappers provide semantic normalization for comparisons. For example, `ColorPickerMapper` still sends Loxone's wire protocol (`hsv(...)`, `temp(...)`, `On`, `Off`), but equality is checked using normalized color values with tolerances for Hue/Hue Bridge round-trip drift. This avoids infinite RGB/HSV correction loops when HA and Loxone normalize colors slightly differently.
+
+When a genuine Loxone event arrives, any pending HA → Loxone cooldown command is cancelled. Loxone has taken ownership of the current interaction, so stale HA commands must not flush later and overwrite the user's Loxone app action.
+
+`loxone/get_bridges` exposes runtime diagnostics for each active bridge: persisted `loxone_states`, active `subscribe_uuids`, last sent/received values, pending command, echo flag, HA suppression remaining, and the last suppression reason. Use this alongside `loxone/subscribe_events` when debugging sync.
+
 ## Coordinator (`coordinator.py`)
 
 `LoxoneCoordinator` wraps `DataUpdateCoordinator` but does **not** use it for polling. The base class is used only for its lifecycle integration with HA (config entry, first-refresh pattern).

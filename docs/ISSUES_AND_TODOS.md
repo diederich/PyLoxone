@@ -25,15 +25,6 @@ No open high-priority improvements.
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
 
-### MED-013: `send_websocket_command` has no connection state check
-
-**File:** `pyloxone_api/connection.py` (`send_websocket_command`, line ~271)
-**Impact:** Commands queue silently during disconnects; may flood Miniserver on reconnect
-
-`send_websocket_command` validates the UUID parameter but does not check whether the WebSocket is connected before calling `_message_queue.put_nowait()`. During a disconnect, commands accumulate in the queue. When `_send_text_command` processes them, it logs a warning and attempts `self.connection.send()` anyway, which raises on a closed connection. The exception is caught, but the stale command is lost.
-
-**Fix:** Check `is_connected` before enqueueing. Either raise immediately (caller can decide what to do) or log and discard. For the expose feature specifically, this matters because rapid state changes during a disconnect shouldn't flood the queue — only the latest value matters.
-
 ---
 
 ## Low-Priority / Cosmetic
@@ -92,7 +83,7 @@ Additional test tracks:
 | `tests_e2e_miniserver/conftest.py`      | Session-scoped fixtures for live Miniserver connection (credentials from env vars or `.env`).                                                    |
 | `scripts/dump_miniserver`               | Script to fetch `LoxAPP3.json` from a real Miniserver and save it as a dump fixture with auto-generated expectations.                           |
 
-No CI test jobs yet.
+CI test and validation jobs are present in `.github/workflows/`: `tests.yaml`, `lint.yaml`, `hassfest.yaml`, and `validate.yaml`.
 
 ### How HA Integrations Do Testing
 
@@ -373,17 +364,16 @@ These test the API client in isolation. No HA fixtures needed — just plain pyt
 
 #### Tier 2 — Config Flow & Init Tests (needs HA fixtures)
 
-`test_config_flow.py` now covers the user step, reauth, reconfigure, DHCP discovery (new + already configured), options (menu, settings, bridges), and related edge cases — **this tier is largely complete for config flow**. Remaining gaps are mostly `__init__.py` (migration paths, extra service coverage).
+`test_config_flow.py` now covers the user step, reauth, reconfigure, DHCP discovery (new + already configured), options (menu, settings, bridges), and related edge cases — **this tier is largely complete for config flow**. Remaining gaps are mostly `__init__.py` service edge cases.
 
 | Component               | What to Test                                                         | Approach                                |
 | ----------------------- | -------------------------------------------------------------------- | --------------------------------------- |
 | `config_flow.py`        | Core paths covered in `test_config_flow.py`; add tests only for new flow steps | `hass.config_entries.flow.async_init()` |
 | `__init__.py` setup     | `async_setup_entry` with mocked API, platform forwarding             | `init_integration` fixture              |
 | `__init__.py` unload    | `async_unload_entry` cleanup                                         | Verify listeners removed                |
-| `__init__.py` migration | v1→v2→v3 config migration paths                                      | `MockConfigEntry` with old versions     |
 | `__init__.py` services  | `event_websocket_command`, `sync_areas`, `reload`                    | Service call assertions                 |
 
-**Estimated effort:** ~1 day remaining (migrations + service edge cases). **Value:** High — entry setup and migrations are still high-impact.
+**Estimated effort:** <1 day remaining (service edge cases). **Value:** High — entry setup and services are still high-impact.
 
 #### Tier 3 — Platform Entity Tests (needs HA fixtures + structure fixtures)
 
@@ -479,10 +469,6 @@ Modern HA integrations use `EntityDescription` dataclasses for entity metadata. 
 - Reduce boilerplate
 - Make entity configuration declarative
 - Align with HA best practices
-
-### ARCH-006: Add config entry migration tests
-
-`async_migrate_entry` handles v1→v2→v3 migrations but there are no tests for these migration paths.
 
 ### ARCH-008: Firmware update entity (`UpdateEntity`)
 

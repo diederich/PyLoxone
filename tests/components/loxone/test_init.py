@@ -7,7 +7,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.loxone.const import ATTR_AREA_CREATE, DOMAIN
+from custom_components.loxone import async_migrate_entry
+from custom_components.loxone.const import (
+    ATTR_AREA_CREATE,
+    CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN,
+    CONF_SCENE_GEN_DELAY,
+    DEFAULT_DELAY_SCENE,
+    DOMAIN,
+)
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
@@ -124,6 +131,71 @@ async def test_async_load_platform_only_for_yaml_platforms(
 
     called_platforms = {call.args[1] for call in mock_load.call_args_list}
     assert called_platforms == {Platform.SENSOR, Platform.BINARY_SENSOR}
+
+
+# -- Config entry migration ----------------------------------------------------
+
+
+async def test_migrate_entry_from_v1_to_v3(hass: HomeAssistant) -> None:
+    """Version 1 entries should receive all migration defaults."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={"existing": "kept"},
+        unique_id="migrate_v1",
+        version=1,
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == 3
+    assert entry.options == {
+        "existing": "kept",
+        CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: True,
+        CONF_SCENE_GEN_DELAY: DEFAULT_DELAY_SCENE,
+    }
+
+
+async def test_migrate_entry_from_v2_to_v3(hass: HomeAssistant) -> None:
+    """Version 2 entries should receive only the scene delay default."""
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options={CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: False},
+        unique_id="migrate_v2",
+        version=2,
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == 3
+    assert entry.options == {
+        CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: False,
+        CONF_SCENE_GEN_DELAY: DEFAULT_DELAY_SCENE,
+    }
+
+
+async def test_migrate_entry_v3_is_noop(hass: HomeAssistant) -> None:
+    """Current entries should be left unchanged by migration."""
+    options = {CONF_SCENE_GEN_DELAY: 7}
+    entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={},
+        options=options,
+        unique_id="migrate_v3",
+        version=3,
+    )
+    entry.add_to_hass(hass)
+
+    result = await async_migrate_entry(hass, entry)
+
+    assert result is True
+    assert entry.version == 3
+    assert entry.options == options
 
 
 # -- sync_device_names service ------------------------------------------------

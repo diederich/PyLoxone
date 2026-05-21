@@ -4,6 +4,58 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-21 — Guard disconnected WebSocket commands and migration tests
+
+Closed the command-queue disconnect gap, added config-entry migration coverage, and reconciled the TODO docs with the CI workflows that already exist in the repository.
+
+### Decisions
+
+- **Drop commands before enqueueing when disconnected.** User and bridge commands during a closed WebSocket session are logged and discarded instead of piling up in the send queue.
+- **Keep send-loop disconnect handling quiet.** If the connection closes between enqueue and send, `_send_text_command` returns after logging instead of attempting to write to a missing transport.
+- **Treat CI as present.** The repo already has tests, lint, Hassfest, and HACS validation workflows, so the TODO docs were corrected instead of adding duplicate workflows.
+
+### Changes
+
+- `custom_components/loxone/pyloxone_api/connection.py` — added connection-state guards before queueing and before transport send.
+- `tests/components/loxone/test_connection.py` — covered connected queueing, disconnected dropping, UUID validation, and send-loop disconnect behavior.
+- `tests/components/loxone/test_init.py` — added v1→v3, v2→v3, and v3 no-op config-entry migration tests.
+- `docs/ISSUES_AND_TODOS.md`, `docs/API_LAYER.md` — removed completed MED-013/ARCH-006 items and corrected CI status.
+
+### Testplan
+
+- `python -m pytest tests/components/loxone/test_connection.py tests/components/loxone/test_init.py -q --tb=short` — 21 passed.
+- `python -m ruff check custom_components/loxone/__init__.py custom_components/loxone/pyloxone_api/connection.py tests/components/loxone/test_connection.py tests/components/loxone/test_init.py` — no issues.
+- `python -m pytest tests/ -q --tb=short` — 432 passed.
+
+---
+
+## 2026-05-21 — Harden bridge sync loop prevention and diagnostics
+
+Made the device bridge runtime direction-aware so bidirectional Hue/ColorPicker bridges settle instead of ping-ponging between Loxone and Home Assistant.
+
+### Decisions
+
+- **Compare semantic values, not raw wire strings.** Mappers now provide normalized values for bridge equality checks; `ColorPickerMapper` uses tolerant HSV/temp comparisons to absorb Hue/Loxone round-trip drift.
+- **Suppress by direction and reason.** HA feedback from a Loxone-originated service call is suppressed for a short window, while Loxone echo suppression only applies when the incoming value matches the command PyLoxone just sent.
+- **Loxone app actions take ownership.** Incoming Loxone values clear pending HA cooldown commands so stale HA changes cannot flush later and overwrite the user's Loxone-side action.
+- **Diagnostics must show runtime state.** The bridge WebSocket API exposes subscribed UUIDs, last sent/received values, pending commands, suppression windows, and suppression reasons.
+
+### Changes
+
+- `custom_components/loxone/bridge.py` — added normalized runtime bookkeeping, direction-aware suppression, pending command cancellation, and richer bridge debug state.
+- `custom_components/loxone/bridge_mappers.py`, `bridge_types.py` — added mapper-level normalization/equality hooks and tolerant ColorPickerV2 comparison.
+- `custom_components/loxone/websocket.py` — expanded `loxone/get_bridges` with bridge state/subscription/runtime diagnostics.
+- `tests/components/loxone/test_bridge.py`, `test_websocket.py` — covered echo suppression, Loxone ownership, pending command cancellation, color drift tolerance, and diagnostics output.
+- `docs/HA_INTEGRATION.md`, `docs/ARCHITECTURE.md` — documented the bridge sync contract and runtime flow.
+
+### Testplan
+
+- `python -m pytest tests/components/loxone/test_bridge.py tests/components/loxone/test_websocket.py -q --tb=short` — 97 passed.
+- `python -m ruff check custom_components/loxone/bridge.py custom_components/loxone/bridge_mappers.py custom_components/loxone/websocket.py tests/components/loxone/test_bridge.py tests/components/loxone/test_websocket.py` — no issues.
+- Deployed with `scripts/deploy`; verified `light.infuse` Loxone → HA and HA → Loxone changes produce expected `Ceiling` events and settle with no follow-up events over a 12 second monitor window.
+
+---
+
 ## 2026-05-21 — Clean up visible CI validation errors
 
 Fixed repository-side lint and Hassfest issues found while checking CI status after the pytest teardown fixes.

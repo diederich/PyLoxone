@@ -331,6 +331,36 @@ api.send_websocket_command(uuid, value)
 Loxone Miniserver
 ```
 
+### Bridge Sync Flow
+
+Device bridges are bidirectional only when the mapper has both an HA → Loxone command path and one or more Loxone state UUIDs to subscribe to. The runtime keeps direction-aware state so feedback loops settle instead of ping-ponging.
+
+```
+Loxone app / logic
+    │
+    ▼
+WebSocket state UUID
+    │
+    ▼
+BridgeRuntime._make_lox_listener()
+    │  normalize + duplicate/echo checks
+    ▼
+BridgeMapper.loxone_value_to_ha()
+    │  HA service call
+    ▼
+HA entity state change
+    │
+    ▼
+BridgeRuntime._process_ha_state()
+    │  suppress if caused by Loxone, or if it matches last received value
+    ▼
+api.send_websocket_command()
+```
+
+For HA-originated changes the same runtime records the normalized command value, enables echo suppression, and sends the Loxone command. A following Loxone event is suppressed only if it semantically matches that command. Color bridges compare normalized HSV/temp values with tolerances, because Hue/Loxone round-trips can shift color values slightly.
+
+The bridge runtime also clears pending cooldown commands when a Loxone-originated update arrives. This prevents an older HA state from being flushed after the user has already changed the device from the Loxone app.
+
 ## Supported Loxone Control Types
 
 | Loxone Control       | HA Platform          | Entity Class                    |

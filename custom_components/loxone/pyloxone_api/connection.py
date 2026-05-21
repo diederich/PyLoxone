@@ -294,6 +294,7 @@ class LoxoneConnection:
         try:
             if not self.connection or not self.is_connected:
                 _LOGGER.warning("Cannot send command — connection is not open")
+                return
             await self.connection.send([command])
         except websockets.ConnectionClosedOK:
             raise LoxoneConnectionClosedOk("Connection closed normally while sending command") from None
@@ -307,6 +308,9 @@ class LoxoneConnection:
             raise ValueError("device_uuid must be a non-empty string")
         command = f"jdev/sps/io/{device_uuid}/{value}"
         _LOGGER.debug("Call send_websocket_command: %s", command)
+        if not self.is_connected:
+            _LOGGER.warning("Dropping websocket command for %s because connection is not open", device_uuid)
+            return
         try:
             self._message_queue.put_nowait(MessageForQueue(command=command, flag=True))
         except asyncio.QueueFull:
