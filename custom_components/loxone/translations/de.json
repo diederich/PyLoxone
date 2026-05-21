@@ -174,7 +174,6 @@
   "issues": {
     "token_expired": {
       "title": "Loxone-Authentifizierung fehlgeschlagen",
-      "description": "Der Miniserver hat die gespeicherten Zugangsdaten abgelehnt. Das Passwort wurde möglicherweise in Loxone Config geändert.",
       "fix_flow": {
         "step": {
           "confirm": {

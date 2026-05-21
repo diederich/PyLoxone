@@ -4,6 +4,27 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-21 — Clean up visible CI validation errors
+
+Fixed repository-side lint and Hassfest issues found while checking CI status after the pytest teardown fixes.
+
+### Decisions
+
+- **Keep fixable repair translations schema-compliant.** `token_expired` uses a repair `fix_flow`, so its user-facing details live in the flow step instead of a top-level issue description.
+- **Leave external HACS checks to repo settings.** Missing repository topics and disabled issues are GitHub repository configuration, not code changes.
+
+### Changes
+
+- `tests/components/loxone/test_websocket.py` — combined nested patch context managers to satisfy Ruff `SIM117`.
+- `custom_components/loxone/translations/en.json`, `de.json` — removed top-level `token_expired.description` for the fixable repair issue.
+
+### Testplan
+
+- `python -m ruff check .` — no issues.
+- `python -m pytest tests/ -q --tb=short` — 420 passed.
+
+---
+
 ## 2026-05-21 — Remove config flow AsyncMock warnings
 
 Cleaned up the config-flow HTTP response mock so successful credential validation tests no longer leak unawaited coroutine warnings.

@@ -174,7 +174,6 @@
   "issues": {
     "token_expired": {
       "title": "Loxone authentication failed",
-      "description": "The Miniserver rejected the stored credentials. This usually means the password was changed in Loxone Config.",
       "fix_flow": {
         "step": {
           "confirm": {

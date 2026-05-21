@@ -425,11 +425,13 @@ async def test_register_panel_calls_hash_in_executor(
             mock_panel.async_register_panel = AsyncMock()
             hass.data.pop("frontend_panels", None)
 
-            with patch("custom_components.loxone.websocket.async_setup_component", return_value=True):
-                with patch.object(hass.http, "async_register_static_paths", new_callable=AsyncMock):
-                    from custom_components.loxone.websocket import register_panel
+            with (
+                patch("custom_components.loxone.websocket.async_setup_component", return_value=True),
+                patch.object(hass.http, "async_register_static_paths", new_callable=AsyncMock),
+            ):
+                from custom_components.loxone.websocket import register_panel
 
-                    await register_panel(hass)
+                await register_panel(hass)
 
         executor_calls = [
             call
