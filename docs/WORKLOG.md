@@ -4,6 +4,29 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-21 — Fix pytest teardown hang in mocked Loxone tests
+
+Stabilized the test fixture lifecycle so mocked WebSocket background tasks are cancelled during config-entry unload instead of lingering through Home Assistant teardown.
+
+### Decisions
+
+- **Mock listener stays pending until cancellation.** The shared `LoxoneConnection.start_listening` mock now behaves like the production WebSocket listener instead of returning immediately.
+- **Shared integration fixture owns unload.** `init_integration` now yields the config entry and explicitly unloads it during fixture teardown.
+- **Scene generation is opt-in for shared tests.** Default mock options disable delayed scene generation; dedicated scene tests still enable it explicitly.
+
+### Changes
+
+- `tests/components/loxone/conftest.py` — pending listener mock, yielding integration fixture, faster default scene options.
+- `tests/components/loxone/test_coordinator.py` — fixed the reconnect cleanup test so it does not orphan a long-running task.
+
+### Testplan
+
+- `python -m pytest tests/components/loxone/test_alarm_control_panel.py -q --tb=short --timeout=15` — 12 passed.
+- `python -m pytest tests/components/loxone/test_coordinator.py -q --tb=short --timeout=15` — 16 passed.
+- `python -m pytest tests/ -q --tb=short` — 417 passed, 5 existing warnings.
+
+---
+
 ## 2026-04-15 — Async compliance, keepalive fix, scene reconnect, architecture docs
 
 Full async compliance sweep across all entity platforms, a Loxone protocol fix for the keepalive handshake, reliable scene generation after reconnects, and comprehensive architecture documentation.

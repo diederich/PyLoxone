@@ -247,9 +247,7 @@ async def test_cleanup_cancels_reconnect_task(hass: HomeAssistant, init_integrat
     with patch.object(coordinator, "_async_reconnect", side_effect=slow_reconnect):
         coordinator._reconnect_task = hass.async_create_task(coordinator._async_reconnect())
         await reconnect_started.wait()
-
-    coordinator._reconnect_task = hass.async_create_task(asyncio.sleep(300))
-    await coordinator.async_cleanup()
+        await coordinator.async_cleanup()
 
     assert coordinator._reconnect_task is None
     assert coordinator._listening_task is None

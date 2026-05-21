@@ -1,5 +1,6 @@
 """Fixtures for Loxone HA unit tests (mocked environment)."""
 
+import asyncio
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -50,8 +51,8 @@ MOCK_OPTIONS = {
     CONF_PORT: 8080,
     CONF_USERNAME: "admin",
     CONF_PASSWORD: "password",
-    CONF_SCENE_GEN: True,
-    CONF_SCENE_GEN_DELAY: 3,
+    CONF_SCENE_GEN: False,
+    CONF_SCENE_GEN_DELAY: 0,
     CONF_LIGHTCONTROLLER_SUBCONTROLS_GEN: False,
     CONF_CREATE_AREAS: True,
 }
@@ -84,13 +85,16 @@ def mock_loxone_connection(structure_fixture_name: str):
     """Mock the LoxoneConnection used by the coordinator."""
     structure = _load_json_fixture(structure_fixture_name)
 
+    async def _start_listening_until_cancelled(*_args, **_kwargs) -> None:
+        await asyncio.Future()
+
     with patch(
         "custom_components.loxone.coordinator.LoxoneConnection",
     ) as mock_cls:
         api = MagicMock()
         api.open = AsyncMock()
         api.close = AsyncMock()
-        api.start_listening = AsyncMock()
+        api.start_listening = AsyncMock(side_effect=_start_listening_until_cancelled)
         api.send_websocket_command = AsyncMock()
         api.send_secured__websocket_command = AsyncMock()
         api.get_token_dict = MagicMock(return_value={"token": "fake", "hash_alg": "SHA256", "valid_until": "9999"})
@@ -111,4 +115,6 @@ async def init_integration(
     mock_config_entry.add_to_hass(hass)
     await hass.config_entries.async_setup(mock_config_entry.entry_id)
     await hass.async_block_till_done()
-    return mock_config_entry
+    yield mock_config_entry
+    await hass.config_entries.async_unload(mock_config_entry.entry_id)
+    await hass.async_block_till_done()
