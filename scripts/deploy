@@ -34,6 +34,25 @@ if [ ! -f "$ENV_FILE" ]; then
 fi
 source "$ENV_FILE"
 
+check_ssh() {
+  if ssh -o BatchMode=yes -o ConnectTimeout=5 "$HA_SSH" true &>/dev/null; then
+    return 0
+  fi
+
+  echo "Error: cannot connect to $HA_SSH with non-interactive SSH."
+  echo ""
+  echo "If you normally need to unlock your SSH key first, run:"
+  echo "  ssh-add"
+  echo ""
+  echo "Then verify the deploy connection with:"
+  echo "  ssh -o BatchMode=yes \"$HA_SSH\" true"
+  echo ""
+  echo "For more detail:"
+  echo "  ssh-add -l"
+  echo "  ssh -v \"$HA_SSH\" true"
+  exit 1
+}
+
 if [ "$MODE" = "reload" ] && [ -z "${HA_TOKEN:-}" ]; then
   echo "Warning: HA_TOKEN not set — cannot reload, falling back to full restart."
   echo "  For fast reloads (~2s), create a long-lived access token:"
@@ -49,6 +68,8 @@ if [ ! -d "$LOCAL_DIR" ]; then
   echo "Error: Could not find $LOCAL_DIR from repo root."
   exit 1
 fi
+
+check_ssh
 
 FRONTEND_DIR="$LOCAL_DIR/frontend"
 if [ -f "$FRONTEND_DIR/build.mjs" ]; then

@@ -43,6 +43,54 @@ Change 123456789ABC to your miniserver Serial Number.
 6. Add the Integration and fill out all required fields
 7. Restart Home-Assistant
 
+## Development deploys
+
+For local development against a remote Home Assistant instance, use the deploy
+helper from the repository root:
+
+```bash
+scripts/deploy
+```
+
+The script builds the frontend bundle, syncs `custom_components/loxone` to the
+remote Home Assistant config directory, and restarts Home Assistant Core. Use
+`scripts/deploy --reload` only when no Python files changed; a reload does not
+re-import Python modules.
+
+Create a gitignored `.deploy.env` file in the repository root:
+
+```bash
+HA_URL="http://your-ha-host:8123"
+HA_SSH="root@your-ha-host"
+HA_CONFIG="/config"
+HA_TOKEN="your-long-lived-access-token"
+```
+
+`HA_SSH` must work non-interactively from the same shell or devcontainer where
+you run `scripts/deploy`:
+
+```bash
+ssh "$HA_SSH" true
+```
+
+If your SSH key is passphrase-protected, unlock it once after a host reboot
+before deploying:
+
+```bash
+ssh-add
+scripts/deploy
+```
+
+If deploy fails with `Permission denied (publickey)`, SSH connected to Home
+Assistant but did not have an accepted private key available. Make sure your key
+is loaded into the host SSH agent and that the agent is visible in the
+devcontainer:
+
+```bash
+ssh-add -l
+ssh -v "$HA_SSH" true
+```
+
 ## Supported Loxone Entities
 Currently, this integration supports the following Loxone entities by mapping them to Home Assistant entities.
 If you encounter a Loxone entity that is currently not supported, you can post a feature request so it can be looked into.

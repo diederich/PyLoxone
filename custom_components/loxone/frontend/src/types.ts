@@ -90,6 +90,22 @@ export interface BridgeInfo {
   loxone_uuid: string;
   loxone_name: string;
   loxone_type: string;
+  loxone_states: Record<string, string>;
+  subscribe_uuids: string[];
+  runtime: BridgeRuntimeInfo;
+}
+
+export interface BridgeRuntimeInfo {
+  last_sent_uuid: string | null;
+  last_sent_value: unknown;
+  last_sent_age: number | null;
+  last_received_uuid: string | null;
+  last_received_value: unknown;
+  last_received_age: number | null;
+  pending_command: unknown;
+  echo_suppress: boolean;
+  suppress_ha_remaining: number;
+  last_suppression_reason: string | null;
 }
 
 export interface GetBridgesResult {

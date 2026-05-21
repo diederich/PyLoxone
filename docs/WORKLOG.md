@@ -4,6 +4,79 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-21 — Add deploy SSH preflight
+
+Made the deploy helper fail early with a clear `ssh-add` hint when the SSH key is not unlocked in the current session.
+
+### Decisions
+
+- **Check SSH before building.** If SSH cannot authenticate, there is no point rebuilding the frontend bundle first.
+- **Use BatchMode for deploy validation.** The script now tests the same non-interactive behavior it needs later for rsync/scp and restart commands.
+- **Document the recurring unlock step.** Passphrase-protected keys require `ssh-add` once after a host reboot in this setup.
+
+### Changes
+
+- `scripts/deploy` — added a non-interactive SSH preflight and actionable diagnostics for empty/locked SSH agent cases.
+- `.devcontainer.json` — removed the explicit host `~/.ssh` bind mount; deploy now relies on the forwarded SSH agent.
+- `README.md` — added the common `ssh-add` before `scripts/deploy` workflow and described checking the forwarded agent.
+- `docs/WORKLOG.md` — recorded this cleanup.
+
+### Testplan
+
+- `bash -n scripts/deploy` — syntax OK.
+- Reviewed script and README diffs.
+
+---
+
+## 2026-05-21 — Document development deploy SSH setup
+
+Documented the local deploy workflow and the SSH-key failure mode hit while trying to deploy the RGB bridge panel update.
+
+### Decisions
+
+- **Keep deploy setup in the README.** The deploy script is developer-facing and depends on local `.deploy.env` plus SSH, so the top-level README is the easiest place to find it.
+- **Call out non-interactive SSH.** `scripts/deploy` cannot prompt for a key or password during automation; `ssh "$HA_SSH" true` should work before running it.
+- **Document the observed failure.** `Permission denied (publickey)` from the devcontainer means no accepted key was available to SSH, not that the frontend build failed.
+
+### Changes
+
+- `README.md` — added a Development deploys section with `.deploy.env`, restart/reload behavior, devcontainer SSH mount notes, and troubleshooting commands.
+- `docs/WORKLOG.md` — recorded this documentation cleanup.
+
+### Testplan
+
+- Documentation-only change; no automated tests run.
+- Reviewed README diff and existing deploy script behavior.
+
+---
+
+## 2026-05-21 — Show RGB diagnostics in bridge overview
+
+Added compact RGB visibility to the frontend Bridges view so color-light bridges show both current HA color and bridge runtime color flow.
+
+### Decisions
+
+- **Keep conversion in the frontend.** The `loxone/get_bridges` endpoint already exposes runtime values, so the panel derives RGB display values without changing the backend payload.
+- **Parse only the known color wire format.** Loxone runtime values are converted from `hsv(h,s,v)` with a strict parser; unsupported values such as `temp(...)`, `On`, or `Off` stay hidden in the color chips.
+- **Prefer compact diagnostics.** RGB chips live under the existing state cell so the bridge table remains readable for non-light bridges.
+- **Show retained color while off.** HA often keeps `rgb_color`/`hs_color` attributes on an off light, so the panel displays those last known values instead of hiding them.
+
+### Changes
+
+- `custom_components/loxone/frontend/src/types.ts` — typed the existing bridge runtime diagnostics returned by `loxone/get_bridges`.
+- `custom_components/loxone/frontend/src/color-format.ts` — added HA/Loxone RGB conversion and display helpers.
+- `custom_components/loxone/frontend/src/bridges-view.ts` — renders `HA`, `Sent`, and `Recv` RGB chips with color swatches when values are available.
+- `custom_components/loxone/frontend/test/color-format.test.ts` — covers RGB formatting, HSV conversion, HA attribute fallback, off-state retained colors, invalid values, and Loxone runtime parsing.
+- `docs/WORKLOG.md` — recorded this session.
+
+### Testplan
+
+- `npm run test && npm run typecheck && npm run build` in `custom_components/loxone/frontend` — 18 frontend tests passed, typecheck passed, panel bundle built.
+- `python -m pytest tests/ -v` — 432 passed.
+- IDE diagnostics — no linter errors in edited frontend files.
+
+---
+
 ## 2026-05-21 — Guard disconnected WebSocket commands and migration tests
 
 Closed the command-queue disconnect gap, added config-entry migration coverage, and reconciled the TODO docs with the CI workflows that already exist in the repository.

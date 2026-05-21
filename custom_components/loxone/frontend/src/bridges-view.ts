@@ -3,6 +3,7 @@ import { customElement, property, state } from "lit/decorators.js";
 import type { HomeAssistant, BridgeInfo, LoxoneDevice } from "./types";
 import { showToast } from "./types";
 import { fetchBridges, addBridge, removeBridge, fetchDevices } from "./api";
+import { formatRgb, rgbCss, rgbFromHassState, rgbFromLoxoneValue, type RgbColor } from "./color-format";
 
 const BRIDGEABLE_DOMAINS = [
   "cover",
@@ -44,6 +45,11 @@ interface LoxoneOption {
   name: string;
   type: string;
   room: string;
+}
+
+interface RgbChip {
+  label: string;
+  rgb: RgbColor;
 }
 
 @customElement("bridges-view")
@@ -222,6 +228,42 @@ export class BridgesView extends LitElement {
     }
     .state-value.state-warn {
       background: var(--warning-color, #ff9800);
+    }
+    .color-details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      margin-top: 6px;
+      max-width: 360px;
+    }
+    .rgb-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      border: 1px solid var(--divider-color, #e0e0e0);
+      background: var(--primary-background-color, #fafafa);
+      color: var(--secondary-text-color, #727272);
+      font-family: var(--ha-font-family-code, monospace);
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+    .rgb-chip strong {
+      color: var(--primary-text-color, #212121);
+      font-family: var(--ha-font-family, sans-serif);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .rgb-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      flex-shrink: 0;
     }
     .direction {
       text-align: center;
@@ -604,6 +646,45 @@ export class BridgesView extends LitElement {
     );
   }
 
+  private _bridgeRgbChips(bridge: BridgeInfo): RgbChip[] {
+    const chips: RgbChip[] = [];
+    const state = this.hass.states[bridge.entity_id];
+    const haRgb = rgbFromHassState(state);
+    if (haRgb) {
+      chips.push({ label: "HA", rgb: haRgb });
+    }
+
+    const sentRgb = rgbFromLoxoneValue(bridge.runtime?.last_sent_value);
+    if (sentRgb) {
+      chips.push({ label: "Sent", rgb: sentRgb });
+    }
+
+    const receivedRgb = rgbFromLoxoneValue(bridge.runtime?.last_received_value);
+    if (receivedRgb) {
+      chips.push({ label: "Recv", rgb: receivedRgb });
+    }
+    return chips;
+  }
+
+  private _renderRgbChips(chips: RgbChip[]) {
+    if (chips.length === 0) {
+      return "";
+    }
+    return html`
+      <div class="color-details">
+        ${chips.map(
+          (chip) => html`
+            <span class="rgb-chip" title=${`${chip.label} ${formatRgb(chip.rgb)}`}>
+              <span class="rgb-swatch" style=${`background: ${rgbCss(chip.rgb)}`}></span>
+              <strong>${chip.label}</strong>
+              <span>${formatRgb(chip.rgb)}</span>
+            </span>
+          `,
+        )}
+      </div>
+    `;
+  }
+
   private async _addBridge(): Promise<void> {
     if (!this._newEntityId || !this._newLoxoneUuid) return;
     this._error = "";
@@ -883,10 +964,14 @@ export class BridgesView extends LitElement {
                       const stateClass =
                         !st || stateStr === "unavailable" || stateStr === "unknown"
                           ? "state-warn" : "";
+                      const rgbChips = this._bridgeRgbChips(b);
                       return html`
                         <tr>
                           <td>${b.entity_id}</td>
-                          <td><span class="state-value ${stateClass}">${stateStr}</span></td>
+                          <td>
+                            <span class="state-value ${stateClass}">${stateStr}</span>
+                            ${this._renderRgbChips(rgbChips)}
+                          </td>
                           <td class="direction">→</td>
                           <td>${b.loxone_name || b.loxone_uuid}</td>
                           <td><span class="badge">${b.loxone_type}</span></td>
