@@ -4,6 +4,25 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-21 — Remove config flow AsyncMock warnings
+
+Cleaned up the config-flow HTTP response mock so successful credential validation tests no longer leak unawaited coroutine warnings.
+
+### Decisions
+
+- **Mock `resp.json()` as async.** The production config flow awaits `ClientResponse.json()`, so tests should provide an awaitable JSON method instead of relying on MagicMock's default coroutine behavior.
+
+### Changes
+
+- `tests/components/loxone/test_config_flow.py` — `_mock_response()` now attaches an `AsyncMock` JSON method returning an empty payload by default.
+
+### Testplan
+
+- `python -m pytest tests/components/loxone/test_config_flow.py -q --tb=short` — 27 passed.
+- `python -m pytest tests/ -q --tb=short` — 420 passed, 0 warnings.
+
+---
+
 ## 2026-05-21 — Fix pytest teardown hang in mocked Loxone tests
 
 Stabilized the test fixture lifecycle so mocked WebSocket background tasks are cancelled during config-entry unload instead of lingering through Home Assistant teardown.

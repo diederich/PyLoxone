@@ -1,6 +1,6 @@
 """Tests for the Loxone config flow."""
 
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import aiohttp
 import pytest
@@ -23,10 +23,11 @@ VALID_USER_INPUT = {
 }
 
 
-def _mock_response(status=200):
+def _mock_response(status=200, json_payload: dict | None = None):
     """Create a mock aiohttp response with the given status."""
     resp = MagicMock(spec=aiohttp.ClientResponse)
     resp.status = status
+    resp.json = AsyncMock(return_value=json_payload or {})
     return resp
 
 
