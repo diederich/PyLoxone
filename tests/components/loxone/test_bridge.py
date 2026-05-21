@@ -358,6 +358,25 @@ class TestColorPickerMapper:
             {"entity_id": "light.hue"},
         )
 
+    def test_color_normalization_treats_small_hsv_drift_as_equal(self):
+        m = self._make()
+        sent = m.normalize_sent_value("hsv(308,83,100)")
+        received = m.normalize_received_value("color-uuid", "hsv(307,79,98)")
+
+        assert m.values_equal(sent, received) is True
+
+    def test_color_normalization_detects_large_hsv_change(self):
+        m = self._make()
+        sent = m.normalize_sent_value("hsv(308,83,100)")
+        received = m.normalize_received_value("color-uuid", "hsv(210,80,60)")
+
+        assert m.values_equal(sent, received) is False
+
+    def test_color_normalization_treats_zero_brightness_as_off(self):
+        m = self._make()
+
+        assert m.values_equal(m.normalize_sent_value("Off"), m.normalize_received_value("color-uuid", "hsv(120,80,0)"))
+
 
 # ---------------------------------------------------------------------------
 # LightSwitchMapper
@@ -540,6 +559,171 @@ class TestBridgeRuntime:
             await hass.async_block_till_done()
 
             mock_lox.assert_called_once_with(hass, "pos-uuid", 75.0)
+
+        await runtime.async_teardown()
+
+    @pytest.mark.asyncio
+    async def test_echo_suppression_only_drops_matching_value(
+        self,
+        hass: HomeAssistant,
+        bridge_config,
+        mock_coordinator,
+    ):
+        """Echo protection should not swallow a real Loxone-side change."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            options={"bridges": [bridge_config]},
+        )
+        entry.add_to_hass(hass)
+
+        mock_coordinator.dispatcher_prefix = f"loxone_{entry.entry_id}_uuid_"
+        runtime = BridgeRuntime(hass, mock_coordinator, entry)
+        await runtime.async_setup()
+
+        ab = runtime._active[0]
+        ab.echo_suppress = True
+        ab.last_sent_value = 50.0
+        ab.last_sent_normalized = ab.mapper.normalize_sent_value(50.0)
+
+        with patch.object(ab.mapper, "loxone_value_to_ha", new_callable=AsyncMock) as mock_lox:
+            fire_loxone_event(hass, {"pos-uuid": 75.0})
+            await hass.async_block_till_done()
+
+            mock_lox.assert_called_once_with(hass, "pos-uuid", 75.0)
+            assert ab.echo_suppress is False
+
+        await runtime.async_teardown()
+
+    @pytest.mark.asyncio
+    async def test_echo_suppression_drops_matching_value(
+        self,
+        hass: HomeAssistant,
+        bridge_config,
+        mock_coordinator,
+    ):
+        """Echo protection still ignores the immediate echo of our own send."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            options={"bridges": [bridge_config]},
+        )
+        entry.add_to_hass(hass)
+
+        mock_coordinator.dispatcher_prefix = f"loxone_{entry.entry_id}_uuid_"
+        runtime = BridgeRuntime(hass, mock_coordinator, entry)
+        await runtime.async_setup()
+
+        ab = runtime._active[0]
+        ab.echo_suppress = True
+        ab.last_sent_value = 75.0
+        ab.last_sent_normalized = ab.mapper.normalize_sent_value(75.0)
+
+        with patch.object(ab.mapper, "loxone_value_to_ha", new_callable=AsyncMock) as mock_lox:
+            fire_loxone_event(hass, {"pos-uuid": 75.0})
+            await hass.async_block_till_done()
+
+            mock_lox.assert_not_called()
+            assert ab.echo_suppress is False
+
+        await runtime.async_teardown()
+
+    @pytest.mark.asyncio
+    async def test_loxone_update_suppresses_followup_ha_state_change(
+        self,
+        hass: HomeAssistant,
+        bridge_config,
+        mock_coordinator,
+    ):
+        """A Loxone-driven HA update must not immediately echo back to Loxone."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            options={"bridges": [bridge_config]},
+        )
+        entry.add_to_hass(hass)
+
+        mock_coordinator.dispatcher_prefix = f"loxone_{entry.entry_id}_uuid_"
+        runtime = BridgeRuntime(hass, mock_coordinator, entry)
+        await runtime.async_setup()
+
+        ab = runtime._active[0]
+        await runtime._handle_lox_value(ab, "pos-uuid", 75.0)
+
+        mock_coordinator.api.send_websocket_command.reset_mock()
+        hass.states.async_set("light.test_bridge", "on", {"brightness": 200})
+        await hass.async_block_till_done()
+
+        mock_coordinator.api.send_websocket_command.assert_not_called()
+
+        await runtime.async_teardown()
+
+    @pytest.mark.asyncio
+    async def test_ha_state_matching_last_loxone_value_is_not_echoed(
+        self,
+        hass: HomeAssistant,
+        bridge_config,
+        mock_coordinator,
+    ):
+        """Late HA state convergence should not echo the last Loxone value back."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            options={"bridges": [bridge_config]},
+        )
+        entry.add_to_hass(hass)
+
+        runtime = BridgeRuntime(hass, mock_coordinator, entry)
+        await runtime.async_setup()
+
+        ab = runtime._active[0]
+        ab.last_received_value = 50
+        ab.last_received_normalized = ab.mapper.normalize_received_value("pos-uuid", 50)
+
+        mock_coordinator.api.send_websocket_command.reset_mock()
+        hass.states.async_set("light.test_bridge", "on", {"brightness": 128})
+        await hass.async_block_till_done()
+
+        mock_coordinator.api.send_websocket_command.assert_not_called()
+        assert ab.last_suppression_reason == "matches_last_received"
+
+        await runtime.async_teardown()
+
+    @pytest.mark.asyncio
+    async def test_loxone_update_clears_pending_ha_command(
+        self,
+        hass: HomeAssistant,
+        bridge_config,
+        mock_coordinator,
+    ):
+        """Incoming Loxone ownership should cancel a queued HA command."""
+        entry = MockConfigEntry(
+            domain=DOMAIN,
+            data={},
+            options={"bridges": [bridge_config]},
+        )
+        entry.add_to_hass(hass)
+
+        mock_coordinator.dispatcher_prefix = f"loxone_{entry.entry_id}_uuid_"
+        runtime = BridgeRuntime(hass, mock_coordinator, entry)
+        await runtime.async_setup()
+
+        ab = runtime._active[0]
+        cancelled = False
+
+        def _cancel_pending():
+            nonlocal cancelled
+            cancelled = True
+
+        ab.pending_command = ("dim-uuid", 60)
+        ab.cancel_cooldown = _cancel_pending
+
+        fire_loxone_event(hass, {"pos-uuid": 75.0})
+        await hass.async_block_till_done()
+
+        assert cancelled is True
+        assert ab.pending_command is None
+        assert ab.cancel_cooldown is None
 
         await runtime.async_teardown()
 

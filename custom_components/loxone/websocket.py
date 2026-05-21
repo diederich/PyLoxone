@@ -15,6 +15,7 @@ import contextlib
 import hashlib
 import logging
 from pathlib import Path
+import time
 from typing import Any
 
 import voluptuous as vol
@@ -359,12 +360,27 @@ def ws_get_bridges(
         connection.send_result(msg["id"], {"bridges": []})
         return
 
+    now = time.monotonic()
     bridges = [
         {
             "entity_id": ab.bridge.entity_id,
             "loxone_uuid": ab.bridge.loxone_uuid,
             "loxone_name": ab.bridge.loxone_name,
             "loxone_type": ab.bridge.loxone_type,
+            "loxone_states": ab.bridge.loxone_states,
+            "subscribe_uuids": sorted(ab.mapper.subscribe_uuids),
+            "runtime": {
+                "last_sent_uuid": ab.last_sent_uuid,
+                "last_sent_value": ab.last_sent_value,
+                "last_sent_age": round(now - ab.last_sent_time, 3) if ab.last_sent_time else None,
+                "last_received_uuid": ab.last_received_uuid,
+                "last_received_value": ab.last_received_value,
+                "last_received_age": round(now - ab.last_received_time, 3) if ab.last_received_time else None,
+                "pending_command": ab.pending_command,
+                "echo_suppress": ab.echo_suppress,
+                "suppress_ha_remaining": max(0.0, round(ab.suppress_ha_until - now, 3)),
+                "last_suppression_reason": ab.last_suppression_reason,
+            },
         }
         for ab in bridge_runtime.active_bridges
     ]

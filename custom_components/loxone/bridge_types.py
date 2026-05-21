@@ -93,6 +93,22 @@ class BridgeMapper(ABC):
         Default implementation does nothing (expose-only mappers).
         """
 
+    def normalize_sent_value(self, value: Any) -> Any:
+        """Return a comparable representation of an HA -> Loxone command value."""
+        return value
+
+    def normalize_received_value(self, uuid: str, value: Any) -> Any:
+        """Return a comparable representation of a Loxone -> HA state value."""
+        return value
+
+    def values_equal(self, left: Any, right: Any) -> bool:
+        """Return whether two normalized values should be treated as equal."""
+        if left is None or right is None:
+            return left is right
+        if isinstance(left, (int, float)) and isinstance(right, (int, float)):
+            return abs(float(left) - float(right)) < VALUE_EPSILON
+        return str(left) == str(right)
+
     @property
     def description(self) -> str:
         """Human-readable summary for the options-flow UI."""

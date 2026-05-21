@@ -36,6 +36,7 @@ from .const import DOMAIN
 __all__ = ["DEFAULT_COOLDOWN", "VALUE_EPSILON", "BridgeMapper", "BridgeRuntime", "DeviceBridge"]
 
 _LOGGER = logging.getLogger(__name__)
+_LOXONE_TO_HA_SUPPRESS_SECONDS = 2.0
 
 
 # ---------------------------------------------------------------------------
@@ -50,13 +51,20 @@ class _ActiveBridge:
     bridge: DeviceBridge
     mapper: BridgeMapper
     last_sent_value: Any = None
+    last_sent_normalized: Any = None
+    last_sent_uuid: str | None = None
     last_sent_time: float = 0.0
     last_received_value: Any = None
+    last_received_normalized: Any = None
+    last_received_uuid: str | None = None
+    last_received_time: float = 0.0
     pending_command: tuple[str, Any] | None = field(default=None, repr=False)
     cancel_ha_listener: CALLBACK_TYPE | None = field(default=None, repr=False)
     cancel_lox_listener: CALLBACK_TYPE | None = field(default=None, repr=False)
     cancel_cooldown: CALLBACK_TYPE | None = field(default=None, repr=False)
     echo_suppress: bool = field(default=False, repr=False)
+    suppress_ha_until: float = field(default=0.0, repr=False)
+    last_suppression_reason: str | None = field(default=None, repr=False)
 
 
 def _values_equal(a: Any, b: Any) -> bool:
@@ -141,7 +149,7 @@ class BridgeRuntime:
         """Disable native Loxone entities whose control is used by a bridge."""
         registry = er.async_get(self.hass)
         for uuid in self.bridged_uuids:
-            entry = registry.async_get_entity_id(None, DOMAIN, uuid)
+            entry = None
             if entry is None:
                 # Try all platforms — async_get_entity_id needs a domain
                 for ent in registry.entities.values():
@@ -216,15 +224,20 @@ class BridgeRuntime:
             cancel_fns = [
                 async_dispatcher_connect(self.hass, f"{prefix}{uuid}", listener) for uuid in mapper.subscribe_uuids
             ]
-            ab.cancel_lox_listener = lambda fns=cancel_fns: [fn() for fn in fns]
+            def _cancel_lox_listeners(fns: list[CALLBACK_TYPE] = cancel_fns) -> None:
+                for fn in fns:
+                    fn()
+
+            ab.cancel_lox_listener = _cancel_lox_listeners
 
         _LOGGER.info(
-            "Bridge activated: %s <-> %s (%s) [expose=%s, subscribe=%s]",
+            "Bridge activated: %s <-> %s (%s) [expose=%s, subscribe=%s, subscribe_uuids=%s]",
             bridge.entity_id,
             bridge.loxone_name or bridge.loxone_uuid,
             bridge.loxone_type,
             mapper.expose_supported,
             mapper.subscribe_supported,
+            sorted(mapper.subscribe_uuids),
         )
 
     def _deactivate(self, ab: _ActiveBridge) -> None:
@@ -260,15 +273,45 @@ class BridgeRuntime:
         if str(state.state) in (STATE_UNAVAILABLE, STATE_UNKNOWN):
             return
 
+        now = time.monotonic()
+        if now < ab.suppress_ha_until:
+            remaining = ab.suppress_ha_until - now
+            ab.last_suppression_reason = "ha_feedback_window"
+            _LOGGER.debug(
+                "Bridge %s -> %s: suppressed HA state caused by Loxone update (%.2fs remaining)",
+                ab.bridge.entity_id,
+                ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                remaining,
+            )
+            return
+
         cmd = ab.mapper.ha_state_to_command(state)
         if cmd is None:
+            ab.last_suppression_reason = "no_command"
             return
 
         _uuid, value = cmd
-        if _values_equal(value, ab.last_sent_value):
+        normalized = ab.mapper.normalize_sent_value(value)
+        if ab.mapper.values_equal(normalized, ab.last_sent_normalized):
+            ab.last_suppression_reason = "matches_last_sent"
+            _LOGGER.debug(
+                "Bridge %s -> %s: ignored unchanged HA value %r",
+                ab.bridge.entity_id,
+                ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                value,
+            )
             return
 
-        now = time.monotonic()
+        if ab.mapper.values_equal(normalized, ab.last_received_normalized):
+            ab.last_suppression_reason = "matches_last_received"
+            _LOGGER.debug(
+                "Bridge %s -> %s: ignored HA state matching last Loxone value %r",
+                ab.bridge.entity_id,
+                ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                value,
+            )
+            return
+
         elapsed = now - ab.last_sent_time
 
         if elapsed >= ab.bridge.cooldown:
@@ -293,8 +336,12 @@ class BridgeRuntime:
     def _send(self, ab: _ActiveBridge, cmd: tuple[str, Any]) -> None:
         """Enqueue a websocket command to Loxone and update send bookkeeping."""
         uuid, value = cmd
+        normalized = ab.mapper.normalize_sent_value(value)
         ab.last_sent_value = value
+        ab.last_sent_normalized = normalized
+        ab.last_sent_uuid = uuid
         ab.last_sent_time = time.monotonic()
+        ab.last_suppression_reason = None
         ab.pending_command = None
         if ab.mapper.subscribe_supported:
             ab.echo_suppress = True
@@ -319,19 +366,57 @@ class BridgeRuntime:
                 if uuid not in message:
                     continue
                 value = message[uuid]
+                normalized = ab.mapper.normalize_received_value(uuid, value)
 
-                if ab.echo_suppress:
+                if ab.echo_suppress and ab.mapper.values_equal(normalized, ab.last_sent_normalized):
                     ab.echo_suppress = False
+                    ab.last_suppression_reason = "loxone_echo"
+                    _LOGGER.debug(
+                        "Bridge %s <- %s: suppressed echo value %r from %s",
+                        ab.bridge.entity_id,
+                        ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                        value,
+                        uuid,
+                    )
+                    return
+                ab.echo_suppress = False
+
+                if ab.mapper.values_equal(normalized, ab.last_received_normalized):
+                    ab.last_suppression_reason = "duplicate_loxone_value"
+                    _LOGGER.debug(
+                        "Bridge %s <- %s: ignored duplicate Loxone value %r from %s",
+                        ab.bridge.entity_id,
+                        ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                        value,
+                        uuid,
+                    )
                     return
 
-                if _values_equal(value, ab.last_received_value):
-                    return
-
+                self._clear_pending_command(ab, "loxone_update")
                 ab.last_received_value = value
+                ab.last_received_normalized = normalized
+                ab.last_received_uuid = uuid
+                ab.last_received_time = time.monotonic()
+                ab.last_suppression_reason = None
                 self.hass.async_create_task(self._handle_lox_value(ab, uuid, value))
                 return
 
         return _listener
+
+    def _clear_pending_command(self, ab: _ActiveBridge, reason: str) -> None:
+        """Cancel any queued HA -> Loxone command because Loxone took ownership."""
+        if ab.cancel_cooldown:
+            ab.cancel_cooldown()
+            ab.cancel_cooldown = None
+        if ab.pending_command is not None:
+            _LOGGER.debug(
+                "Bridge %s -> %s: cleared pending command %r (%s)",
+                ab.bridge.entity_id,
+                ab.bridge.loxone_name or ab.bridge.loxone_uuid,
+                ab.pending_command,
+                reason,
+            )
+        ab.pending_command = None
 
     async def _handle_lox_value(self, ab: _ActiveBridge, uuid: str, value: Any) -> None:
         """Push one Loxone value into Home Assistant via the mapper."""
@@ -342,6 +427,7 @@ class BridgeRuntime:
             value,
         )
         try:
+            ab.suppress_ha_until = time.monotonic() + _LOXONE_TO_HA_SUPPRESS_SECONDS
             await ab.mapper.loxone_value_to_ha(self.hass, uuid, value)
         except Exception:
             _LOGGER.exception(

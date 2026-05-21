@@ -12,6 +12,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 import json
 import logging
+import time
 from types import TracebackType
 from typing import Any, NoReturn, Self
 from urllib.parse import urlparse
@@ -508,11 +509,15 @@ class LoxoneConnection:
             raise RuntimeError("Session key not initialized")
         await self.connection.send(f"{CMD_KEY_EXCHANGE}{self._session_key.decode()}")
 
-        # Launch concurrent tasks
+        # Launch concurrent tasks.
+        # Note: _keep_alive() is intentionally omitted.  We now respond to the
+        # server's binary KEEPALIVE ping directly inside _do_start_listening,
+        # which is both more reliable (responds at exactly the right time) and
+        # avoids the infinite loop that arises when the server sends a binary
+        # KEEPALIVE ACK in response to the client's keepalive text.
         self._pending_task = [
             asyncio.create_task(self._do_start_listening(callback, self.connection)),
             asyncio.create_task(self._process_message()),
-            asyncio.create_task(self._keep_alive()),
             asyncio.create_task(self._check_and_refresh_token()),
             asyncio.create_task(self._reconnect_task()),
         ]
@@ -690,6 +695,13 @@ class LoxoneConnection:
 
         last_header = None
 
+        # Debounce for keepalive responses.  The Miniserver sends a binary
+        # KEEPALIVE ACK after receiving our "keepalive" text, which looks
+        # identical to a server-initiated ping.  Responding to the ACK would
+        # start an infinite round-trip loop.  We suppress any response that
+        # arrives within 5 s of the last one we sent.
+        _last_keepalive_response: float = 0.0
+
         async def _run_callback(msg: BaseMessage) -> None:
             try:
                 await callback(msg.as_dict())
@@ -707,13 +719,17 @@ class LoxoneConnection:
                     if last_header.message_type == MessageType.OUT_OF_SERVICE:
                         _raise_out_of_service()
                     if last_header.message_type == MessageType.KEEPALIVE:
-                        # Respond to the server's keepalive ping — required by the Loxone
-                        # protocol.  Without this, the Miniserver closes the connection
-                        # ~3s after sending its ping (every 30s), causing a spurious
-                        # disconnect-reconnect cycle on every boot.
-                        self._track_background_task(
-                            asyncio.create_task(self._send_text_command(CMD_KEEP_ALIVE, encrypted=False))
-                        )
+                        # Respond to the server's keepalive ping — required by the
+                        # Loxone protocol.  The Miniserver also sends a binary
+                        # KEEPALIVE ACK after receiving our "keepalive" text, so we
+                        # debounce: only send a response if ≥ 5 s have elapsed since
+                        # the last one to avoid an infinite ping-pong loop.
+                        now = time.monotonic()
+                        if now - _last_keepalive_response > 5.0:
+                            _last_keepalive_response = now
+                            self._track_background_task(
+                                asyncio.create_task(self._send_text_command(CMD_KEEP_ALIVE, encrypted=False))
+                            )
                         self._track_background_task(asyncio.create_task(_run_callback(Keepalive(""))))
 
                 elif last_header and last_header.payload_length == message_length:

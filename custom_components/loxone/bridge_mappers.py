@@ -21,6 +21,10 @@ from .helpers import hass_to_lox, lox_to_hass
 _LOGGER = logging.getLogger(__name__)
 
 _BINARY_TRUE = frozenset({"on", "true", "1", "yes", "home", "open"})
+_COLOR_HUE_EPSILON = 5.0
+_COLOR_SATURATION_EPSILON = 5.0
+_COLOR_BRIGHTNESS_EPSILON = 5.0
+_COLOR_TEMP_EPSILON = 150.0
 
 
 def _loxone_to_bool(value: Any) -> bool:
@@ -29,6 +33,26 @@ def _loxone_to_bool(value: Any) -> bool:
         return float(value) >= 1.0
     except (ValueError, TypeError):
         return str(value).lower() in _BINARY_TRUE
+
+
+def _parse_loxone_color_tuple(value: str, prefix: str) -> tuple[Any, ...] | None:
+    """Parse a Loxone color tuple like hsv(1,2,3) or temp(50,3000)."""
+    if not value.startswith(prefix):
+        return None
+    try:
+        parsed = ast.literal_eval(value.replace(prefix, "", 1))
+    except (ValueError, SyntaxError):
+        _LOGGER.warning("Cannot parse Loxone color value %r", value)
+        return None
+    if not isinstance(parsed, tuple):
+        return None
+    return parsed
+
+
+def _hue_distance(left: float, right: float) -> float:
+    """Return shortest distance between two hue values on the 0-360 wheel."""
+    delta = abs((left % 360.0) - (right % 360.0))
+    return min(delta, 360.0 - delta)
 
 
 # ---------------------------------------------------------------------------
@@ -89,13 +113,73 @@ class ColorPickerMapper(BridgeMapper):
 
         return (self.bridge.loxone_uuid, f"temp({lox_br:.1f},3000)")
 
+    def _normalize_color_value(self, value: Any) -> tuple[Any, ...]:
+        """Normalize Loxone color wire values for tolerant equality checks."""
+        color = str(value)
+        if color.lower() == "off":
+            return ("off",)
+        if color.lower() == "on":
+            return ("on",)
+
+        if color.startswith("hsv"):
+            tup = _parse_loxone_color_tuple(color, "hsv")
+            if tup is None or len(tup) < 3:
+                return ("raw", color)
+            h, s, v = float(tup[0]), float(tup[1]), float(tup[2])
+            if v <= 0:
+                return ("off",)
+            return ("hsv", h, s, v)
+
+        if color.startswith("temp"):
+            tup = _parse_loxone_color_tuple(color, "temp")
+            if tup is None or len(tup) < 2:
+                return ("raw", color)
+            br_lox, kelvin = float(tup[0]), float(tup[1])
+            if br_lox <= 0:
+                return ("off",)
+            return ("temp", br_lox, kelvin)
+
+        return ("bool", _loxone_to_bool(value))
+
+    def normalize_sent_value(self, value: Any) -> Any:
+        """Normalize HA -> Loxone color commands."""
+        return self._normalize_color_value(value)
+
+    def normalize_received_value(self, uuid: str, value: Any) -> Any:
+        """Normalize Loxone -> HA color state values."""
+        return self._normalize_color_value(value)
+
+    def values_equal(self, left: Any, right: Any) -> bool:
+        """Treat close color round-trips as equal to avoid drift loops."""
+        if not isinstance(left, tuple) or not isinstance(right, tuple):
+            return super().values_equal(left, right)
+        if not left or not right or left[0] != right[0]:
+            return False
+        mode = left[0]
+        if mode in ("off", "on"):
+            return True
+        if mode == "hsv" and len(left) >= 4 and len(right) >= 4:
+            return (
+                _hue_distance(float(left[1]), float(right[1])) <= _COLOR_HUE_EPSILON
+                and abs(float(left[2]) - float(right[2])) <= _COLOR_SATURATION_EPSILON
+                and abs(float(left[3]) - float(right[3])) <= _COLOR_BRIGHTNESS_EPSILON
+            )
+        if mode == "temp" and len(left) >= 3 and len(right) >= 3:
+            return (
+                abs(float(left[1]) - float(right[1])) <= _COLOR_BRIGHTNESS_EPSILON
+                and abs(float(left[2]) - float(right[2])) <= _COLOR_TEMP_EPSILON
+            )
+        return super().values_equal(left, right)
+
     async def loxone_value_to_ha(self, hass: HomeAssistant, uuid: str, value: Any) -> None:
         """Loxone value to ha."""
         entity_id = self.bridge.entity_id
         color = str(value)
 
         if color.startswith("hsv"):
-            tup = ast.literal_eval(color.replace("hsv", ""))
+            tup = _parse_loxone_color_tuple(color, "hsv")
+            if tup is None or len(tup) < 3:
+                return
             h, s, v = tup[0], tup[1], tup[2]
             brightness = round(lox_to_hass(v))
             if brightness <= 0:
@@ -113,7 +197,9 @@ class ColorPickerMapper(BridgeMapper):
                     },
                 )
         elif color.startswith("temp"):
-            tup = ast.literal_eval(color.replace("temp", ""))
+            tup = _parse_loxone_color_tuple(color, "temp")
+            if tup is None or len(tup) < 2:
+                return
             br_lox, kelvin = tup[0], tup[1]
             brightness = round(lox_to_hass(br_lox))
             if brightness <= 0:

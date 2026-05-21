@@ -314,6 +314,12 @@ async def test_ws_add_and_get_bridge(
     bridges = resp["result"]["bridges"]
     assert len(bridges) == 1
     assert bridges[0]["entity_id"] == "sensor.other_temp1"
+    assert bridges[0]["loxone_states"] == {"active": "aaa10000-0000-0000-0000000000000001"}
+    assert bridges[0]["subscribe_uuids"] == []
+    runtime = bridges[0]["runtime"]
+    assert runtime["last_sent_uuid"] is None
+    assert runtime["suppress_ha_remaining"] == 0.0
+    assert runtime["last_suppression_reason"] is None
 
 
 async def test_ws_remove_bridge(
