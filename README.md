@@ -155,7 +155,42 @@ python -m pytest tests_e2e_miniserver/ -s -v
 
 ## Known Limitations
 
-- Pushbuttons are stateless. They can not be used to reliably trigger automations. Use a Switch as a workaround and turn it off again in the Automation or in Loxone itself. 
+- Pushbuttons are stateless. They can not be used to reliably trigger automations. Use a Switch as a workaround and turn it off again in the Automation or in Loxone itself.
+
+## Sensor Device Class Detection
+
+`InfoOnlyAnalog` and `Meter` sensors are automatically classified by unit, with disambiguation by name/category for unit-only-ambiguous cases.
+
+| Device class       | Detected by                                                                                |
+| ------------------ | ------------------------------------------------------------------------------------------ |
+| `temperature`      | Unit: °C, °F                                                                               |
+| `humidity`         | Unit: % **and** category or name contains `humidity`, `vlhkost`, `feucht`, or `humidité`   |
+| `battery`          | Unit: % **and** name contains `batt`, `akku`, or `battery`                                 |
+| `energy`           | Unit: kWh, Wh, MWh                                                                         |
+| `power`            | Unit: W, kW                                                                                |
+| `volume_flow_rate` | Unit: L/h, L/min                                                                           |
+| `water`            | Unit: L                                                                                    |
+| `illuminance`      | Unit: lx, Lx, lux                                                                          |
+| `carbon_dioxide`   | Unit: ppm                                                                                  |
+| `wind_speed`       | Unit: km/h                                                                                 |
+
+Sensors with `%` unit that don't match any humidity/battery keyword are left without a device class — this avoids the previous "humidity_or_battery" bucket that gave every percent sensor the wrong icon and no Energy Dashboard wiring.
+
+`Meter` subsensors (Actual / Total / TotalReturned / Level) additionally get a fallback classification from the meter type (`energy` / `water` / `gas`), so even meters with unusual format strings end up with the right `device_class` and `state_class` for the Energy Dashboard.
+
+### Overriding the detected device class
+
+If the automatic detection assigns the wrong device class (or you want one for an unclassified sensor), use Home Assistant's built-in [entity customization](https://www.home-assistant.io/docs/configuration/customizing-devices/) in `configuration.yaml`:
+
+```yaml
+homeassistant:
+  customize:
+    sensor.my_percentage_sensor:
+      device_class: battery
+  customize_glob:
+    sensor.*humidity*:
+      device_class: humidity
+```
 
 ## Log Configuration
 Use the following settings if you paste a log into a issue:

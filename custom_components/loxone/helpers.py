@@ -4,6 +4,26 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/loxone/
 """
 
+import re
+
+from .const import cfmt
+
+
+def clean_unit(lox_format: str) -> str:
+    """Extract the unit string from a Loxone format specifier like '%.1f °C'.
+
+    Strips the printf-style format specifier and returns the trailing unit
+    text. `%%` collapses to `%`. Returns the original string unchanged if no
+    format specifier is found.
+    """
+    search = re.search(cfmt, lox_format, flags=re.VERBOSE)
+    if search:
+        unit = lox_format.replace(search.group(0).strip(), "").strip()
+        if unit == "%%":
+            unit = "%"
+        return unit
+    return lox_format
+
 
 def map_range(value, in_min, in_max, out_min, out_max):
     """Map range."""

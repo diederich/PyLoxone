@@ -74,6 +74,6 @@ async def discover(*, discovery_timeout: int = 5, host: str = "255.255.255.255")
                 response = (await wait_for(loop.sock_recv(sock, 1024), discovery_timeout)).decode()
                 # Look for a Loxone Response.
                 if (found := re.match(r, response)) is not None:
-                    (ip, port) = found.groups()
+                    ip, port = found.groups()
                     return ip, int(port), response
             return None

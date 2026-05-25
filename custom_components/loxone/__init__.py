@@ -585,7 +585,12 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: LoxoneConfigEntry
             err,
         )
         raise ConfigEntryNotReady from err
-    except (LoxoneConnectionError, LoxoneConnectionClosedOk, TimeoutError, ConnectionError) as err:
+    except (
+        LoxoneConnectionError,
+        LoxoneConnectionClosedOk,
+        TimeoutError,
+        ConnectionError,
+    ) as err:
         await coordinator.api.close()
         _LOGGER.warning(
             "Could not connect to Loxone Miniserver at %s: %s. Will retry automatically",
@@ -864,17 +869,6 @@ class LoxoneEntity(Entity):
             if serial:
                 info["via_device"] = (DOMAIN, serial)
         return info
-
-    @staticmethod
-    def _clean_unit(lox_format):
-        """Return clean unit."""
-        search = re.search(cfmt, lox_format, flags=re.VERBOSE)
-        if search:
-            unit = lox_format.replace(search.group(0).strip(), "").strip()
-            if unit == "%%":
-                unit = unit.replace("%%", "%")
-            return unit
-        return lox_format
 
     @staticmethod
     def _get_format(lox_format):

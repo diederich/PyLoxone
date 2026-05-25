@@ -4,6 +4,66 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-25 — Merge upstream/master (0.9.12 → 0.9.14)
+
+First sync with `JoDehli/PyLoxone` master since we diverged: 9 upstream commits, including [`d32f8cf`](https://github.com/JoDehli/PyLoxone/commit/d32f8cfa5d6fb6f6657758757af1e1c33c000df3) (Jaroslav Martasek) — a keyword-aware sensor classification engine that fixes a real bug we still carried. Took the refactor and integrated it with our existing extensions in the same merge, so the resulting tree is the actual intended state instead of "merge then partial fix later".
+
+### Decisions
+
+- **Merge, not rebase.** 85 commits ahead, 9 behind. A merge commit preserves the divergent history and clearly marks where we re-synced; rebasing would rewrite the whole feature lineage for cosmetic linearity.
+- **Adopt upstream's sensor classification refactor.** `d32f8cf` replaced the broken `humidity_or_battery` `SENSOR_TYPES` entry (matched every `%` sensor, set no `device_class`) with a unit-and-keyword matching engine — one description per concept (`temperature`, `wind_speed`, `energy`, `power`, `volume_flow_rate`, `water`, `illuminance`, `carbon_dioxide`, `humidity`, `battery`). New `match_sensor_description(unit, name, category)` plus `UNAMBIGUOUS_UNITS` frozenset. We adopt it verbatim — no parallel infrastructure for a problem upstream already solved well, and it gives us a contribution-ready surface for any future locale-keyword extensions.
+- **Keep `_METER_CLASSIFICATION` alongside, untouched.** The two systems are complementary, not overlapping: `match_sensor_description` classifies `InfoOnlyAnalog` value sensors by unit + name/category; our existing `_METER_CLASSIFICATION` classifies `Meter` subsensors (Actual / Total / TotalReturned / Level) by meter type. Different code paths, different inputs, both stay.
+- **Move `_clean_unit` from `LoxoneEntity` to `helpers.clean_unit`.** Upstream's refactor extracts it to module level. Only one external caller (`LoxoneSensor.__init__`) and it lets the new test suite import it directly. `_get_format` stays on `LoxoneEntity` — it has three callers (`sensor`, `binary_sensor`, `fan`).
+- **Read `name` / `cat` from kwargs in `LoxoneSensor.__init__`.** Not from `self.*` — the base class's dynamic `setattr(self, key, val)` only runs for keys actually present in kwargs, so `self.cat` may or may not exist on the instance. `kwargs.get("cat", "")` is unambiguous and side-effect-free.
+- **Use `frozen_or_thawed=True` for `LoxoneEntityDescription`.** Upstream uses HA's class-arg syntax for subclassing the frozen `SensorEntityDescription` with new fields. Confirmed supported on our pinned HA version; removes the now-unnecessary `@dataclass(frozen=True)` + `LoxoneRequiredKeysMixin` pattern.
+- **"Ours" wins on formatting-only conflicts.** All six formatting conflicts (`binary_sensor.py`, `climate.py`, `helpers.py`, `lights/lightcontroller.py`, `pyloxone_api/connection.py`, `pyloxone_api/message.py`) and the docstring tweak resolve to our version — we're Ruff-aligned to HA Core style, upstream's pre-Ruff formatting is not an upgrade.
+- **`colorpickers.py` LumiTech: drop the legacy assignment.** Upstream still assigns `_attr_device_info` in `LumiTech.__init__`; our `RGBColorPicker` base now provides a dynamic `device_info` property that handles both standalone and LightControllerV2-subcontrol cases. The duplicate assignment is no longer needed.
+- **Take upstream's version bump (`manifest.json`: 0.9.12 → 0.9.14).** Stays in sync with the upstream version line; we don't ship a separately versioned fork.
+- **Skip upstream's new `pytest.ini` and root `conftest.py`.** `pytest.ini` would conflict with our `pyproject.toml` (no `asyncio_mode = "auto"` → tests break); root `conftest.py` is a venv-setup docstring not relevant to our devcontainer.
+- **Take upstream's `tests/test_sensor_matching.py` content, place under `tests/components/loxone/`.** Matches our HA-style test layout. 50 pure-unit tests covering `match_sensor_description`, `UNAMBIGUOUS_UNITS`, `clean_unit`, and `SENSOR_TYPES` invariants — guards the classification table independent of integration setup.
+- **Take upstream's new README "Sensor Device Class Detection" section, plus our `Meter` fallback paragraph.** The section accurately describes the new behavior; we extend it to also document the `Meter` fallback path that upstream doesn't have. Also updated `HA_INTEGRATION.md` to describe the new classification flow.
+- **Already-have items confirmed identical.** Upstream's two bugfixes from this batch were already independently present on `dev`: `climate.py` `ATTR_TEMPERATURE` fix (#479) and `colorpickers.py` logging format fix (#482).
+- **Future strategy.** Treat upstream as a baseline to re-sync periodically and a target for small, themed contribution PRs (translation_keys, keepalive fix, legacy meter model handling, CI cleanup) — not for the big architectural pieces (sync engine, frontend panel, runtime_data rewrite) which need a design dialogue with `@JoDehli` first.
+
+### Changes
+
+#### Sensor classification (from upstream `d32f8cf`)
+
+- `custom_components/loxone/sensor.py` —
+  - replaced `LoxoneRequiredKeysMixin` + `@dataclass(frozen=True)` `LoxoneEntityDescription` with `frozen_or_thawed=True` subclass carrying `loxone_format_strings`, `category_keywords`, `name_keywords`;
+  - rebuilt `SENSOR_TYPES` (10 entries, one per concept) — collapsed prior per-unit duplicates (`kwh`/`wh`, `power`×2) into single descriptions with multi-unit tuples;
+  - added `UNAMBIGUOUS_UNITS` frozenset + `match_sensor_description()`;
+  - dropped `SENSOR_FORMATS` and `LoxoneSensor._get_entity_description`;
+  - `LoxoneSensor.__init__` now calls `clean_unit` + `match_sensor_description` with name/category from kwargs;
+  - added `CONCENTRATION_PARTS_PER_MILLION` and `UnitOfVolumeFlowRate` to imports.
+- `custom_components/loxone/helpers.py` — new module-level `clean_unit(lox_format)`.
+- `custom_components/loxone/__init__.py` — removed `LoxoneEntity._clean_unit` staticmethod (now `helpers.clean_unit`).
+- `tests/components/loxone/test_sensor_matching.py` — 50 new pure-unit tests across `TestSensorMatching`, `TestUnambiguousUnits`, `TestUnitExtraction`, `TestSensorTypesStructure`.
+
+#### Other upstream integration
+
+- `custom_components/loxone/manifest.json` — version bumped to `0.9.14`.
+- `custom_components/loxone/__init__.py` — auto-merged formatting (multi-line except clause).
+- `custom_components/loxone/pyloxone_api/discover.py` — auto-merged formatting (removed redundant parens around tuple unpacking).
+- `custom_components/loxone/lights/colorpickers.py` — LumiTech `else` branch no longer assigns `_attr_device_info`; the parent `RGBColorPicker.device_info` property already handles both standalone and LightControllerV2 cases.
+
+#### Docs
+
+- `README.md` — new "Sensor Device Class Detection" section with device class table, `Meter` fallback note, and `customize`/`customize_glob` override example.
+- `docs/HA_INTEGRATION.md` — replaced stale "duplicate `power` keys" issue note with a one-paragraph description of the new classification flow.
+- `docs/WORKLOG.md` — this entry.
+
+### Testplan
+
+- `ruff check .` → All checks passed.
+- `python -m pytest tests/components/loxone/test_sensor_matching.py -v` → 50 passed in 0.47s.
+- `python -m pytest tests/ -q --tb=short` → 482 passed in ~50s (was 432 before the merge; gained 50 new sensor classification tests).
+- Existing `test_sensor_entity_description_matched` and `test_wind_sensor_unit` continue to pass — Temperature and WIND_SPEED classifications are equivalent under the new system.
+- Merge commit graph preserves both lineages; future `git fetch upstream && git merge upstream/master` will only see commits added after this point.
+- Manual: deploy + verify in HA UI that existing `%` sensors named "Vlhkost …" / "Battery …" pick up `humidity` / `battery` device classes after restart.
+
+---
+
 ## 2026-05-21 — Add deploy SSH preflight
 
 Made the deploy helper fail early with a clear `ssh-add` hint when the SSH key is not unlocked in the current session.

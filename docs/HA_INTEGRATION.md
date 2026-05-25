@@ -285,7 +285,7 @@ User/password must remain Latin-1 encodable where the flow enforces it, and host
 | `LoxoneVersionSensor`   | —               | —               | Miniserver version            |
 | `LoxoneCustomSensor`    | —               | —               | YAML-defined (legacy)         |
 
-**Issue:** `SENSOR_TYPES` has duplicate `key="power"` entries for both Watt and Kilowatt.
+Sensor classification flows through `match_sensor_description(unit, name, category)`: unambiguous units (°C, kWh, ppm, …) match by unit alone; ambiguous units (%) require a keyword hit in the Loxone name or category to pick `humidity` vs `battery`. One description per concept — no per-variant duplication. See `README.md` → *Sensor Device Class Detection* for the user-facing table and override pattern.
 
 ### binary_sensor.py
 
