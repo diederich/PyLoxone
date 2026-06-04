@@ -4,6 +4,45 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-05-26 — Discover Meter subControls of PowerUnit (Energy Flow Monitor)
+
+User reported their Loxone Energy Flow Monitor view in Loxone Config (`Energieflussmonitor`) lists 8 meters but only 1 of them — the standalone `Fronius Energy Flow` — shows up in HA. Diagnostics dump confirmed the 7 missing meters are `subControls` of a `PowerUnit` block (`Power Supply & Backup`), and that `sensor.py` only iterates top-level `Meter` controls via `get_all(loxconfig, "Meter")`.
+
+### Decisions
+
+- **Walk subControls in Meter discovery, not just top-level controls.** Loxone exposes per-circuit meters of an Energy Flow Monitor as `Meter` subControls inside a `PowerUnit` block. The integration must surface these or the user's grid/consumer/producer breakdown is invisible in HA. Same model that `LightControllerV2` already uses for its sub-controls; we just hadn't applied it to meters.
+- **Each subcontrol meter gets its own device, not a child of the parent.** `LoxoneMeterSensor.create_device_info_from_sensor()` already keys by `uuidAction`, which is unique per (sub)control. Treating each meter as its own device keeps the existing user-facing model (one device per meter, with Actual / Total / Total Returned / Level subsensors) and avoids special-casing PowerUnit handling. The `PowerUnit` block itself stays unhandled for now — it has no clean HA representation and would only contribute extra entities for `outputPower`, fuse state, battery SoC, etc.
+- **New helper `get_all_including_subcontrols`, not a refactor of `get_all`.** Most callers (lights, switches, climate, …) deliberately operate on top-level controls only — silently expanding `get_all` to descend into subControls would surface things like `Switch` subcontrols of `LightControllerV2` as duplicate entities. Adding a parallel helper keeps the existing semantics intact and makes the recursive variant opt-in.
+- **SubControls inherit `room` and `cat` from their parent.** Loxone subcontrols typically omit these because they belong to the parent control's room/category. The helper fills them in only via `setdefault` so an explicitly-set room on the subcontrol still wins.
+- **Update `KNOWN_SUBCONTROL_TYPES` and the `get_all` AST scanner.** `Meter` is now a recognised subcontrol type for the dump-coverage tests; `_extract_get_all_types` in `test_known_types_sync.py` recognises `get_all_including_subcontrols` so the new call doesn't make `Meter` look stale in `KNOWN_CONTROL_TYPES`.
+
+### Changes
+
+- `custom_components/loxone/helpers.py` — new `get_all_including_subcontrols(json_data, name)` that walks both top-level controls and their `subControls`, applying `setdefault` for `room`/`cat` so subcontrols inherit from their parent.
+- `custom_components/loxone/sensor.py` — `async_setup_entry` now uses `get_all_including_subcontrols(loxconfig, "Meter")` for meter discovery; rest of the meter-classification + repair-issue logic is unchanged.
+- `tests/components/loxone/known_types.py` — added `"Meter": "sensor"` to `KNOWN_SUBCONTROL_TYPES`.
+- `tests/components/loxone/test_known_types_sync.py` — `_extract_get_all_types` now also recognises calls to `get_all_including_subcontrols` so `Meter` stays mapped without being flagged as stale.
+- `tests/components/loxone/fixtures/structure_sensors.json` — added a `PowerUnit` control `Power Supply & Backup` with one `Meter` subControl `Miniserver & Extensions` so the existing fixture exercises both top-level and subcontrol meters.
+- `tests/components/loxone/test_helpers.py` — new `TestGetAllIncludingSubcontrols` with 7 unit tests (top-level + subcontrol discovery, room/cat inheritance vs explicit override, type filtering, empty input).
+- `tests/components/loxone/test_sensor.py` — 4 new tests for sub-meter discovery: subsensor creation, state-from-event, energy-dashboard attrs, own-device identity.
+- `docs/HA_INTEGRATION.md` — added a paragraph in the `sensor.py` section describing meter discovery walking subControls.
+- `docs/ARCHITECTURE.md` — clarified the supported-control-types table to mention `PowerUnit` subControls feed `LoxoneMeterSensor`.
+- `docs/WORKLOG.md` — this entry.
+
+### Investigation notes
+
+- Live diagnostics dump from the user's Miniserver shows `EFM` ("Energieflussmonitor") as a separate top-level control with aggregate states (`Ppwr` production, `Gpwr` grid, `Spwr` storage, `Pre`/`Pri` produced/consumed energy, `selfConsumption`, `actual0`–`actual7`). The screenshot in Loxone Config is the EFM block's view — it lists meters by association (Verbraucher / Erzeuger / Netz / Speicher), not by structural containment. Structurally, the meters live as either top-level `Meter` controls or `Meter` subControls of `PowerUnit`. Exposing `EFM` itself as a sensor cluster could come later but is out of scope for this fix; the per-meter data is the thing the user actually graphs.
+- Existing dump fixture (`v16.1.11.6_2026-03-15_AABBCCDDEEFF.json`) has 0 `Meter` subControls so the `_compute_expectations` count in `test_structure_dumps.py` is unaffected. Future dumps containing `PowerUnit` will need their `_expected.json` regenerated; the dump-collection script already auto-counts top-level controls per platform, and we accept that subcontrol-derived entities aren't counted there — same as how light subcontrols are excluded from the dump platform counts.
+
+### Testplan
+
+- `python -m pytest tests/components/loxone/test_helpers.py tests/components/loxone/test_sensor.py tests/components/loxone/test_known_types_sync.py -v` → 98 passed.
+- `python -m pytest tests/ -q` → 493 passed in ~51s (was 482 → +11: 7 new `TestGetAllIncludingSubcontrols` + 4 new sub-meter sensor tests).
+- `ruff check custom_components/loxone tests/components/loxone` → clean (after one auto-fix to import order in `sensor.py`).
+- Manual: deploy via `scripts/deploy`, confirm `sensor.miniserver_extensions_actual` etc. appear in HA's Energy dashboard alongside the existing `sensor.fronius_energy_flow_*` entities.
+
+---
+
 ## 2026-05-25 — Merge upstream/master (0.9.12 → 0.9.14)
 
 First sync with `JoDehli/PyLoxone` master since we diverged: 9 upstream commits, including [`d32f8cf`](https://github.com/JoDehli/PyLoxone/commit/d32f8cfa5d6fb6f6657758757af1e1c33c000df3) (Jaroslav Martasek) — a keyword-aware sensor classification engine that fixes a real bug we still carried. Took the refactor and integrated it with our existing extensions in the same merge, so the resulting tree is the actual intended state instead of "merge then partial fix later".

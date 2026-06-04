@@ -367,7 +367,7 @@ The bridge runtime also clears pending cooldown commands when a Loxone-originate
 |----------------------|----------------------|---------------------------------|
 | InfoOnlyAnalog       | `sensor`             | `LoxoneSensor`                  |
 | InfoOnlyDigital      | `sensor`             | `LoxoneSensor`                  |
-| Meter                | `sensor`             | `LoxoneMeterSensor`             |
+| Meter (incl. PowerUnit subControls) | `sensor` | `LoxoneMeterSensor`           |
 | TextInput            | `sensor` / `text`    | `LoxoneTextSensor` / `LoxoneText` |
 | Switch               | `switch`             | `LoxoneSwitch`                  |
 | TimedSwitch          | `switch`             | `LoxoneTimedSwitch`             |

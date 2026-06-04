@@ -287,6 +287,8 @@ User/password must remain Latin-1 encodable where the flow enforces it, and host
 
 Sensor classification flows through `match_sensor_description(unit, name, category)`: unambiguous units (°C, kWh, ppm, …) match by unit alone; ambiguous units (%) require a keyword hit in the Loxone name or category to pick `humidity` vs `battery`. One description per concept — no per-variant duplication. See `README.md` → *Sensor Device Class Detection* for the user-facing table and override pattern.
 
+**Meter discovery walks subControls.** `Meter` controls are surfaced as their own device with up to four subsensors (`Actual`, `Total`, `Total Returned`, `Level`). Discovery uses `helpers.get_all_including_subcontrols("Meter")` so meters nested inside a parent control — most commonly the per-circuit meters of a `PowerUnit` (Loxone Energy Flow Monitor) — are exposed alongside top-level meters. Subcontrol meters inherit `room` and `cat` from their parent when not set on the subcontrol itself.
+
 ### binary_sensor.py
 
 | Entity Class          | Loxone Type     | HA Device Class |

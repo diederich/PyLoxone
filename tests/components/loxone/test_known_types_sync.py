@@ -24,11 +24,16 @@ SKIP_FILES = {
 }
 
 
-def _extract_get_all_types() -> dict[str, set[str]]:
-    """Scan platform .py files for get_all(loxconfig, ...) calls.
+_DISCOVERY_FUNCS = {"get_all", "get_all_including_subcontrols"}
 
-    Returns a dict mapping each control type string to the platform(s)
-    that handle it (derived from the filename).
+
+def _extract_get_all_types() -> dict[str, set[str]]:
+    """Scan platform .py files for control-discovery helper calls.
+
+    Recognises ``get_all(loxconfig, ...)`` and the recursive variant
+    ``get_all_including_subcontrols(loxconfig, ...)``. Returns a dict
+    mapping each control type string to the platform(s) that handle
+    it (derived from the filename).
     """
     type_to_platforms: dict[str, set[str]] = {}
 
@@ -46,7 +51,7 @@ def _extract_get_all_types() -> dict[str, set[str]]:
             if not isinstance(node, ast.Call):
                 continue
             func = node.func
-            if not (isinstance(func, ast.Name) and func.id == "get_all"):
+            if not (isinstance(func, ast.Name) and func.id in _DISCOVERY_FUNCS):
                 continue
             if len(node.args) < 2:
                 continue

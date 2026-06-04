@@ -379,6 +379,56 @@ async def test_meter_matching_unit_no_repair(
     assert issue is None
 
 
+# -- Meter subcontrols of PowerUnit (Loxone Energy Flow Monitor) -------------
+
+SUBMETER_ACTUAL_UUID = "submtr00-0000-0000-0000000000000010"
+SUBMETER_TOTAL_UUID = "submtr00-0000-0000-0000000000000011"
+
+
+async def test_submeter_creates_subsensors(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """A Meter subControl of a PowerUnit should produce sensor entities."""
+    actual = hass.states.get("sensor.miniserver_extensions_actual")
+    total = hass.states.get("sensor.miniserver_extensions_total")
+    total_returned = hass.states.get("sensor.miniserver_extensions_total_returned")
+
+    assert actual is not None, "Sub-meter Actual missing"
+    assert total is not None, "Sub-meter Total missing"
+    assert total_returned is not None, "Sub-meter Total Returned missing"
+
+
+async def test_submeter_state_from_event(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """A submeter should react to state events on its own UUIDs."""
+    fire_loxone_event(hass, {SUBMETER_ACTUAL_UUID: 42.0})
+    fire_loxone_event(hass, {SUBMETER_TOTAL_UUID: 7.5})
+    await hass.async_block_till_done()
+
+    actual = hass.states.get("sensor.miniserver_extensions_actual")
+    total = hass.states.get("sensor.miniserver_extensions_total")
+    assert float(actual.state) == pytest.approx(42.0)
+    assert float(total.state) == pytest.approx(7.5)
+
+
+async def test_submeter_energy_dashboard_attrs(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Submeter Total subsensor should be ENERGY/TOTAL_INCREASING."""
+    state = hass.states.get("sensor.miniserver_extensions_total")
+    assert state.attributes.get("device_class") == SensorDeviceClass.ENERGY
+    assert state.attributes.get("state_class") == SensorStateClass.TOTAL_INCREASING
+    assert state.attributes.get("unit_of_measurement") == "kWh"
+
+
+async def test_submeter_has_own_device(hass: HomeAssistant, init_integration: MockConfigEntry) -> None:
+    """Each Meter subcontrol should be its own device, not part of the PowerUnit."""
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+
+    entry = ent_reg.async_get("sensor.miniserver_extensions_total")
+    assert entry is not None
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, "submtr00-0000-0000-0000000000000000") in device.identifiers
+    assert device.name == "Miniserver & Extensions"
+
+
 # -- Connection state diagnostic sensor (LoxoneConnectionStateSensor) ---------
 
 

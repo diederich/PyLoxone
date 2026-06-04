@@ -25,6 +25,25 @@ No open high-priority improvements.
 
 Only ColorPickerV2 subcontrols of LightControllerV2 are created. A standalone ColorPickerV2 control (not inside a LightControllerV2) will be silently ignored.
 
+### MED-003: `EFM` (Energieflussmonitor) aggregate sensors not exposed
+
+**File:** `sensor.py`
+
+The Loxone Energy Flow Monitor (`type: "EFM"`) is a top-level control that aggregates the per-circuit `Meter` controls into useful headline values:
+
+| State | Meaning |
+|---|---|
+| `Ppwr` | Production power (W) |
+| `Gpwr` | Grid power, signed (W) |
+| `Spwr` | Storage / battery power (W) |
+| `Pre` | Total produced energy (kWh) |
+| `Pri` | Total consumed energy (kWh) |
+| `selfConsumption` | Self-consumption ratio (0–1) |
+| `CO2` | CO₂ emissions (kg) |
+| `actual0…actual7` | Per-meter actual power (mirrors associated `Meter` controls) |
+
+After [the 2026-05-26 sub-meter discovery fix](WORKLOG.md), the per-meter data is exposed as individual `Meter` devices, but the EFM aggregate states are still unhandled. Surfacing them as a dedicated `LoxoneEnergyFlowMonitor` device with sensor entities for production / grid / storage / consumption / self-consumption ratio would give users the same headline numbers the Loxone app shows on the `Energieflussmonitor` tile, without needing to template them in HA. `actual0…actual7` are duplicates of the per-meter `actual` values and should be skipped.
+
 ---
 
 ## Low-Priority / Cosmetic

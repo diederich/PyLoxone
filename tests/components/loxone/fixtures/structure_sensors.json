@@ -74,6 +74,33 @@
         "total": "mtr10000-0000-0000-0000000000000011",
         "totalNeg": "mtr10000-0000-0000-0000000000000012"
       }
+    },
+    "pwr10000-0000-0000-0000000000000000": {
+      "name": "Power Supply & Backup",
+      "type": "PowerUnit",
+      "uuidAction": "pwr10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "",
+      "states": {
+        "outputPower": "pwr10000-0000-0000-0000000000000001"
+      },
+      "subControls": {
+        "submtr00-0000-0000-0000000000000000": {
+          "name": "Miniserver & Extensions",
+          "type": "Meter",
+          "uuidAction": "submtr00-0000-0000-0000000000000000",
+          "details": {
+            "type": "energy",
+            "actualFormat": "%.1f W",
+            "totalFormat": "%.1f kWh"
+          },
+          "states": {
+            "actual": "submtr00-0000-0000-0000000000000010",
+            "total": "submtr00-0000-0000-0000000000000011",
+            "totalNeg": "submtr00-0000-0000-0000000000000012"
+          }
+        }
+      }
     }
   },
   "softwareVersion": [14, 5, 12, 7]

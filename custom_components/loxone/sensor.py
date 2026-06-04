@@ -50,7 +50,7 @@ from homeassistant.util import dt as dt_util
 from . import LoxoneConfigEntry, LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN, THROTTLE_KEEP_ALIVE_TIME
 from .coordinator import LoxoneCoordinator
-from .helpers import add_room_and_cat_to_value_values, clean_unit, get_all
+from .helpers import add_room_and_cat_to_value_values, clean_unit, get_all, get_all_including_subcontrols
 from .miniserver import MiniServer
 
 NEW_SENSOR = "sensors"
@@ -368,7 +368,7 @@ async def async_setup_entry(
         sensor.update({"type": "analog", "coordinator": coordinator})
         entities.append(LoxoneSensor(**sensor))
 
-    for sensor in get_all(loxconfig, "Meter"):
+    for sensor in get_all_including_subcontrols(loxconfig, "Meter"):
         _LOGGER.info("Found Meter: %s", sensor)
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
         device_info = LoxoneMeterSensor.create_device_info_from_sensor(sensor)

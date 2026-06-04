@@ -39,4 +39,8 @@ KNOWN_SUBCONTROL_TYPES: dict[str, str] = {
     "Dimmer": "light",
     "EIBDimmer": "light",
     "ColorPickerV2": "light",
+    # Meter sub-controls of PowerUnit (Loxone Energy Flow Monitor) are
+    # discovered alongside top-level Meter controls — see
+    # custom_components.loxone.helpers.get_all_including_subcontrols.
+    "Meter": "sensor",
 }

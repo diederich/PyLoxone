@@ -125,3 +125,29 @@ def get_all(json_data, name):
     if isinstance(name, list):
         return [ctrls[c] for c in ctrls if ctrls[c]["type"] in name]
     return [ctrls[c] for c in ctrls if ctrls[c]["type"] == name]
+
+
+def get_all_including_subcontrols(json_data: dict, name: str | list[str]) -> list[dict]:
+    """Return all controls of the given type(s), including subControls.
+
+    Walks both the top-level ``controls`` map and the ``subControls`` of
+    each control. SubControls inherit ``room`` and ``cat`` from their
+    parent if not set on the subcontrol itself — Loxone subcontrols
+    typically omit these because they live inside a parent control.
+
+    Used for meter discovery so that ``Meter`` subControls of e.g. a
+    ``PowerUnit`` (Loxone Energy Flow Monitor) are surfaced as their own
+    sensor devices, not silently ignored.
+    """
+    types = {name} if isinstance(name, str) else set(name)
+    out: list[dict] = []
+    for ctrl in json_data.get("controls", {}).values():
+        if ctrl.get("type") in types:
+            out.append(ctrl)
+        for sub in (ctrl.get("subControls") or {}).values():
+            if sub.get("type") not in types:
+                continue
+            sub.setdefault("room", ctrl.get("room", ""))
+            sub.setdefault("cat", ctrl.get("cat", ""))
+            out.append(sub)
+    return out

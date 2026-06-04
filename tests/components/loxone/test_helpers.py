@@ -8,6 +8,7 @@ import pytest
 from custom_components.loxone.helpers import (
     add_room_and_cat_to_value_values,
     get_all,
+    get_all_including_subcontrols,
     get_cat_name_from_cat_uuid,
     get_miniserver_type,
     get_room_name_from_room_uuid,
@@ -196,6 +197,95 @@ class TestGetAll:
 
     def test_empty_controls(self):
         assert get_all({"controls": {}}, "Switch") == []
+
+
+# -- get_all_including_subcontrols -------------------------------------------
+
+NESTED_STRUCTURE = {
+    "controls": {
+        "top-meter": {
+            "type": "Meter",
+            "name": "TopMeter",
+            "uuidAction": "top-meter",
+            "room": "room-1",
+            "cat": "cat-1",
+            "states": {"actual": "top-meter-actual"},
+        },
+        "power-unit": {
+            "type": "PowerUnit",
+            "name": "PSU",
+            "uuidAction": "power-unit",
+            "room": "room-2",
+            "cat": "cat-2",
+            "states": {},
+            "subControls": {
+                "sub-meter-1": {
+                    "type": "Meter",
+                    "name": "SubMeter1",
+                    "uuidAction": "sub-meter-1",
+                    "states": {"actual": "sub-meter-1-actual"},
+                },
+                "sub-meter-2": {
+                    "type": "Meter",
+                    "name": "SubMeter2",
+                    "uuidAction": "sub-meter-2",
+                    "room": "room-3",
+                    "cat": "cat-3",
+                    "states": {"actual": "sub-meter-2-actual"},
+                },
+                "sub-tracker": {
+                    "type": "Tracker",
+                    "name": "Events",
+                    "states": {},
+                },
+            },
+        },
+        "switch-1": {
+            "type": "Switch",
+            "name": "S",
+            "uuidAction": "switch-1",
+            "states": {},
+        },
+    }
+}
+
+
+class TestGetAllIncludingSubcontrols:
+    def test_includes_top_level_and_subcontrol_meters(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter")
+        names = {c["name"] for c in result}
+        assert names == {"TopMeter", "SubMeter1", "SubMeter2"}
+
+    def test_subcontrol_inherits_room_and_cat_from_parent(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter")
+        sub1 = next(c for c in result if c["name"] == "SubMeter1")
+        # SubMeter1 has no room/cat → inherits from PowerUnit (room-2, cat-2)
+        assert sub1["room"] == "room-2"
+        assert sub1["cat"] == "cat-2"
+
+    def test_subcontrol_keeps_explicit_room_and_cat(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter")
+        sub2 = next(c for c in result if c["name"] == "SubMeter2")
+        # SubMeter2 has its own room/cat → not overwritten
+        assert sub2["room"] == "room-3"
+        assert sub2["cat"] == "cat-3"
+
+    def test_ignores_other_subcontrol_types(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter")
+        # Tracker subcontrol is filtered out
+        assert all(c["type"] == "Meter" for c in result)
+
+    def test_list_of_types(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, ["Meter", "Switch"])
+        types = [c["type"] for c in result]
+        assert types.count("Meter") == 3
+        assert types.count("Switch") == 1
+
+    def test_empty_controls(self):
+        assert get_all_including_subcontrols({"controls": {}}, "Meter") == []
+
+    def test_no_match(self):
+        assert get_all_including_subcontrols(NESTED_STRUCTURE, "Gate") == []
 
 
 # -- Room / category lookup ---------------------------------------------------
