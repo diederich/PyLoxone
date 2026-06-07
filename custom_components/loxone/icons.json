@@ -13,6 +13,15 @@
       "meter_storage": {
         "default": "mdi:battery-outline"
       },
+      "meter_storage_discharge": {
+        "default": "mdi:battery-arrow-up-outline"
+      },
+      "meter_storage_charge": {
+        "default": "mdi:battery-arrow-down-outline"
+      },
+      "meter_storage_level": {
+        "default": "mdi:battery"
+      },
       "project_name": {
         "default": "mdi:file-cog-outline"
       },

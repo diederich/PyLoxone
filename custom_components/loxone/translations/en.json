@@ -13,6 +13,15 @@
       "meter_storage": {
         "name": "Level"
       },
+      "meter_storage_discharge": {
+        "name": "Discharge energy"
+      },
+      "meter_storage_charge": {
+        "name": "Charge energy"
+      },
+      "meter_storage_level": {
+        "name": "Battery level"
+      },
       "powerunit_output_power": {
         "name": "Output power"
       },
@@ -228,6 +237,10 @@
     "meter_unit_mismatch": {
       "title": "Meter unit mismatch: {name}",
       "description": "The **{name}** meter is configured as type **{meter_type}** in Loxone Config, but its **{state_key}** format string resolved to device class **{detected_class}**. This may cause incorrect readings in the Energy dashboard. Check the format string in Loxone Config to ensure it matches the meter type."
+    },
+    "meter_storage_legacy_labels": {
+      "title": "Battery meter labels updated: {name}",
+      "description": "**{name}** is a Loxone storage (battery) meter. The two energy counters on this meter were previously labeled **Total** and **Total Returned**, which was misleading for batteries.\n\nThe correct semantics are:\n\n- `{discharge_entity}` = **Discharge energy** (Loxone `total` / Mrd) → use as **Energy from battery** in the Home Assistant Energy Dashboard.\n- `{charge_entity}` = **Charge energy** (Loxone `totalNeg` / Mrc) → use as **Energy to battery** in the Home Assistant Energy Dashboard.\n\nIf you previously configured the Energy Dashboard for this battery, please verify that the assignment matches the list above. The original entity IDs were kept so your statistics history stays intact — only the display name changed.\n\nDismiss this notification once you've verified the configuration."
     }
   },
   "exceptions": {

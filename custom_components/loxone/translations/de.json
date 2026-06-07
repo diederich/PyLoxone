@@ -13,6 +13,15 @@
       "meter_storage": {
         "name": "Speicherstand"
       },
+      "meter_storage_discharge": {
+        "name": "Entladeenergie"
+      },
+      "meter_storage_charge": {
+        "name": "Ladeenergie"
+      },
+      "meter_storage_level": {
+        "name": "Akkustand"
+      },
       "powerunit_output_power": {
         "name": "Ausgangsleistung"
       },
@@ -228,6 +237,10 @@
     "meter_unit_mismatch": {
       "title": "Zähler-Einheit stimmt nicht überein: {name}",
       "description": "Der Zähler **{name}** ist in Loxone Config als Typ **{meter_type}** konfiguriert, aber der Formatstring für **{state_key}** ergibt die Geräteklasse **{detected_class}**. Dies kann zu falschen Werten im Energie-Dashboard führen. Prüfe den Formatstring in Loxone Config."
+    },
+    "meter_storage_legacy_labels": {
+      "title": "Batterie-Zähler umbenannt: {name}",
+      "description": "**{name}** ist ein Loxone-Speicherzähler (Batterie). Die beiden Energiezähler hießen bisher **Total** und **Total Returned**, was bei Batterien irreführend war.\n\nKorrekte Zuordnung:\n\n- `{discharge_entity}` = **Entladeenergie** (Loxone `total` / Mrd) → im Home Assistant Energie-Dashboard als **Energie aus der Batterie** eintragen.\n- `{charge_entity}` = **Ladeenergie** (Loxone `totalNeg` / Mrc) → im Energie-Dashboard als **Energie in die Batterie** eintragen.\n\nFalls du das Energie-Dashboard für diese Batterie bereits konfiguriert hast, prüfe bitte, ob die Zuordnung passt. Die ursprünglichen Entity-IDs bleiben erhalten, damit deine Statistik-Historie nicht verloren geht — nur der Anzeigename wurde geändert.\n\nNach erfolgter Prüfung kannst du diesen Hinweis schließen."
     }
   },
   "exceptions": {

@@ -4,6 +4,82 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-06-07 — Battery meter labels: Discharge / Charge instead of Total / Total Returned
+
+Real-world bug uncovered by Stephan: his BYD HVB battery's `sensor.battery_total` and `sensor.battery_total_returned` had been wired to the wrong sources in the Home Assistant Energy Dashboard, leading to ~89% "Untracked Consumption". Root cause: Loxone's `total` / `totalNeg` semantic *flips* between meter types, and our meter sub-sensor mapping was meter-type-blind.
+
+### Background
+
+For a normal energy meter (consumer / bidirectional grid):
+
+- `total` = imported (Bezug aus dem Netz)
+- `totalNeg` = exported (Einspeisung)
+- "Total" / "Total Returned" labels read naturally for an English user.
+
+For a storage meter (`details.type == "storage"`, e.g. BYD HVB):
+
+- `actual` is signed power: `+W = discharge`, `-W = charge` (matches HA / power-flow-card-plus convention).
+- `total` accumulates **discharge** (Loxone variable `Mrd`).
+- `totalNeg` accumulates **charge** (Loxone variable `Mrc`).
+- `storage` is the battery state-of-charge in %.
+
+An English reader looking at `sensor.battery_total_returned` parses "returned" as "given back to home" and wires it as `stat_energy_from` in the Energy Dashboard. That is the exact opposite of what `totalNeg` is for a battery (charge, energy going INTO the battery). The result is a fully reversed battery storage row in the dashboard, leading to nonsense energy balances.
+
+Live evidence from Stephan's system at the time of investigation:
+
+```
+sensor.battery_total           = 13.41 kWh   (Mrd / discharge)
+sensor.battery_total_returned  = 20.73 kWh   (Mrc / charge)
+sensor.battery_actual          =  0.007 kW   (positive: ~7 W standby discharge at 99.3% SoC)
+sensor.battery_level           = 99.3 %      (device_class was empty!)
+```
+
+`Mrc > Mrd` is consistent with round-trip losses (more energy goes in than comes out over time), confirming the empirical interpretation.
+
+### Decisions
+
+- **Meter-type-aware sub-sensor layout.** Replace the single hard-coded tuple list in `async_setup_entry` with a small `_meter_state_layout(meter_type)` helper that returns `(_METER_LAYOUT_DEFAULT or _METER_LAYOUT_STORAGE)`. Only storage diverges today; future meter types (`water` / `gas` rename, custom Loxone meter variants, ...) can land as additional branches without touching the call site.
+- **Storage labels: "Discharge energy" / "Charge energy" / "Battery level".** Picked over "Energy out / Energy in" because the discharge/charge terminology matches the rest of the HA battery ecosystem (Tesla, Sonnen, BYD HVB native integration). "Battery level" matches what HA Lovelace badges already say for the BATTERY device class.
+- **`actual` stays "Actual".** Loxone's sign convention (positive = discharge) already matches HA's common convention for battery power sensors. Power-flow cards just work; the Energy Dashboard doesn't use `actual` directly (only the total / totalNeg counters). No label problem; rename would just be cosmetic. Decision and rationale walked through in-thread before implementation.
+- **Add `"storage"` to `_METER_CLASSIFICATION` and `_METER_EXPECTED_CLASSES`.** Bonus side-effect: `sensor.battery_level` finally gets `device_class=battery` even when its Loxone-side name isn't one of the `battery / batt / akku` keywords used by `match_sensor_description`. The fallback classification also makes the format/type mismatch repair issue cover storage meters from now on.
+- **One-shot Repair issue for legacy installs, fresh installs see nothing.** Asked the user explicitly between `warn_only_legacy`, `warn_always`, `fixable_rename`. `fixable_rename` is dangerous (auto-renaming entity IDs breaks user automations / Lovelace cards / template sensors silently). `warn_always` would spam fresh installs unnecessarily. `warn_only_legacy` triggers only when we can prove via the entity registry that the user installed before the relabel (entity for `state.total` UUID exists with `_total` slug, ditto for `totalNeg` with `_total_returned`). One issue per meter, dismissable, deduplicated by meter UUID across restarts.
+- **Don't auto-rename entity IDs.** HA freezes the entity_id slug at first registration. Changing `translation_key` only updates the friendly name. Entity IDs stay (e.g. `sensor.battery_total` remains, now reading "BYD HVB Discharge energy"). This preserves long-term statistics history (recorder keys by unique_id, which is UUID-based here) and doesn't break any existing automation / Lovelace card / template sensor referencing the old entity_id. The Repair issue tells the user the IDs themselves are unchanged.
+- **Single commit for clean upstream PR.** Upstream `JoDehli/PyLoxone` uses `_attr_name = "Total Neg"` (no translation keys); the equivalent upstream patch is a smaller cherry-pick of the layout helper + classification + repair issue with English labels inlined. Doing a separate upstream PR after this lands and we've verified on the live system.
+
+### Changes
+
+- `custom_components/loxone/sensor.py`:
+  - new `_METER_LAYOUT_DEFAULT` and `_METER_LAYOUT_STORAGE` constants;
+  - new `_meter_state_layout(meter_type)` returning the per-type sub-sensor table;
+  - meter loop in `async_setup_entry` switched to `_meter_state_layout(meter_type)`;
+  - new `"storage"` entry in `_METER_CLASSIFICATION` (POWER/W, ENERGY/kWh × 2, BATTERY/%);
+  - `_METER_EXPECTED_CLASSES["storage"] = {POWER, ENERGY, BATTERY}` so the unit-mismatch repair check applies to storage too;
+  - new `_LEGACY_STORAGE_TOTAL_SUFFIXES` + `_maybe_create_storage_legacy_repair(hass, meter=...)` helper;
+  - meter loop invokes the helper once per storage meter, before sub-sensors are constructed;
+  - import of `entity_registry as er` added.
+- `custom_components/loxone/translations/en.json` + `de.json`:
+  - new entity-name keys `meter_storage_discharge`, `meter_storage_charge`, `meter_storage_level`;
+  - new issue key `meter_storage_legacy_labels` with full description spelling out the entity-IDs-and-mapping advice.
+- `custom_components/loxone/icons.json`: new entries for the three storage sub-sensor keys (`mdi:battery-arrow-up-outline`, `mdi:battery-arrow-down-outline`, `mdi:battery`).
+- `tests/components/loxone/fixtures/structure_meter_storage.json` (new): single BYD-HVB-shaped storage meter with `details.type="storage"` and the four states (`actual`/`total`/`totalNeg`/`storage`) wired to plausible format strings.
+- `tests/components/loxone/test_meter_storage.py` (new, 10 tests):
+  - `TestMeterStateLayout` (3 pure-unit tests) — storage layout uses the new translation keys, energy layout unchanged, unknown type falls back to default.
+  - 7 integration tests: storage sub-sensors registered with correct translation_keys; discharge/charge sub-sensors carry ENERGY + TOTAL_INCREASING + kWh; storage sub-sensor carries BATTERY + MEASUREMENT + %; `actual` stays POWER + W; no repair issue on fresh install; repair issue created with correct placeholders when legacy `..._total` / `..._total_returned` entities pre-exist in the registry.
+- `docs/HA_INTEGRATION.md`: new paragraph in the `sensor.py` section describing `_meter_state_layout`, the storage-classification entry, and the legacy-install Repair flow.
+- `docs/WORKLOG.md`: this entry.
+
+### Testplan
+
+- `python -m pytest tests/ -q --tb=short` -> 517 passed in ~55s (was 507 -> +10).
+- `python -m ruff check custom_components/loxone tests/components/loxone` -> All checks passed.
+- Live: deploy via `scripts/deploy`, verify on the live HA via `/api/states` and the Repairs panel:
+  - `sensor.battery_total` keeps its entity_id, friendly name now "BYD HVB Discharge energy", unit still `kWh`, `device_class=energy`, `state_class=total_increasing` (statistics history intact).
+  - `sensor.battery_total_returned` symmetric -> "BYD HVB Charge energy".
+  - `sensor.battery_level` now reports `device_class=battery`, unit `%`.
+  - One Repair issue `meter_storage_legacy_labels_<bydhvb_uuid>` shows up in Settings -> System -> Repairs with the actual entity IDs in the description.
+
+---
+
 ## 2026-06-04 — Group PowerUnit sub-meters via `via_device` and expose PowerUnit headline states
 
 After [the 2026-05-26 fix](#2026-05-26--discover-meter-subcontrols-of-powerunit-energy-flow-monitor) made the 8 sub-meters of `Power Supply & Backup` discoverable in HA, the user pointed out that they showed up as 8 independent meter devices instead of being visually grouped under the parent PowerUnit. The `PowerUnit`'s own states (`outputPower`, `batteryStateOfCharge`, `supplyTimeRemaining`, `fuse`, `CP1..CP7`, `deviceInfo`) were also still unused. This session does the "premium Loxone/HA" treatment of the whole block.

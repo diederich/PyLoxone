@@ -1,0 +1,50 @@
+{
+  "msInfo": {
+    "serialNr": "504F94A0FEA2",
+    "msName": "Test Miniserver",
+    "projectName": "Test Project",
+    "swVersion": "14.5.12.7",
+    "localUrl": "192.168.1.100",
+    "tempUnit": 0,
+    "miniserverType": 0,
+    "location": "Kollerschlag",
+    "latitude": 48.6082,
+    "longitude": 13.8384,
+    "altitude": 94,
+    "currentUser": {
+      "name": "admin",
+      "uuid": "test-user-uuid",
+      "isAdmin": true,
+      "changePassword": false,
+      "userRights": 4294967295
+    }
+  },
+  "rooms": {
+    "room-1": { "name": "Utility", "uuid": "room-1" }
+  },
+  "cats": {
+    "cat-1": { "name": "Energy", "uuid": "cat-1" }
+  },
+  "controls": {
+    "bat10000-0000-0000-0000000000000000": {
+      "name": "BYD HVB",
+      "type": "Meter",
+      "uuidAction": "bat10000-0000-0000-0000000000000000",
+      "room": "room-1",
+      "cat": "cat-1",
+      "details": {
+        "type": "storage",
+        "actualFormat": "%.1f W",
+        "totalFormat": "%.3f kWh",
+        "storageFormat": "%.1f %%"
+      },
+      "states": {
+        "actual": "bat10000-0000-0000-0000000000000010",
+        "total": "bat10000-0000-0000-0000000000000011",
+        "totalNeg": "bat10000-0000-0000-0000000000000012",
+        "storage": "bat10000-0000-0000-0000000000000013"
+      }
+    }
+  },
+  "softwareVersion": [14, 5, 12, 7]
+}

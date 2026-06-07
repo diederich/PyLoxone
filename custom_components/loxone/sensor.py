@@ -40,7 +40,7 @@ from homeassistant.const import (
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import device_registry as dr, entity_registry as er
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -198,6 +198,14 @@ def match_sensor_description(
 # Meter type → (state_key → (device_class, state_class, fallback_unit))
 # Used when the format string doesn't match a known SENSOR_FORMAT, so the
 # meter subsensor still gets the right classification for HA energy dashboard.
+#
+# Note on `storage` meters (Loxone Battery, e.g. BYD HVB):
+#   - `actual` is signed power: +W = discharging, -W = charging
+#   - `total` accumulates DISCHARGE energy (Loxone Mrd)
+#   - `totalNeg` accumulates CHARGE energy (Loxone Mrc)
+#   - `storage` is the battery state-of-charge in %
+# The labels exposed to HA (see `_meter_state_layout`) reflect this so users
+# don't swap them in the Energy Dashboard config.
 _METER_CLASSIFICATION: dict[str, dict[str, tuple[SensorDeviceClass, SensorStateClass, str]]] = {
     "energy": {
         "actual": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT),
@@ -215,6 +223,12 @@ _METER_CLASSIFICATION: dict[str, dict[str, tuple[SensorDeviceClass, SensorStateC
         "total": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
         "totalNeg": (SensorDeviceClass.GAS, SensorStateClass.TOTAL_INCREASING, UnitOfVolume.CUBIC_METERS),
     },
+    "storage": {
+        "actual": (SensorDeviceClass.POWER, SensorStateClass.MEASUREMENT, UnitOfPower.WATT),
+        "total": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
+        "totalNeg": (SensorDeviceClass.ENERGY, SensorStateClass.TOTAL_INCREASING, UnitOfEnergy.KILO_WATT_HOUR),
+        "storage": (SensorDeviceClass.BATTERY, SensorStateClass.MEASUREMENT, PERCENTAGE),
+    },
 }
 
 # Expected device classes per meter type — used to detect format/type mismatches.
@@ -222,7 +236,89 @@ _METER_EXPECTED_CLASSES: dict[str, set[SensorDeviceClass]] = {
     "energy": {SensorDeviceClass.ENERGY, SensorDeviceClass.POWER},
     "water": {SensorDeviceClass.WATER, SensorDeviceClass.VOLUME_FLOW_RATE},
     "gas": {SensorDeviceClass.GAS},
+    "storage": {SensorDeviceClass.ENERGY, SensorDeviceClass.POWER, SensorDeviceClass.BATTERY},
 }
+
+
+# Meter type → sub-sensor layout. Each tuple is
+# ``(state_key, name_suffix, translation_key, format_key)``. The name suffix is
+# the English fallback used when the translation_key resolves to nothing.
+#
+# Storage meters get discharge/charge labels because Loxone's convention
+# (``total`` = discharge / Mrd, ``totalNeg`` = charge / Mrc) is the opposite of
+# how an English reader interprets "Total" / "Total Returned"; mislabeling
+# silently flips the HA Energy Dashboard battery storage source.
+_METER_LAYOUT_DEFAULT: tuple[tuple[str, str, str, str], ...] = (
+    ("actual", "Actual", "meter_actual", "actualFormat"),
+    ("total", "Total", "meter_total", "totalFormat"),
+    ("totalNeg", "Total Returned", "meter_total_returned", "totalFormat"),
+    ("storage", "Level", "meter_storage", "storageFormat"),
+)
+
+_METER_LAYOUT_STORAGE: tuple[tuple[str, str, str, str], ...] = (
+    ("actual", "Actual", "meter_actual", "actualFormat"),
+    ("total", "Discharge energy", "meter_storage_discharge", "totalFormat"),
+    ("totalNeg", "Charge energy", "meter_storage_charge", "totalFormat"),
+    ("storage", "Battery level", "meter_storage_level", "storageFormat"),
+)
+
+
+def _meter_state_layout(meter_type: str) -> tuple[tuple[str, str, str, str], ...]:
+    """Return the sub-sensor layout for a given Loxone meter type."""
+    if meter_type == "storage":
+        return _METER_LAYOUT_STORAGE
+    return _METER_LAYOUT_DEFAULT
+
+
+# Legacy entity-id suffixes generated from the pre-fix labels "Total" /
+# "Total Returned". Used to detect users who installed the integration BEFORE
+# storage meters got discharge/charge labels, so we can prompt them to verify
+# their HA Energy Dashboard mapping.
+_LEGACY_STORAGE_TOTAL_SUFFIXES: tuple[str, ...] = ("_total", "_total_returned")
+
+
+def _maybe_create_storage_legacy_repair(
+    hass: HomeAssistant,
+    *,
+    meter: dict,
+) -> None:
+    """Create a one-shot repair issue if this storage meter has legacy entity slugs.
+
+    Only fires for users who installed the integration before the storage
+    relabel: their `total` / `totalNeg` entities are still registered with the
+    old `..._total` / `..._total_returned` slugs (HA never auto-renames slugs).
+    Fresh installs land directly on the new `..._discharge_energy` /
+    `..._charge_energy` slugs and never see this warning.
+    """
+    states = meter.get("states") or {}
+    total_uuid = states.get("total")
+    total_neg_uuid = states.get("totalNeg")
+    if not total_uuid and not total_neg_uuid:
+        return
+
+    ent_reg = er.async_get(hass)
+    discharge_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, total_uuid) if total_uuid else None
+    charge_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, total_neg_uuid) if total_neg_uuid else None
+
+    def _is_legacy(entity_id: str | None) -> bool:
+        return bool(entity_id) and entity_id.endswith(_LEGACY_STORAGE_TOTAL_SUFFIXES)
+
+    if not (_is_legacy(discharge_entity) or _is_legacy(charge_entity)):
+        return
+
+    ir.async_create_issue(
+        hass,
+        DOMAIN,
+        f"meter_storage_legacy_labels_{meter['uuidAction']}",
+        is_fixable=False,
+        severity=ir.IssueSeverity.WARNING,
+        translation_key="meter_storage_legacy_labels",
+        translation_placeholders={
+            "name": meter.get("name", ""),
+            "discharge_entity": discharge_entity or "-",
+            "charge_entity": charge_entity or "-",
+        },
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -387,12 +483,10 @@ async def async_setup_entry(
         device_info = LoxoneMeterSensor.create_device_info_from_sensor(sensor, parent=parent)
         meter_type = sensor.get("details", {}).get("type", "").lower()
 
-        for state_key, suffix, translation_key, format_key in [
-            ("actual", "Actual", "meter_actual", "actualFormat"),
-            ("total", "Total", "meter_total", "totalFormat"),
-            ("totalNeg", "Total Returned", "meter_total_returned", "totalFormat"),
-            ("storage", "Level", "meter_storage", "storageFormat"),
-        ]:
+        if meter_type == "storage":
+            _maybe_create_storage_legacy_repair(hass, meter=sensor)
+
+        for state_key, suffix, translation_key, format_key in _meter_state_layout(meter_type):
             if state_key in sensor["states"]:
                 subsensor = {
                     "device_info": device_info,
