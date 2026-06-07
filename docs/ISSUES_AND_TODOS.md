@@ -42,7 +42,7 @@ The Loxone Energy Flow Monitor (`type: "EFM"`) is a top-level control that aggre
 | `CO2` | CO₂ emissions (kg) |
 | `actual0…actual7` | Per-meter actual power (mirrors associated `Meter` controls) |
 
-After [the 2026-05-26 sub-meter discovery fix](WORKLOG.md), the per-meter data is exposed as individual `Meter` devices, but the EFM aggregate states are still unhandled. Surfacing them as a dedicated `LoxoneEnergyFlowMonitor` device with sensor entities for production / grid / storage / consumption / self-consumption ratio would give users the same headline numbers the Loxone app shows on the `Energieflussmonitor` tile, without needing to template them in HA. `actual0…actual7` are duplicates of the per-meter `actual` values and should be skipped.
+After [the 2026-05-26 sub-meter discovery fix](WORKLOG.md) and the 2026-06-04 PowerUnit grouping work, per-meter data and the parent `PowerUnit`'s own states (output power, battery SoC, time remaining, fuse, CP1..CP7) are exposed as a properly nested HA device hierarchy. The `EFM` aggregate states are still unhandled. Surfacing them as a dedicated `LoxoneEnergyFlowMonitor` device with sensor entities for production / grid / storage / consumption / self-consumption ratio would give users the same headline numbers the Loxone app shows on the `Energieflussmonitor` tile, without needing to template them in HA. `actual0…actual7` are duplicates of the per-meter `actual` values and should be skipped. EFM should likely be linked to the parent PowerUnit via `via_device` when one is present.
 
 ---
 

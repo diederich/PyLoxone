@@ -127,7 +127,12 @@ def get_all(json_data, name):
     return [ctrls[c] for c in ctrls if ctrls[c]["type"] == name]
 
 
-def get_all_including_subcontrols(json_data: dict, name: str | list[str]) -> list[dict]:
+def get_all_including_subcontrols(
+    json_data: dict,
+    name: str | list[str],
+    *,
+    with_parent: bool = False,
+) -> list[dict] | list[tuple[dict, dict | None]]:
     """Return all controls of the given type(s), including subControls.
 
     Walks both the top-level ``controls`` map and the ``subControls`` of
@@ -138,16 +143,24 @@ def get_all_including_subcontrols(json_data: dict, name: str | list[str]) -> lis
     Used for meter discovery so that ``Meter`` subControls of e.g. a
     ``PowerUnit`` (Loxone Energy Flow Monitor) are surfaced as their own
     sensor devices, not silently ignored.
+
+    When ``with_parent`` is True, returns a list of ``(control, parent_or_None)``
+    tuples so callers (e.g. the meter loop in ``sensor.py``) can link a
+    subcontrol device back to its parent via HA's ``via_device``.
+    Top-level controls report ``parent=None``.
     """
     types = {name} if isinstance(name, str) else set(name)
-    out: list[dict] = []
+    out_flat: list[dict] = []
+    out_pairs: list[tuple[dict, dict | None]] = []
     for ctrl in json_data.get("controls", {}).values():
         if ctrl.get("type") in types:
-            out.append(ctrl)
+            out_flat.append(ctrl)
+            out_pairs.append((ctrl, None))
         for sub in (ctrl.get("subControls") or {}).values():
             if sub.get("type") not in types:
                 continue
             sub.setdefault("room", ctrl.get("room", ""))
             sub.setdefault("cat", ctrl.get("cat", ""))
-            out.append(sub)
-    return out
+            out_flat.append(sub)
+            out_pairs.append((sub, ctrl))
+    return out_pairs if with_parent else out_flat

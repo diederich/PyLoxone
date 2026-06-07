@@ -32,6 +32,11 @@ KNOWN_CONTROL_TYPES: dict[str, str] = {
     "AudioZoneV2": "media_player",
     "Slider": "number",
     "Pushbutton": "button",
+    # PowerUnit (Loxone Power Supply & Backup) — produces sensor entities
+    # (output power, battery SoC, time remaining, deviceInfo) and binary_sensor
+    # entities (fuse, CP1..CP7). Its Meter subControls are handled separately
+    # via the Meter subcontrol entry below.
+    "PowerUnit": "sensor",
 }
 
 KNOWN_SUBCONTROL_TYPES: dict[str, str] = {

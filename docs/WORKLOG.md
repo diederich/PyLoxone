@@ -4,6 +4,81 @@ Session-by-session record of work done on PyLoxone. Newest first.
 
 ---
 
+## 2026-06-04 — Group PowerUnit sub-meters via `via_device` and expose PowerUnit headline states
+
+After [the 2026-05-26 fix](#2026-05-26--discover-meter-subcontrols-of-powerunit-energy-flow-monitor) made the 8 sub-meters of `Power Supply & Backup` discoverable in HA, the user pointed out that they showed up as 8 independent meter devices instead of being visually grouped under the parent PowerUnit. The `PowerUnit`'s own states (`outputPower`, `batteryStateOfCharge`, `supplyTimeRemaining`, `fuse`, `CP1..CP7`, `deviceInfo`) were also still unused. This session does the "premium Loxone/HA" treatment of the whole block.
+
+### Decisions
+
+- **`via_device` over single-device collapse.** Two options for grouping: (a) each sub-meter stays its own device but is linked to the `PowerUnit` via HA's `via_device` (the device entry the integration creates for the PowerUnit itself), or (b) all sub-meter sensors collapse onto one giant device card. (a) wins because HA's nested device hierarchy is the canonical pattern (e.g. Shelly Pro 3EM phase devices, Sonnen battery sub-modules) and keeps each sub-meter's existing 2–3 sensor card clean. The user explicitly chose this, and on reflection the alternative would have meant ~24 sensors on a single device, which is unreadable.
+- **Headline sensors vs everything-equally.** The pushback in-thread: surface `outputPower`, `batteryStateOfCharge`, `supplyTimeRemaining` as enabled headline sensors; `deviceInfo` as DIAGNOSTIC + disabled-by-default (text dump, debug only); `fuse` as DIAGNOSTIC + enabled (a blown main fuse is actionable); `CP1..CP7` as DIAGNOSTIC + disabled-by-default (cryptic per-circuit labels with no Loxone-side names — exposing them on by default would be noise for the 95% of users who never care). Users who *do* care can enable them per-need.
+- **Inverted `problem` semantics for fuse + CP\*.** Loxone reports `1=OK / 0=tripped` for protection states. We map this to `BinarySensorDeviceClass.PROBLEM` with `on_when=0.0` so the entity is *on* when there's a problem — matching the HA convention and letting users plug straight into alerts.
+- **`DURATION` + seconds for `supplyTimeRemaining`.** Loxone reports raw seconds; HA's `SensorDeviceClass.DURATION` auto-formats to a human-readable string (`1:23:45`) in the UI, so no need to convert to minutes/hours on our side.
+- **Pre-register the PowerUnit parent device before adding entities.** Critical bug found via the via_device test: HA's device registry silently drops `via_device` if the parent device isn't yet in the registry at entity-registration time. Fix: at the top of `sensor.async_setup_entry`, walk all `PowerUnit` controls and call `dr.async_get_or_create(**create_power_unit_device_info(power_unit))` before iterating meters. The PowerUnit sensor entities later attach to the same device entry via shared identifiers.
+- **Single shared `create_power_unit_device_info(power_unit)` helper.** Both `sensor.py` and `binary_sensor.py` need to register child entities on the same parent device. Sharing the constructor (rather than duplicating the `DeviceInfo` literal) guarantees identical identifiers / name / model and means changes to the parent device representation happen in one place.
+- **`get_all_including_subcontrols(..., with_parent=True)` over a side-channel.** To know whether a discovered meter is a subcontrol (and of what), the helper now optionally returns `(control, parent_or_None)` tuples. Default behaviour is unchanged (flat `list[dict]`) so existing callers stay on the simple signature. Alternative considered: annotate the subcontrol dict with a hidden key like `_parent_uuid` via `setdefault` — rejected as it pollutes the structure dict in a way the rest of the integration can't see.
+- **`PowerUnit` mapped to `sensor` in `KNOWN_CONTROL_TYPES`, even though it also uses `binary_sensor`.** The known-types sync test's `test_platform_mapping_correct` only requires the declared platform to be *among* the platforms that use the type; using `sensor` matches one of two and the binary_sensor coverage is implicit.
+- **EFM (`Energieflussmonitor`) aggregates left for a follow-up** — out of scope for this PR. The new docs and `ISSUES_AND_TODOS.md` MED-003 entry note that an EFM device should likely also be linked to the parent PowerUnit via `via_device` when one is present; design that with the EFM headline sensors in a separate change.
+
+### Changes
+
+#### Helper
+
+- `custom_components/loxone/helpers.py` — `get_all_including_subcontrols(..., with_parent: bool = False)` now returns `list[tuple[control, parent_or_None]]` when `with_parent=True`; default behaviour unchanged.
+
+#### Sensor platform
+
+- `custom_components/loxone/sensor.py` —
+  - new `PowerUnitSensorDescription` dataclass and `POWER_UNIT_SENSOR_DESCRIPTIONS` (4 entries: `outputPower`, `batteryStateOfCharge`, `supplyTimeRemaining`, `deviceInfo`);
+  - new `create_power_unit_device_info(power_unit)` shared with binary_sensor;
+  - new `LoxonePowerUnitSensor` entity (subscribes per-UUID, reports native value, attaches to PowerUnit device via `_attr_device_info`);
+  - `async_setup_entry` pre-registers each PowerUnit device via `dr.async_get_or_create` before discovering meters, then iterates `get_all(loxconfig, "PowerUnit")` to add headline sensors;
+  - `LoxoneMeterSensor.create_device_info_from_sensor(sensor, parent=None)` adds `via_device=(DOMAIN, parent["uuidAction"])` when a parent is provided;
+  - meter loop switched to `get_all_including_subcontrols(..., with_parent=True)` and passes parent through;
+  - imports: `UnitOfTime`, `device_registry as dr`.
+
+#### Binary sensor platform
+
+- `custom_components/loxone/binary_sensor.py` —
+  - imports `create_power_unit_device_info` from `sensor`;
+  - new `PowerUnitBinarySensorDescription` dataclass with `state_key` + `on_when` (=0.0 by default) for inverted PROBLEM semantics;
+  - new `POWER_UNIT_BINARY_DESCRIPTIONS` (`fuse` enabled DIAGNOSTIC, `CP1..CP7` DIAGNOSTIC + disabled-by-default);
+  - new `LoxonePowerUnitBinarySensor` (per-UUID subscribe, sets `_attr_is_on = value == on_when`);
+  - `async_setup_entry` adds entities for each matching PowerUnit state.
+
+#### Translations
+
+- `custom_components/loxone/translations/en.json` + `de.json` — new entity name keys: `powerunit_output_power`, `powerunit_battery_soc`, `powerunit_supply_time_remaining`, `powerunit_device_info`, and (under `binary_sensor`) `powerunit_fuse` + `powerunit_cp1..7`.
+
+#### Tests + fixtures
+
+- `tests/components/loxone/fixtures/structure_sensors.json` — extended the `PowerUnit` "Power Supply & Backup" with the full state map (`batteryStateOfCharge`, `supplyTimeRemaining`, `deviceInfo`, `fuse`, `CP1..CP7`) so the new tests have realistic UUIDs to fire events at.
+- `tests/components/loxone/test_helpers.py` — 2 new tests: `test_with_parent_returns_tuples` and `test_with_parent_false_unchanged` (backwards-compat).
+- `tests/components/loxone/test_sensor.py` — new `test_submeter_linked_to_powerunit_via_device`, `test_top_level_meter_has_no_via_device`, and 5 new tests covering each `LoxonePowerUnitSensor` (output power / battery SoC / time remaining / deviceInfo diagnostic+disabled / shared parent device).
+- `tests/components/loxone/test_powerunit_binary_sensor.py` — new test module (uses `structure_sensors.json`): 5 tests covering fuse creation+enabled, CP1..CP7 created but disabled-by-default, inverted PROBLEM semantics for fuse (`1`→off, `0`→on), CP1 event update via force-enable helper, and shared parent device.
+- `tests/components/loxone/known_types.py` — `PowerUnit` added under `KNOWN_CONTROL_TYPES` (mapped to `sensor`; `test_platform_mapping_correct` is satisfied because the declared platform need only be one of the platforms that uses the type).
+
+#### Docs
+
+- `docs/ARCHITECTURE.md` — added `PowerUnit` row to the supported-control-types table.
+- `docs/HA_INTEGRATION.md` — `sensor.py` and `binary_sensor.py` entity tables updated; new sub-sections describing the `via_device` link, the pre-registration trick, and tables of which PowerUnit states map to which entities + their default-enabled flags.
+- `docs/ISSUES_AND_TODOS.md` — MED-003 description tightened to reflect what's now done (per-meter discovery + PowerUnit-grouping) vs what remains (EFM aggregates).
+- `docs/WORKLOG.md` — this entry.
+
+### Investigation notes
+
+- Live diagnostics dump from the user's Miniserver showed two distinct UUID-prefix clusters in the 12 active meter devices: 8 meters under one `PowerUnit` (`2063c3dc-0101-9e60-…` parent, `2063c460-01ce..032a-…` children + one "Power Supply & Backup" meter that shares the parent's name, with `details.type = "unidirectional"`) and 4 top-level `Meter`s (BYD HVB battery, Grid bidirectional, PV, Wattpilot). The 4 top-level meters intentionally remain at the top of the device hierarchy with no `via_device` link.
+- The PowerUnit's full state map from the live structure file: `outputPower`, `CP1..CP7`, `fuse`, `batteryStateOfCharge`, `deviceInfo`, `supplyTimeRemaining`. There is no `details` block on the PowerUnit itself, so units are hardcoded per the Loxone Backup module convention (`outputPower=W`, `batteryStateOfCharge=%`, `supplyTimeRemaining=seconds`). Hardcoding is acceptable here because Loxone doesn't expose format strings for these states; if a future Loxone firmware changes the unit conventions we'll revisit.
+- The teardown error `"Unable to remove unknown job listener … loxone_discovered"` observed in some test runs is unrelated to this change — it's a pre-existing pytest teardown noise from the `EVENT_COMPONENT_LOADED` listener in `__init__.py`. Tests still pass and the test harness doesn't surface it as a failure.
+
+### Testplan
+
+- `python -m pytest tests/ -q --tb=short` → 507 passed in ~53s (was 493 → +14: 2 helper, 7 sensor, 5 PowerUnit binary sensor).
+- `python -m ruff check custom_components/loxone tests/components/loxone` → All checks passed.
+- Manual: deployed via `scripts/deploy`; need to verify on the live Miniserver that (a) the 8 `Meter` sub-devices of `Power Supply & Backup` now show "via_device" linking to the PowerUnit in the HA device page, (b) the PowerUnit device itself shows `Output power`, `Battery state of charge`, `Time remaining on battery`, and `Fuse` (with deviceInfo + CP1..CP7 hidden under "+1 disabled entities" until enabled).
+
+---
+
 ## 2026-05-26 — Discover Meter subControls of PowerUnit (Energy Flow Monitor)
 
 User reported their Loxone Energy Flow Monitor view in Loxone Config (`Energieflussmonitor`) lists 8 meters but only 1 of them — the standalone `Fronius Energy Flow` — shows up in HA. Diagnostics dump confirmed the 7 missing meters are `subControls` of a `PowerUnit` block (`Power Supply & Backup`), and that `sensor.py` only iterates top-level `Meter` controls via `get_all(loxconfig, "Meter")`.

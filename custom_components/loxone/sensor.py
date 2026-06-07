@@ -35,10 +35,12 @@ from homeassistant.const import (
     UnitOfPower,
     UnitOfSpeed,
     UnitOfTemperature,
+    UnitOfTime,
     UnitOfVolume,
     UnitOfVolumeFlowRate,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import device_registry as dr
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import DeviceInfo
@@ -368,10 +370,21 @@ async def async_setup_entry(
         sensor.update({"type": "analog", "coordinator": coordinator})
         entities.append(LoxoneSensor(**sensor))
 
-    for sensor in get_all_including_subcontrols(loxconfig, "Meter"):
-        _LOGGER.info("Found Meter: %s", sensor)
+    # Pre-register PowerUnit parent devices so that via_device links on Meter
+    # subcontrol entities (registered below) resolve immediately. Without this
+    # step HA silently drops via_device when the parent isn't yet in the device
+    # registry, and the visual nesting in the UI is lost.
+    device_registry = dr.async_get(hass)
+    for power_unit in get_all(loxconfig, "PowerUnit"):
+        device_registry.async_get_or_create(
+            config_entry_id=config_entry.entry_id,
+            **create_power_unit_device_info(power_unit),
+        )
+
+    for sensor, parent in get_all_including_subcontrols(loxconfig, "Meter", with_parent=True):
+        _LOGGER.info("Found Meter: %s (parent=%s)", sensor.get("name"), parent.get("name") if parent else None)
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
-        device_info = LoxoneMeterSensor.create_device_info_from_sensor(sensor)
+        device_info = LoxoneMeterSensor.create_device_info_from_sensor(sensor, parent=parent)
         meter_type = sensor.get("details", {}).get("type", "").lower()
 
         for state_key, suffix, translation_key, format_key in [
@@ -432,6 +445,22 @@ async def async_setup_entry(
                                 "detected_class": str(resolved_cls),
                             },
                         )
+
+    # Headline + diagnostic sensors for each PowerUnit (Energy Flow Monitor).
+    # The PowerUnit itself is not a Meter; its child Meter subControls have already
+    # been linked to it via via_device in the loop above. Here we surface its own
+    # states (output power, battery SoC, time on battery, deviceInfo).
+    for power_unit in get_all(loxconfig, "PowerUnit"):
+        states = power_unit.get("states") or {}
+        entities.extend(
+            LoxonePowerUnitSensor(
+                power_unit=power_unit,
+                description=desc,
+                coordinator=coordinator,
+            )
+            for desc in POWER_UNIT_SENSOR_DESCRIPTIONS
+            if desc.state_key in states
+        )
 
     if miniserver and miniserver.serial:
         entities.append(LoxoneConnectionStateSensor(serial=miniserver.serial, coordinator=coordinator))
@@ -660,19 +689,133 @@ class LoxoneMeterSensor(LoxoneSensor, SensorEntity):
                     self._attr_native_unit_of_measurement = fallback_unit
 
     @staticmethod
-    def create_device_info_from_sensor(sensor) -> DeviceInfo:
-        """Create device info from sensor."""
+    def create_device_info_from_sensor(sensor, parent: dict | None = None) -> DeviceInfo:
+        """Create device info from sensor.
+
+        When ``parent`` is provided (the meter is a subControl of e.g. a
+        ``PowerUnit``), link the sub-meter device to the parent device via
+        HA's ``via_device`` so they render as a nested device hierarchy.
+        """
         try:
             # For legacy Meter
             model = sensor["details"]["type"].capitalize() + " Meter"
         except (KeyError, TypeError):
             model = "Meter"
-        return DeviceInfo(
+        info = DeviceInfo(
             identifiers={(DOMAIN, sensor["uuidAction"])},
             name=sensor["name"],
             manufacturer="Loxone",
             model=model,
         )
+        if parent and parent.get("uuidAction"):
+            info["via_device"] = (DOMAIN, parent["uuidAction"])
+        return info
+
+
+@dataclass(frozen=True, kw_only=True)
+class PowerUnitSensorDescription(SensorEntityDescription):
+    """Describes a sensor entity that lives on a Loxone PowerUnit device.
+
+    ``state_key`` is the key under PowerUnit ``states`` whose UUID this
+    sensor subscribes to. ``value_fn`` (optional) maps the raw Loxone
+    value to the entity's native value; defaults to identity.
+    """
+
+    state_key: str
+    value_fn: Callable[[Any], Any] | None = None
+
+
+POWER_UNIT_SENSOR_DESCRIPTIONS: tuple[PowerUnitSensorDescription, ...] = (
+    PowerUnitSensorDescription(
+        key="output_power",
+        state_key="outputPower",
+        translation_key="powerunit_output_power",
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=UnitOfPower.WATT,
+        suggested_display_precision=1,
+    ),
+    PowerUnitSensorDescription(
+        key="battery_state_of_charge",
+        state_key="batteryStateOfCharge",
+        translation_key="powerunit_battery_soc",
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        native_unit_of_measurement=PERCENTAGE,
+        suggested_display_precision=0,
+    ),
+    PowerUnitSensorDescription(
+        key="supply_time_remaining",
+        state_key="supplyTimeRemaining",
+        translation_key="powerunit_supply_time_remaining",
+        device_class=SensorDeviceClass.DURATION,
+        # Loxone reports the value in seconds; HA's DURATION sensor
+        # auto-formats to human-readable in the UI.
+        native_unit_of_measurement=UnitOfTime.SECONDS,
+        suggested_display_precision=0,
+        icon="mdi:battery-clock",
+    ),
+    PowerUnitSensorDescription(
+        key="device_info",
+        state_key="deviceInfo",
+        translation_key="powerunit_device_info",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        entity_registry_enabled_default=False,
+        icon="mdi:information-outline",
+    ),
+)
+
+
+def create_power_unit_device_info(power_unit: dict) -> DeviceInfo:
+    """Build the DeviceInfo for a Loxone PowerUnit parent device.
+
+    Shared by both the sensor and binary_sensor platforms so all child
+    entities land on a single device entry keyed by the PowerUnit UUID.
+    """
+    return DeviceInfo(
+        identifiers={(DOMAIN, power_unit["uuidAction"])},
+        name=power_unit.get("name") or "Power Supply & Backup",
+        manufacturer="Loxone",
+        model="Power Unit",
+    )
+
+
+class LoxonePowerUnitSensor(LoxoneEntity, SensorEntity):
+    """A sensor exposing one Loxone PowerUnit state on the parent device."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    entity_description: PowerUnitSensorDescription
+
+    def __init__(
+        self,
+        *,
+        power_unit: dict,
+        description: PowerUnitSensorDescription,
+        coordinator: LoxoneCoordinator,
+    ) -> None:
+        """Initialize the LoxonePowerUnitSensor."""
+        super().__init__(coordinator=coordinator)
+        self.entity_description = description
+        self.uuidAction = power_unit["states"][description.state_key]
+        self._power_unit_uuid = power_unit["uuidAction"]
+        self._attr_unique_id = f"{self._power_unit_uuid}_{description.key}"
+        self._attr_device_info = create_power_unit_device_info(power_unit)
+        self._attr_native_value = None
+
+    @cached_property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._attr_unique_id
+
+    async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
+        if self.uuidAction in e:
+            value = e[self.uuidAction]
+            if self.entity_description.value_fn is not None:
+                value = self.entity_description.value_fn(value)
+            self._attr_native_value = value
+            self.async_schedule_update_ha_state()
 
 
 class LoxoneConnectionStateSensor(LoxoneEntity, SensorEntity):

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from functools import cached_property
 import logging
 from typing import Literal, final
 
@@ -11,6 +13,7 @@ from homeassistant.components.binary_sensor import (
     PLATFORM_SCHEMA as BINARY_SENSOR_PLATFORM_SCHEMA,
     BinarySensorDeviceClass,
     BinarySensorEntity,
+    BinarySensorEntityDescription,
 )
 from homeassistant.const import (
     CONF_DEVICE_CLASS,
@@ -33,6 +36,7 @@ from . import LoxoneConfigEntry, LoxoneEntity
 from .const import CONF_ACTIONID, DOMAIN
 from .coordinator import LoxoneCoordinator
 from .helpers import add_room_and_cat_to_value_values, get_all
+from .sensor import create_power_unit_device_info
 
 _LOGGER = logging.getLogger(__name__)
 NEW_SENSOR = "sensors"
@@ -94,6 +98,22 @@ async def async_setup_entry(
         sensor = add_room_and_cat_to_value_values(loxconfig, sensor)
         sensor.update({"type": "smoke", "coordinator": coordinator})
         entities.append(LoxoneDigitalSensor(**sensor))
+
+    # Fuse + CP1..CP7 diagnostic binary sensors on each PowerUnit.
+    # CP* are disabled by default (cryptic per-circuit protection state,
+    # noisy in the UI); fuse is enabled because a blown main fuse is
+    # actionable for the user.
+    for power_unit in get_all(loxconfig, "PowerUnit"):
+        states = power_unit.get("states") or {}
+        entities.extend(
+            LoxonePowerUnitBinarySensor(
+                power_unit=power_unit,
+                description=desc,
+                coordinator=coordinator,
+            )
+            for desc in POWER_UNIT_BINARY_DESCRIPTIONS
+            if desc.state_key in states
+        )
 
     if miniserver and miniserver.serial:
         entities.append(LoxoneConnectivitySensor(coordinator, miniserver.serial))
@@ -237,6 +257,88 @@ class LoxoneCustomBinarySensor(LoxoneEntity, BinarySensorEntity):
                 self._state = self._on_state
             else:
                 self._state = self._off_state
+            self.async_schedule_update_ha_state()
+
+
+@dataclass(frozen=True, kw_only=True)
+class PowerUnitBinarySensorDescription(BinarySensorEntityDescription):
+    """Describes a binary sensor on a Loxone PowerUnit device.
+
+    ``state_key`` is the key under PowerUnit ``states`` whose UUID this
+    binary sensor subscribes to. ``on_when`` is the raw Loxone value that
+    represents ``is_on=True`` — for fuse/CP* a value of 0 means "tripped"
+    (problem), so on_when=0.0 lets the entity expose this as a HA problem.
+    """
+
+    state_key: str
+    on_when: float = 0.0
+
+
+# fuse = main fuse: 1=OK, 0=blown.  CP1..CP7 = per-circuit protection: same convention.
+# Both map to BinarySensorDeviceClass.PROBLEM, where is_on=True == "there's a problem".
+POWER_UNIT_BINARY_DESCRIPTIONS: tuple[PowerUnitBinarySensorDescription, ...] = (
+    PowerUnitBinarySensorDescription(
+        key="fuse",
+        state_key="fuse",
+        translation_key="powerunit_fuse",
+        device_class=BinarySensorDeviceClass.PROBLEM,
+        entity_category=EntityCategory.DIAGNOSTIC,
+    ),
+    *(
+        PowerUnitBinarySensorDescription(
+            key=f"cp{n}",
+            state_key=f"CP{n}",
+            translation_key=f"powerunit_cp{n}",
+            device_class=BinarySensorDeviceClass.PROBLEM,
+            entity_category=EntityCategory.DIAGNOSTIC,
+            entity_registry_enabled_default=False,
+        )
+        for n in range(1, 8)
+    ),
+)
+
+
+class LoxonePowerUnitBinarySensor(LoxoneEntity, BinarySensorEntity):
+    """A binary sensor exposing one PowerUnit state on the parent device."""
+
+    _attr_has_entity_name = True
+    _attr_should_poll = False
+    entity_description: PowerUnitBinarySensorDescription
+
+    def __init__(
+        self,
+        *,
+        power_unit: dict,
+        description: PowerUnitBinarySensorDescription,
+        coordinator: LoxoneCoordinator,
+    ) -> None:
+        """Initialize the LoxonePowerUnitBinarySensor."""
+        super().__init__(coordinator=coordinator)
+        self.entity_description = description
+        self.uuidAction = power_unit["states"][description.state_key]
+        self._power_unit_uuid = power_unit["uuidAction"]
+        self._attr_unique_id = f"{self._power_unit_uuid}_{description.key}"
+        self._attr_device_info = create_power_unit_device_info(power_unit)
+        self._attr_is_on: bool | None = None
+
+    @cached_property
+    def unique_id(self) -> str:
+        """Return a unique ID."""
+        return self._attr_unique_id
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if the binary sensor is on (problem state)."""
+        return self._attr_is_on
+
+    async def event_handler(self, e):
+        """Handle a state update message from Loxone."""
+        if self.uuidAction in e:
+            try:
+                value = float(e[self.uuidAction])
+            except (TypeError, ValueError):
+                return
+            self._attr_is_on = value == self.entity_description.on_when
             self.async_schedule_update_ha_state()
 
 

@@ -13,6 +13,18 @@
       "meter_storage": {
         "name": "Speicherstand"
       },
+      "powerunit_output_power": {
+        "name": "Ausgangsleistung"
+      },
+      "powerunit_battery_soc": {
+        "name": "Akku-Ladezustand"
+      },
+      "powerunit_supply_time_remaining": {
+        "name": "Restlaufzeit auf Akku"
+      },
+      "powerunit_device_info": {
+        "name": "Geräte-Info"
+      },
       "project_name": {
         "name": "Projektname"
       },
@@ -30,6 +42,32 @@
       },
       "reconnect_count": {
         "name": "Neuverbindungen"
+      }
+    },
+    "binary_sensor": {
+      "powerunit_fuse": {
+        "name": "Sicherung"
+      },
+      "powerunit_cp1": {
+        "name": "Sicherungsautomat 1"
+      },
+      "powerunit_cp2": {
+        "name": "Sicherungsautomat 2"
+      },
+      "powerunit_cp3": {
+        "name": "Sicherungsautomat 3"
+      },
+      "powerunit_cp4": {
+        "name": "Sicherungsautomat 4"
+      },
+      "powerunit_cp5": {
+        "name": "Sicherungsautomat 5"
+      },
+      "powerunit_cp6": {
+        "name": "Sicherungsautomat 6"
+      },
+      "powerunit_cp7": {
+        "name": "Sicherungsautomat 7"
       }
     }
   },

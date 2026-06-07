@@ -13,6 +13,18 @@
       "meter_storage": {
         "name": "Level"
       },
+      "powerunit_output_power": {
+        "name": "Output power"
+      },
+      "powerunit_battery_soc": {
+        "name": "Battery state of charge"
+      },
+      "powerunit_supply_time_remaining": {
+        "name": "Time remaining on battery"
+      },
+      "powerunit_device_info": {
+        "name": "Device info"
+      },
       "project_name": {
         "name": "Project name"
       },
@@ -30,6 +42,32 @@
       },
       "reconnect_count": {
         "name": "Reconnect count"
+      }
+    },
+    "binary_sensor": {
+      "powerunit_fuse": {
+        "name": "Fuse"
+      },
+      "powerunit_cp1": {
+        "name": "Circuit protection 1"
+      },
+      "powerunit_cp2": {
+        "name": "Circuit protection 2"
+      },
+      "powerunit_cp3": {
+        "name": "Circuit protection 3"
+      },
+      "powerunit_cp4": {
+        "name": "Circuit protection 4"
+      },
+      "powerunit_cp5": {
+        "name": "Circuit protection 5"
+      },
+      "powerunit_cp6": {
+        "name": "Circuit protection 6"
+      },
+      "powerunit_cp7": {
+        "name": "Circuit protection 7"
       }
     }
   },

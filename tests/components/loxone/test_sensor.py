@@ -429,6 +429,131 @@ async def test_submeter_has_own_device(hass: HomeAssistant, init_integration: Mo
     assert device.name == "Miniserver & Extensions"
 
 
+async def test_submeter_linked_to_powerunit_via_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """Sub-meter device should be linked to the parent PowerUnit via via_device."""
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+
+    entry = ent_reg.async_get("sensor.miniserver_extensions_total")
+    submeter_dev = dev_reg.async_get(entry.device_id)
+
+    # Parent PowerUnit device must exist (created by the PowerUnit sensor setup)
+    parent = dev_reg.async_get_device(identifiers={(DOMAIN, "pwr10000-0000-0000-0000000000000000")})
+    assert parent is not None, "PowerUnit parent device missing"
+    # via_device_id on the sub-meter device should point at the PowerUnit device
+    assert submeter_dev.via_device_id == parent.id
+
+
+async def test_top_level_meter_has_no_via_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """A top-level Meter (no PowerUnit parent) should not have a via_device link."""
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+    # The top-level Energy Meter in structure_sensors.json has uuid mtr10000-...
+    parent_uuid = "mtr10000-0000-0000-0000000000000000"
+    # Pick any of its subsensor entities
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, "mtr10000-0000-0000-0000000000000011")
+    assert entity_id is not None
+    entry = ent_reg.async_get(entity_id)
+    device = dev_reg.async_get(entry.device_id)
+    assert device is not None
+    assert (DOMAIN, parent_uuid) in device.identifiers
+    assert device.via_device_id is None
+
+
+# -- PowerUnit headline + diagnostic sensors ---------------------------------
+
+PSU_UUID = "pwr10000-0000-0000-0000000000000000"
+PSU_OUTPUT_POWER_UUID = "pwr10000-0000-0000-0000000000000001"
+PSU_BATTERY_SOC_UUID = "pwr10000-0000-0000-0000000000000002"
+PSU_TIME_REMAINING_UUID = "pwr10000-0000-0000-0000000000000003"
+PSU_DEVICE_INFO_UUID = "pwr10000-0000-0000-0000000000000004"
+
+
+async def test_powerunit_output_power_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """PowerUnit outputPower should be a POWER sensor on the parent device."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_output_power")
+    assert entity_id is not None
+    entry = ent_reg.async_get(entity_id)
+    assert entry.translation_key == "powerunit_output_power"
+
+    fire_loxone_event(hass, {PSU_OUTPUT_POWER_UUID: 123.4})
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert float(state.state) == pytest.approx(123.4)
+    assert state.attributes.get("device_class") == SensorDeviceClass.POWER
+    assert state.attributes.get("state_class") == SensorStateClass.MEASUREMENT
+    assert state.attributes.get("unit_of_measurement") == "W"
+
+
+async def test_powerunit_battery_soc_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """PowerUnit batteryStateOfCharge should be a BATTERY sensor (%, measurement)."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_battery_state_of_charge")
+    assert entity_id is not None
+
+    fire_loxone_event(hass, {PSU_BATTERY_SOC_UUID: 87.0})
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert float(state.state) == pytest.approx(87.0)
+    assert state.attributes.get("device_class") == SensorDeviceClass.BATTERY
+    assert state.attributes.get("state_class") == SensorStateClass.MEASUREMENT
+    assert state.attributes.get("unit_of_measurement") == "%"
+
+
+async def test_powerunit_supply_time_remaining_sensor(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """PowerUnit supplyTimeRemaining should be a DURATION sensor in seconds."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_supply_time_remaining")
+    assert entity_id is not None
+
+    fire_loxone_event(hass, {PSU_TIME_REMAINING_UUID: 3600.0})
+    await hass.async_block_till_done()
+    state = hass.states.get(entity_id)
+    assert float(state.state) == pytest.approx(3600.0)
+    assert state.attributes.get("device_class") == SensorDeviceClass.DURATION
+    assert state.attributes.get("unit_of_measurement") == "s"
+
+
+async def test_powerunit_device_info_sensor_diagnostic_disabled_by_default(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """DeviceInfo state should be a DIAGNOSTIC sensor and disabled by default."""
+    ent_reg = er.async_get(hass)
+    entity_id = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_device_info")
+    assert entity_id is not None
+    entry = ent_reg.async_get(entity_id)
+    assert entry.entity_category == EntityCategory.DIAGNOSTIC
+    assert entry.disabled_by == er.RegistryEntryDisabler.INTEGRATION
+
+
+async def test_powerunit_sensors_share_parent_device(
+    hass: HomeAssistant, init_integration: MockConfigEntry
+) -> None:
+    """All PowerUnit sensors should live on a single 'Power Unit' device."""
+    ent_reg = er.async_get(hass)
+    dev_reg = dr.async_get(hass)
+
+    output_power_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_output_power")
+    battery_entity = ent_reg.async_get_entity_id("sensor", DOMAIN, f"{PSU_UUID}_battery_state_of_charge")
+    op_dev = dev_reg.async_get(ent_reg.async_get(output_power_entity).device_id)
+    bs_dev = dev_reg.async_get(ent_reg.async_get(battery_entity).device_id)
+    assert op_dev.id == bs_dev.id
+    assert (DOMAIN, PSU_UUID) in op_dev.identifiers
+    assert op_dev.model == "Power Unit"
+    assert op_dev.name == "Power Supply & Backup"
+
+
 # -- Connection state diagnostic sensor (LoxoneConnectionStateSensor) ---------
 
 

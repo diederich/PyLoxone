@@ -280,6 +280,7 @@ User/password must remain Latin-1 encodable where the flow enforces it, and host
 | `LoxoneSensor`          | InfoOnlyAnalog  | Auto-detected   | Format string → unit mapping  |
 | `LoxoneSensor`          | InfoOnlyDigital | —               | 0/1 values                    |
 | `LoxoneMeterSensor`     | Meter           | Various         | Creates subsensors per detail |
+| `LoxonePowerUnitSensor` | PowerUnit       | POWER / BATTERY / DURATION | Headline sensors on the PowerUnit device |
 | `LoxoneTextSensor`      | TextInput       | —               | Bidirectional text            |
 | `LoxoneKeepAliveSensor` | —               | TIMESTAMP       | Last WS message time          |
 | `LoxoneVersionSensor`   | —               | —               | Miniserver version            |
@@ -287,15 +288,32 @@ User/password must remain Latin-1 encodable where the flow enforces it, and host
 
 Sensor classification flows through `match_sensor_description(unit, name, category)`: unambiguous units (°C, kWh, ppm, …) match by unit alone; ambiguous units (%) require a keyword hit in the Loxone name or category to pick `humidity` vs `battery`. One description per concept — no per-variant duplication. See `README.md` → *Sensor Device Class Detection* for the user-facing table and override pattern.
 
-**Meter discovery walks subControls.** `Meter` controls are surfaced as their own device with up to four subsensors (`Actual`, `Total`, `Total Returned`, `Level`). Discovery uses `helpers.get_all_including_subcontrols("Meter")` so meters nested inside a parent control — most commonly the per-circuit meters of a `PowerUnit` (Loxone Energy Flow Monitor) — are exposed alongside top-level meters. Subcontrol meters inherit `room` and `cat` from their parent when not set on the subcontrol itself.
+**Meter discovery walks subControls and links via `via_device`.** `Meter` controls are surfaced as their own device with up to four subsensors (`Actual`, `Total`, `Total Returned`, `Level`). Discovery uses `helpers.get_all_including_subcontrols("Meter", with_parent=True)` so meters nested inside a parent control — most commonly the per-circuit meters of a `PowerUnit` (Loxone Energy Flow Monitor) — are exposed alongside top-level meters. Subcontrol meters inherit `room` and `cat` from their parent when not set on the subcontrol itself, and each sub-meter `DeviceInfo` carries `via_device=(DOMAIN, parent_uuid)` so HA renders them visually nested under the parent PowerUnit. The setup pre-registers each `PowerUnit` parent device via `dr.async_get_or_create` before adding entities, because HA silently drops `via_device` links whose target isn't already in the device registry.
+
+**PowerUnit parent device entities.** Each `PowerUnit` itself is registered as a HA device of model `Power Unit` and exposes a small set of headline sensors on that device:
+
+| State                 | Entity                | Device class | Default                 |
+| --------------------- | --------------------- | ------------ | ----------------------- |
+| `outputPower`         | Output power          | POWER (W, MEASUREMENT) | enabled        |
+| `batteryStateOfCharge`| Battery state of charge | BATTERY (%, MEASUREMENT) | enabled    |
+| `supplyTimeRemaining` | Time remaining on battery | DURATION (s) | enabled              |
+| `deviceInfo`          | Device info (string)  | —            | DIAGNOSTIC, **disabled** |
 
 ### binary_sensor.py
 
-| Entity Class          | Loxone Type     | HA Device Class |
-| --------------------- | --------------- | --------------- |
-| `LoxoneDigitalSensor` | InfoOnlyDigital | Auto-detected   |
-| `LoxoneDigitalSensor` | Presence        | PRESENCE        |
-| `LoxoneDigitalSensor` | Smoke           | SMOKE           |
+| Entity Class                   | Loxone Type     | HA Device Class |
+| ------------------------------ | --------------- | --------------- |
+| `LoxoneDigitalSensor`          | InfoOnlyDigital | Auto-detected   |
+| `LoxoneDigitalSensor`          | Presence        | PRESENCE        |
+| `LoxoneDigitalSensor`          | Smoke           | SMOKE           |
+| `LoxonePowerUnitBinarySensor`  | PowerUnit       | PROBLEM (inverted: Loxone `1`=OK → off, `0`=tripped → on) |
+
+The PowerUnit binary sensors live on the same parent device as `LoxonePowerUnitSensor`:
+
+| State          | Entity                  | Default                 |
+| -------------- | ----------------------- | ----------------------- |
+| `fuse`         | Fuse                    | DIAGNOSTIC, **enabled** (actionable when blown) |
+| `CP1`..`CP7`   | Circuit protection 1..7 | DIAGNOSTIC, **disabled by default** (cryptic per-circuit state; enable per-need) |
 
 **Issues:**
 

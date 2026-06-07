@@ -287,6 +287,22 @@ class TestGetAllIncludingSubcontrols:
     def test_no_match(self):
         assert get_all_including_subcontrols(NESTED_STRUCTURE, "Gate") == []
 
+    def test_with_parent_returns_tuples(self):
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter", with_parent=True)
+        # Result is list of (control, parent_or_None) tuples
+        assert len(result) == 3
+        by_name = {c["name"]: p for c, p in result}
+        assert by_name["TopMeter"] is None
+        assert by_name["SubMeter1"] is not None
+        assert by_name["SubMeter1"]["name"] == "PSU"
+        assert by_name["SubMeter2"] is not None
+        assert by_name["SubMeter2"]["name"] == "PSU"
+
+    def test_with_parent_false_unchanged(self):
+        # Default returns flat list (no tuples) — backwards compatible
+        result = get_all_including_subcontrols(NESTED_STRUCTURE, "Meter")
+        assert all(isinstance(c, dict) for c in result)
+
 
 # -- Room / category lookup ---------------------------------------------------
 
